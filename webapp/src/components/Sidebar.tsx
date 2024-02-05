@@ -1,9 +1,6 @@
 import * as React from 'react';
 import GlobalStyles from '@mui/joy/GlobalStyles';
-import Avatar from '@mui/joy/Avatar';
 import Box from '@mui/joy/Box';
-import Divider from '@mui/joy/Divider';
-import IconButton from '@mui/joy/IconButton';
 import Input from '@mui/joy/Input';
 import List from '@mui/joy/List';
 import ListItem from '@mui/joy/ListItem';
@@ -13,10 +10,9 @@ import Typography from '@mui/joy/Typography';
 import Sheet from '@mui/joy/Sheet';
 import SearchRoundedIcon from '@mui/icons-material/SearchRounded';
 import HomeRoundedIcon from '@mui/icons-material/HomeRounded';
-import ShoppingCartRoundedIcon from '@mui/icons-material/ShoppingCartRounded';
 import SettingsRoundedIcon from '@mui/icons-material/SettingsRounded';
-import LogoutRoundedIcon from '@mui/icons-material/LogoutRounded';
-import BrightnessAutoRoundedIcon from '@mui/icons-material/BrightnessAutoRounded';
+import WorkspacesIcon from '@mui/icons-material/Workspaces';
+import StorageIcon from '@mui/icons-material/Storage';
 
 import ColorSchemeToggle from './ColorSchemeToggle';
 import { closeSidebar } from '../utils';
@@ -57,7 +53,6 @@ function Toggler({
 export default function Sidebar() {
 
     const location = useLocation();
-    console.log(location);
     return (
         <Sheet
             className="Sidebar"
@@ -150,7 +145,7 @@ export default function Sidebar() {
                     <NavLink to="/installations">
                         <ListItem>
                             <ListItemButton selected={location.pathname == "/installations"}>
-                                <ShoppingCartRoundedIcon />
+                                <WorkspacesIcon />
                                 <ListItemContent>
                                     <Typography level="title-sm">Installations</Typography>
                                 </ListItemContent>
@@ -160,7 +155,7 @@ export default function Sidebar() {
                     <NavLink to="/clusters">
                         <ListItem>
                             <ListItemButton selected={location.pathname == "/clusters"}>
-                                <ShoppingCartRoundedIcon />
+                                <StorageIcon />
                                 <ListItemContent>
                                     <Typography level="title-sm">Clusters</Typography>
                                 </ListItemContent>

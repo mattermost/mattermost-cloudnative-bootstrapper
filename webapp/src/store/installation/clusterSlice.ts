@@ -61,11 +61,19 @@ export const clustersSlice = createSlice({
             })
             .addCase(fetchClusters.fulfilled, (state, action) => {
                 state.status = 'succeeded'
-                // Add any fetched posts to the array
+                // Merge any fetched clusters to the array
+                state.clusters = action.payload.reduce((acc: Cluster[], cluster: Cluster) => {
+                    const index = acc.findIndex((cl) => cl.ID === cluster.ID);
+                    if (index !== -1) {
+                        acc[index] = cluster;
+                    } else {
+                        acc.push(cluster);
+                    }
+                    return acc;
+                }, state.clusters);
                 if (action.payload.length < state.pagination.per_page) {
                     state.lastPage = state.pagination.page
                 }
-                state.clusters = state.clusters.concat(action.payload);
             })
             .addCase(fetchClusters.rejected, (state, action) => {
                 state.status = 'failed'

@@ -64,7 +64,7 @@ require (
 	github.com/lib/pq v1.10.9 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/mattermost/awat v0.2.0 // indirect
-	github.com/mattermost/mattermost-cloud v0.78.0 // indirect
+	github.com/mattermost/mattermost-cloud v0.81.0 // indirect
 	github.com/mattermost/mattermost-operator v1.21.0-rc.2 // indirect
 	github.com/mattermost/rotator v0.2.1-0.20230830064954-61490ed26761 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect

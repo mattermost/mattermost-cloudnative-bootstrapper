@@ -5,7 +5,7 @@ import {
 } from '@mui/joy';
 import HomeRoundedIcon from '@mui/icons-material/HomeRounded';
 import ChevronRightRoundedIcon from '@mui/icons-material/ChevronRightRounded';
-import OrderTable from '../../components/InstallationsTable';
+import InstallationsTable from '../../components/InstallationsTable';
 import Link from '@mui/joy/Link';
 import Typography from '@mui/joy/Typography';
 import Button from '@mui/joy/Button';
@@ -14,15 +14,21 @@ import InstallationCreationModal from '../../components/installation/CreationMod
 import { CreateInstallationRequest } from '../../types/Installation';
 import { useDispatch } from 'react-redux';
 import { createInstallation } from '../../store/installation/installationSlice';
-
+import {useNavigate} from 'react-router-dom'
 
 const InstallationsPage = () => {
     const [showInstallationCreationModal, setShowInstallationCreationModal] = React.useState<boolean>(false);
+    const [creationError, setCreationError] = React.useState('');
     const dispatch = useDispatch();
-    const handleCreateInstallation = (req: CreateInstallationRequest) => {
+    const navigate = useNavigate();
+    const handleCreateInstallation = async (req: CreateInstallationRequest) => {
         console.log(req);
-        dispatch(createInstallation(req) as any);
-        setShowInstallationCreationModal(false);
+        const result = await dispatch(createInstallation(req) as any);
+        if (!result.payload) {
+            setCreationError('Failed to create installation');
+            return;
+        }
+        navigate(`/installations/${result.payload.ID}`);
     }
 
     return (<Box
@@ -92,8 +98,8 @@ const InstallationsPage = () => {
                 Create
             </Button>
         </Box>
-        <OrderTable />
-        <InstallationCreationModal open={showInstallationCreationModal} onClose={() => setShowInstallationCreationModal(false)} onSubmit={handleCreateInstallation} />
+        <InstallationsTable />
+        <InstallationCreationModal error={creationError} open={showInstallationCreationModal} onClose={() => setShowInstallationCreationModal(false)} onSubmit={handleCreateInstallation} />
         {/* <OrderList /> */}
     </Box>)
 }

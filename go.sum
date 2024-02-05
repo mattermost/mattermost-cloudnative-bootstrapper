@@ -1590,6 +1590,8 @@ github.com/mattermost/mattermost-cloud v0.39.0/go.mod h1:GbWfZajyp+DvdEpoNfFeJ3Z
 github.com/mattermost/mattermost-cloud v0.48.0/go.mod h1:1u1LQsuNVMcoxo6MvKKL6sGZ+LJrGdXg8TGyyTe3yjY=
 github.com/mattermost/mattermost-cloud v0.78.0 h1:meFqFnm1kz2aePRN7H8ljeLhL8v0tC+wX76g9rL4s70=
 github.com/mattermost/mattermost-cloud v0.78.0/go.mod h1:y1r1B5v1skPqtppvo2Lfj5lhVJ4g/tiQIVL0ncgJD0c=
+github.com/mattermost/mattermost-cloud v0.81.0 h1:/8+O9ziPIdkJjjG3fN3ZrQHHUN61a6HEB5RVueuJkzk=
+github.com/mattermost/mattermost-cloud v0.81.0/go.mod h1:y1r1B5v1skPqtppvo2Lfj5lhVJ4g/tiQIVL0ncgJD0c=
 github.com/mattermost/mattermost-operator v1.12.0/go.mod h1:a6pSJI6bDaIfO65M/Hvuqg8kUNYQQYDHLayoT5XZx5o=
 github.com/mattermost/mattermost-operator v1.15.0/go.mod h1:9esaQrOcruyyGQme3AnXGnoCDbpER7XAifDVu3HlCm8=
 github.com/mattermost/mattermost-operator v1.21.0-rc.1 h1:kjEzm2G9xNoZzzCfNxBrr6u8L8MrETquZ7U4UfSO2h0=

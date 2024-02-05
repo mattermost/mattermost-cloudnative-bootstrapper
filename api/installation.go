@@ -19,6 +19,9 @@ func initInstallation(apiRouter *mux.Router, context *Context) {
 
 	installationRouter := apiRouter.PathPrefix("/installation").Subrouter()
 	installationRouter.Handle("", addContext(handleCreateInstallation)).Methods(http.MethodPost)
+	installationRouter.Handle("/{installation:[A-Za-z0-9]{26}}", addContext(handleGetInstallation)).Methods(http.MethodGet)
+	installationRouter.Handle("/{installation:[A-Za-z0-9]{26}}", addContext(handlePatchInstallation)).Methods(http.MethodPatch)
+	installationRouter.Handle("/{installation:[A-Za-z0-9]{26}}", addContext(handleDeleteInstallation)).Methods(http.MethodDelete)
 }
 
 func handleListInstallations(c *Context, w http.ResponseWriter, r *http.Request) {
@@ -71,4 +74,79 @@ func handleCreateInstallation(c *Context, w http.ResponseWriter, r *http.Request
 	}
 
 	w.Write(json)
+}
+
+func handleGetInstallation(c *Context, w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	installationID := vars["installation"]
+
+	installation, err := c.ProvisionerClient.GetInstallation(installationID, &provisioner.GetInstallationRequest{})
+
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		logger.FromContext(c.Ctx).WithError(err).Error("Failed to get installation")
+		return
+	}
+
+	if installation == nil {
+		w.WriteHeader(http.StatusNotFound)
+		return
+	}
+
+	logger.FromContext(c.Ctx).WithField("installation", installation.ID).Info("Installation retrieved")
+
+	json, err := json.Marshal(installation)
+	if err != nil {
+		logger.FromContext(c.Ctx).WithError(err).Error("Failed to marshal installation")
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	w.Write(json)
+}
+
+func handlePatchInstallation(c *Context, w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	installationID := vars["installation"]
+
+	patchInstallationRequest, err := provisioner.NewPatchInstallationRequestFromReader(r.Body)
+	if err != nil {
+		logger.FromContext(c.Ctx).WithError(err).Error("Failed to parse patch installation request")
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	installation, err := c.ProvisionerClient.UpdateInstallation(installationID, patchInstallationRequest)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		logger.FromContext(c.Ctx).WithError(err).Error("Failed to patch installation")
+		return
+	}
+
+	logger.FromContext(c.Ctx).WithField("installation", installation.ID).Info("Installation patched")
+
+	json, err := json.Marshal(installation)
+	if err != nil {
+		logger.FromContext(c.Ctx).WithError(err).Error("Failed to marshal installation")
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	w.Write(json)
+}
+
+func handleDeleteInstallation(c *Context, w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	installationID := vars["installation"]
+
+	err := c.ProvisionerClient.DeleteInstallation(installationID)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		logger.FromContext(c.Ctx).WithError(err).Error("Failed to delete installation")
+		return
+	}
+
+	logger.FromContext(c.Ctx).WithField("installation", installationID).Info("Installation deleted")
+
+	w.WriteHeader(http.StatusOK)
 }

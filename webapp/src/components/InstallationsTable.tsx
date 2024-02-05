@@ -36,7 +36,8 @@ import MoreHorizRoundedIcon from '@mui/icons-material/MoreHorizRounded';
 import { useSelector } from 'react-redux';
 import { RootState } from '../store';
 import { useDispatch } from 'react-redux';
-import { fetchInstallations, incrementPage, decrementPage, selectInstallationsForPage, selectInstallationsPagination } from '../store/installation/installationSlice';
+import { fetchInstallations, incrementPage, decrementPage, selectInstallationsForPage, setInstallationStateFilter, selectInstallationsPagination, selectFilteredInstallationsForPage, setInstallationSizeFilter, setInstallationSearchTerm } from '../store/installation/installationSlice';
+import { Installation } from '../types/Installation';
 
 
 function descendingComparator<T>(a: T, b: T, orderBy: keyof T) {
@@ -103,10 +104,11 @@ export default function() {
     const [order, setOrder] = React.useState<Order>('desc');
     const [selected, setSelected] = React.useState<readonly string[]>([]);
     const [open, setOpen] = React.useState(false);
-    const installations = useSelector(selectInstallationsForPage);
     const pagination = useSelector(selectInstallationsPagination);
     const lastPage = useSelector((state: RootState) => state.installations.lastPage);
     const dispatch = useDispatch();
+
+    const installations = useSelector(selectFilteredInstallationsForPage);
 
     React.useEffect(() => {
         if (installations.length === 0 || pagination.page * pagination.per_page > installations.length) {
@@ -114,42 +116,51 @@ export default function() {
         }
     }, [dispatch, pagination])
 
+
+    const handleSearchChange: React.ChangeEventHandler<HTMLInputElement> = (event) => {
+        // event.target is the target input element
+        const newValue = event.target.value;
+        // Do something with newValue
+        dispatch(setInstallationSearchTerm(newValue));
+    };
+
     const renderFilters = () => (
         <React.Fragment>
             <FormControl size="sm">
                 <FormLabel>State</FormLabel>
                 <Select
                     size="sm"
-                    placeholder="Filter by status"
+                    placeholder="Filter by state"
                     slotProps={{ button: { sx: { whiteSpace: 'nowrap' } } }}
+                    onChange={(e, newValue) => {
+                        if (newValue === null) {
+                            dispatch(setInstallationStateFilter(''));
+                        }
+                        dispatch(setInstallationStateFilter(newValue as string));
+                    }}
                 >
-                    <Option value="paid">Paid</Option>
-                    <Option value="pending">Pending</Option>
-                    <Option value="refunded">Refunded</Option>
-                    <Option value="cancelled">Cancelled</Option>
+                    <Option value="all">All</Option>
+                    <Option value="stable">stable</Option>
+                    <Option value="deleted">deleted</Option>
                 </Select>
             </FormControl>
 
             <FormControl size="sm">
                 <FormLabel>Size</FormLabel>
-                <Select size="sm" placeholder="All">
+                <Select 
+                    size="sm"
+                    placeholder="All"
+                    onChange={(e, newValue) => {
+                        if (newValue === null) {
+                            dispatch(setInstallationSizeFilter(''));
+                        }
+                        dispatch(setInstallationSizeFilter(newValue as string));
+                    }}
+                >
                     <Option value="all">All</Option>
-                    <Option value="refund">Refund</Option>
-                    <Option value="purchase">Purchase</Option>
-                    <Option value="debit">Debit</Option>
-                </Select>
-            </FormControl>
-
-            <FormControl size="sm">
-                <FormLabel>Customer</FormLabel>
-                <Select size="sm" placeholder="All">
-                    <Option value="all">All</Option>
-                    <Option value="olivia">Olivia Rhye</Option>
-                    <Option value="steve">Steve Hampton</Option>
-                    <Option value="ciaran">Ciaran Murray</Option>
-                    <Option value="marina">Marina Macdonald</Option>
-                    <Option value="charles">Charles Fulton</Option>
-                    <Option value="jay">Jay Hoper</Option>
+                    <Option value="100users">100users</Option>
+                    <Option value="1000users">1000users</Option>
+                    <Option value="10000users">10000users</Option>
                 </Select>
             </FormControl>
         </React.Fragment>
@@ -217,8 +228,8 @@ export default function() {
                 }}
             >
                 <FormControl sx={{ flex: 1 }} size="sm">
-                    <FormLabel>Search for order</FormLabel>
-                    <Input size="sm" placeholder="Search" startDecorator={<SearchIcon />} />
+                    <FormLabel>Filter installations</FormLabel>
+                    <Input size="sm" onChange={handleSearchChange} placeholder="Search" startDecorator={<SearchIcon />} />
                 </FormControl>
                 {renderFilters()}
             </Box>
@@ -268,7 +279,7 @@ export default function() {
                                     sx={{ verticalAlign: 'text-bottom' }}
                                 />
                             </th>
-                            <th style={{ width: 120, padding: '12px 6px' }}>
+                            <th style={{ width: 140, padding: '12px 6px' }}>
                                 <Link
                                     underline="none"
                                     color="primary"
@@ -287,16 +298,17 @@ export default function() {
                                     ID
                                 </Link>
                             </th>
-                            <th style={{ width: 140, padding: '12px 6px' }}>Creation Date</th>
-                            <th style={{ width: 140, padding: '12px 6px' }}>State</th>
-                            <th style={{ width: 240, padding: '12px 6px' }}>Size</th>
-                            <th style={{ width: 240, padding: '12px 6px' }}>Image</th>
-                            <th style={{ width: 240, padding: '12px 6px' }}>Version</th>
+                            <th style={{width: 140, padding: '12px 6px' }}>Name</th>
+                            <th style={{ width: 50, padding: '12px 6px' }}>Creation Date</th>
+                            <th style={{ width: 100, padding: '12px 6px' }}>State</th>
+                            <th style={{ width: 50, padding: '12px 6px' }}>Size</th>
+                            <th style={{ width: 140, padding: '12px 6px' }}>Image</th>
+                            <th style={{ width: 50, padding: '12px 6px' }}>Version</th>
                             <th style={{ width: 140, padding: '12px 6px' }}> </th>
                         </tr>
                     </thead>
                     <tbody>
-                        {stableSort(installations, getComparator(order, 'ID')).map((installation) => (
+                        {stableSort(installations, getComparator(order, 'ID')).map((installation: Installation) => (
                             <tr key={installation.ID}>
                                 <td style={{ textAlign: 'center', width: 120 }}>
                                     <Checkbox
@@ -318,7 +330,10 @@ export default function() {
                                     <Typography level="body-xs">{installation.ID}</Typography>
                                 </td>
                                 <td>
-                                    <Typography level="body-xs">{installation.CreateAt}</Typography>
+                                    <Typography level="body-xs">{installation.Name}</Typography>
+                                </td>
+                                <td>
+                                    <Typography level="body-xs">{new Date(installation.CreateAt || 0).toLocaleDateString()}</Typography>
                                 </td>
                                 <td>
                                     <Chip
@@ -369,8 +384,8 @@ export default function() {
                                 </td>
                                 <td>
                                     <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
-                                        <Link level="body-xs" component="button">
-                                            Download
+                                        <Link level="body-xs"  href={`/installations/${installation.ID}`} >
+                                            More Details
                                         </Link>
                                         <RowMenu />
                                     </Box>

@@ -28,6 +28,7 @@ func (c *Context) Clone() *Context {
 func GetPaginationFromRequest(r *http.Request) (provisioner.Paging, error) {
 	pageStr := r.URL.Query().Get("page")
 	perPageStr := r.URL.Query().Get("per_page")
+	includeDeleted := r.URL.Query().Get("include_deleted")
 
 	page, err := strconv.Atoi(pageStr)
 	if err != nil {
@@ -40,8 +41,9 @@ func GetPaginationFromRequest(r *http.Request) (provisioner.Paging, error) {
 	}
 
 	pagination := provisioner.Paging{
-		Page:    page,
-		PerPage: perPage,
+		Page:           page,
+		PerPage:        perPage,
+		IncludeDeleted: includeDeleted == "true",
 	}
 
 	return pagination, nil

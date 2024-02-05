@@ -65,6 +65,16 @@ export interface EnvVar {
 }
 
 
+export function isEnvVarMap(obj: any): obj is EnvVarMap {
+    if (obj && typeof obj === 'object') {
+        return Object.values(obj).every(
+            (value) => typeof value === 'object' && ('value' in value! || value === null)
+        );
+    }
+
+    return false;
+}
+
 export type AllowedIPRange = {
     CIDRBlock: string;
     Description: string;
@@ -73,19 +83,90 @@ export type AllowedIPRange = {
 };
 
 export const filestoreOptions = [
-    { value: 'aws-s3', label: 'AWS S3' },
-    { value: 'minio', label: 'MinIO' },
-    { value: 'aws-multitenant-s3', label: 'AWS Multitenant S3' },
-    { value: 'bifrost', label: 'Bifrost' },
+    'aws-s3',
+    'minio',
+    'aws-multitenant-s3',
+    'bifrost',
 ];
 
 export const databaseOptions = [
-    { value: 'mysql-operator', label: 'MySQL Operator' },
-    { value: 'aws-rds', label: 'AWS RDS MySQL' },
-    { value: 'aws-rds-postgres', label: 'AWS RDS PostgreSQL' },
-    { value: 'aws-multitenant-rds-mysql', label: 'AWS Multitenant RDS MySQL' },
-    { value: 'aws-multitenant-rds-postgres', label: 'AWS Multitenant RDS PostgreSQL' },
-    { value: 'aws-multitenant-rds-postgres-pgbouncer', label: 'AWS Multitenant RDS PostgreSQL PGBouncer' },
-    { value: 'perseus', label: 'Perseus' },
-    { value: 'external', label: 'External' },
+    'mysql-operator',
+    'aws-rds',
+    'aws-rds-postgres',
+    'aws-multitenant-rds-mysql',
+    'aws-multitenant-rds-postgres',
+    'aws-multitenant-rds-postgres-pgbouncer',
+    'perseus',
+    'external',
 ];
+
+
+
+export interface PatchInstallationRequest {
+    OwnerID?: string;
+    Image?: string;
+    Version?: string;
+    Size?: string;
+    License?: string;
+    AllowedIPRanges?: AllowedIPRange[]; // Assuming AllowedIPRanges type definition exists
+    OverrideIPRanges?: boolean;
+    PriorityEnv: EnvVar;
+    MattermostEnv: EnvVar;
+};
+
+export const patchInstallationJSONSchema = {
+    type: 'object',
+    properties: {
+        OwnerID: { type: 'string', title: 'Owner ID' },
+        Image: { type: 'string', title: 'Image' },
+        Version: { type: 'string', title: 'Version' },
+        Size: { type: 'string', title: 'Size' },
+        License: { type: 'string', title: 'License' },
+        OverrideIPRanges: { type: 'boolean', title: 'Override IP Ranges' },
+        // PriorityEnv: {
+        //     type: "object",
+        //     additionalProperties: {
+        //         type: "string",
+        //     }
+        // },
+        // MattermostEnv: {
+        //     type: "object",
+        //     additionalProperties: {
+        //         type: "string",
+        //     }
+        // },
+    },
+};
+
+export const patchInstallationUISchema = {
+    OwnerID: {
+        'ui:placeholder': 'Enter Owner ID',
+    },
+    Image: {
+        'ui:placeholder': 'Enter Image URL',
+    },
+    Version: {
+        'ui:placeholder': 'Enter Version',
+    },
+    Size: {
+        'ui:placeholder': 'Enter Size',
+    },
+    License: {
+        'ui:widget': 'textarea',
+        'ui:placeholder': 'Enter License details',
+    },
+    AllowedIPRanges: {
+        // Define UI settings for AllowedIPRanges if needed
+    },
+    OverrideIPRanges: {
+        'ui:widget': 'checkbox',
+    },
+    // PriorityEnv: {
+    //     // Define UI settings for PriorityEnv if needed
+    //     "ui:widget": "textarea"
+    // },
+    // MattermostEnv: {
+    //     // Define UI settings for MattermostEnv if needed
+    //     "ui:widget": "textarea"
+    // },
+};
