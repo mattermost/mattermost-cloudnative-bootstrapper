@@ -6,28 +6,18 @@ import {
   THEME_ID as MATERIAL_THEME_ID,
 } from '@mui/material/styles';
 import CssBaseline from '@mui/joy/CssBaseline';
-import Box from '@mui/joy/Box';
-import Breadcrumbs from '@mui/joy/Breadcrumbs';
-import Link from '@mui/joy/Link';
-import { Outlet, Route, Routes } from 'react-router-dom';
+import { Route, Routes } from 'react-router-dom';
 import useScript from './useScript';
-import Sidebar from './components/Sidebar';
 
-import Header from './components/Header';
-import InstallationsPage from './pages/installation';
-import ClustersPage from './pages/cluster';
-import InstallationByIDPage from './pages/installation/InstallationByIDPage';
+import SetupPage from './pages/setup';
+import BootstrapperHeader from './components/BootstrapperHeader';
+import AWSPage from './pages/aws';
+import CreatingClusterLoadingScreen from './pages/aws/creating_cluster';
+import ProvisionClusterPage from './pages/aws/provision_cluster';
+import ClusterSummaryPage from './pages/cluster/cluster_summary';
 
 const useEnhancedEffect =
   typeof window !== 'undefined' ? React.useLayoutEffect : React.useEffect;
-
-const PageLayout = () => (
-  <Box sx={{ display: 'flex', minHeight: '100dvh' }}>
-    <Header />
-    <Sidebar />
-    <Outlet />
-  </Box>
-);
 
 const materialTheme = materialExtendTheme();
 
@@ -48,11 +38,37 @@ export default function JoyOrderDashboardTemplate() {
       <JoyCssVarsProvider disableTransitionOnChange>
         <CssBaseline />
         <Routes>
-          <Route path="/" element={<PageLayout />}>
-            <Route path="/installations" element={<InstallationsPage />}/>
-            <Route path="/installations/:id" element={<InstallationByIDPage />} />
-            <Route path="clusters" element={<ClustersPage />} />
+          <Route path="/" element={
+            <>
+              <BootstrapperHeader currentStep={'setup'}/>
+              <SetupPage />
+            </>
+          }>
           </Route>
+          <Route path="/aws" element={
+            <>
+              <BootstrapperHeader currentStep={'create_eks_cluster'}/>
+              <AWSPage />
+            </>
+          } />
+          <Route path="/aws/creating_cluster" element={
+            <>
+              <BootstrapperHeader currentStep={'wait_for_eks'}/>
+              <CreatingClusterLoadingScreen />
+            </>
+          } />
+          <Route path="/aws/provision_cluster" element={
+            <>
+              <BootstrapperHeader currentStep={'provision_cluster'}/>
+              <ProvisionClusterPage />
+            </>
+          } />
+          <Route path="/cluster/summary" element={
+            <>
+              <BootstrapperHeader currentStep={'cluster_summary'}/>
+              <ClusterSummaryPage />
+            </>
+          } />
         </Routes>
       </JoyCssVarsProvider>
     </MaterialCssVarsProvider>

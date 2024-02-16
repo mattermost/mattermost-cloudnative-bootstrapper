@@ -133,16 +133,18 @@ export default function Sidebar() {
                         '--ListItem-radius': (theme) => theme.vars.radius.sm,
                     }}
                 >
-                    <ListItem>
-                        <ListItemButton>
-                            <HomeRoundedIcon />
-                            <ListItemContent>
-                                <Typography level="title-sm">Home</Typography>
-                            </ListItemContent>
-                        </ListItemButton>
-                    </ListItem>
+                    <NavLink to="/setup">
+                        <ListItem>
+                            <ListItemButton>
+                                <HomeRoundedIcon />
+                                <ListItemContent>
+                                    <Typography level="title-sm">Home</Typography>
+                                </ListItemContent>
+                            </ListItemButton>
+                        </ListItem>
+                    </NavLink>
 
-                    <NavLink to="/installations">
+                    {/* <NavLink to="/installations">
                         <ListItem>
                             <ListItemButton selected={location.pathname == "/installations"}>
                                 <WorkspacesIcon />
@@ -161,7 +163,7 @@ export default function Sidebar() {
                                 </ListItemContent>
                             </ListItemButton>
                         </ListItem>
-                    </NavLink>
+                    </NavLink> */}
                 </List>
                 <List
                     size="sm"

@@ -12,7 +12,6 @@ export interface ClustersState {
     lastPage?: number;
 }
 
-
 const initialState: ClustersState = {
     clusters: [],
     pagination: {

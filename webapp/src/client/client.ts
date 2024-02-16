@@ -1,4 +1,5 @@
 import { CreateInstallationRequest, PatchInstallationRequest } from "../types/Installation";
+import { CloudCredentials, CreateAWSNodeGroup, CreateEKSClusterRequest } from "../types/bootstrapper";
 
 export  async function getInstallations(page: number, per_page: number)  {
     const response = await fetch(`http://localhost:3000/api/v1/installations/list?page=${page}&per_page=${per_page}&include_deleted=true`);
@@ -11,7 +12,6 @@ export async function getClusters(page:number, per_page: number) {
     const data = await response.json();
     return data;
 }
-
 
 export async function createInstallation(installation: CreateInstallationRequest) {
     const response = await fetch(`http://localhost:3000/api/v1/installation`, {
@@ -46,6 +46,67 @@ export async function getInstallationByID(id: string) {
 export async function deleteInstallation(id: string) {
     const response = await fetch(`http://localhost:3000/api/v1/installation/${id}`, {
         method: 'DELETE'
+    });
+    const data = await response.json();
+    return data;
+}
+
+
+export async function setAndCheckCloudCredentials(credentials: CloudCredentials, provider: string) {
+    const response = await fetch(`http://localhost:3000/api/v1/${provider}/set_credentials`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(credentials)
+    });
+    const data = await response.json();
+    return data;
+}
+
+export async function fetchAWSPotentialARNs() {
+    const response = await fetch(`http://localhost:3000/api/v1/aws/eks_roles`);
+    const data = await response.json();
+    return data;
+}
+
+export async function createEKSCluster(createEKSClusterRequest: CreateEKSClusterRequest) {
+    const response = await fetch(`http://localhost:3000/api/v1/aws/eks_create`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(createEKSClusterRequest)
+    });
+    const data = await response.json();
+    return data;
+}
+
+export async function getEKSCluster(clusterName: string) {
+    const response = await fetch(`http://localhost:3000/api/v1/aws/eks_cluster/${clusterName}`);
+    const data = await response.json();
+    return data;
+}
+
+export async function fetchEKSNodeGroups(clusterName: string) {
+    const response = await fetch(`http://localhost:3000/api/v1/aws/eks_cluster/${clusterName}/nodegroups`);
+    const data = await response.json();
+    return data;
+}
+
+export async function fetchEKSKubeConfig(clusterName: string) {
+    const response = await fetch(`http://localhost:3000/api/v1/aws/eks_cluster/${clusterName}/kubeconfig`);
+    const data = await response.text();
+    return data;
+}
+
+export async function createEKSNodeGroup(clusterName: string, createNodeGroup: CreateAWSNodeGroup) {
+    const response = await fetch(`http://localhost:3000/api/v1/aws/eks_cluster/${clusterName}/nodegroups`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(createNodeGroup)
     });
     const data = await response.json();
     return data;

@@ -8,4 +8,6 @@ func Register(rootRouter *mux.Router, c *Context) {
 	apiRouter := rootRouter.PathPrefix("/api/v1").Subrouter()
 	initInstallation(apiRouter, c)
 	initCluster(apiRouter, c)
+	initAWS(apiRouter, c)
+	// initk8s(apiRouter, c)
 }

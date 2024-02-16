@@ -1,0 +1,17 @@
+.BootstrapperHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    padding: 24px 20px;
+
+    .BootstrapperHeader-logo {
+        width: 160px;
+        height: 26px;
+    }
+
+    .BootstrapperHeader-contact_us {
+        align-items: right;
+        text-decoration: none;
+    }
+}

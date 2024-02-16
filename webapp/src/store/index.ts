@@ -1,11 +1,15 @@
 import { configureStore } from '@reduxjs/toolkit'
 import installationsSlice from './installation/installationSlice'
 import clustersSlice from './installation/clusterSlice'
+import bootstrapperSlice from './installation/bootstrapperSlice'
+import awsSlice from './installation/awsSlice'
 
 export const store = configureStore({
     reducer: {
         installations: installationsSlice,
         clusters: clustersSlice,
+        bootstrapper: bootstrapperSlice,
+        aws: awsSlice,
     },
 })
 

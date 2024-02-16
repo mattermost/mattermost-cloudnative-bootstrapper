@@ -1,0 +1,136 @@
+.SetupPage {
+    display: flex;
+    height: 100vh; // Take full height of the viewport
+    background-image: url('../../static/bg.png');
+    background-size: cover;
+}
+
+.leftPanel {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    // background-color: #f0f0f0; // Just for visibility, adjust as needed
+
+    .title {
+        // Style your title as needed
+        margin-bottom: 20px;
+    }
+
+    .description {
+        max-width: 700px;
+    }
+}
+
+.rightPanel {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    .setup-card {
+        width: 540px;
+        box-sizing: border-box;
+        border: 1px solid rgba(63, 67, 80, 0.08);
+        border-radius: 8px;
+        box-shadow: 0 12px 32px 0 rgba(0, 0, 0, 0.12);
+        background-color: #FFF;
+
+        .setup-card-content {
+            padding: 20px;
+
+            .card-title {
+                display: flex;
+                align-items: center;
+                gap: 0.5rem;
+            }
+
+            .details label {
+                display: block;
+                margin-bottom: 5px;
+                font-weight: bold;
+            }
+
+            .details td {
+                word-wrap: break-word;
+            }
+
+            .details pre {
+                background-color: lightgrey;
+                padding: 20px;
+            }
+
+            .kubeconfig-buttons {
+                margin-top: 20px;
+                display: flex;
+                align-items: center;
+                justify-content: space-around;
+            }
+
+            .next-step-button {
+                margin-top: 20px;
+                display: flex;
+                align-items: center;
+                justify-content: space-around;
+                gap: 10px;
+            }
+
+
+            .GetCredentials label {
+                display: block;
+                margin-bottom: 5px;
+                font-weight: bold;
+            }
+
+
+            .refresh-countdown {
+                font-size: 0.8rem;
+                gap: 0.5rem;
+            }
+
+            .success-message {
+                margin-top: 12px;
+                color: #4caf50;
+                margin-bottom: 12px;
+            }
+
+            .submit {
+                margin-top: 20px;
+                display: flex;
+                justify-content: flex-end;
+                gap: 10px;
+            }
+
+            .next-step {
+                margin-top: 20px;
+                display: flex;
+                justify-content: flex-end;
+                gap: 10px;
+            }
+
+        }
+    }
+}
+
+
+.fade-enter {
+    opacity: 0;
+    transform: translateY(-20px);
+}
+
+.fade-enter-active {
+    opacity: 1;
+    transform: translateY(0);
+    transition: opacity 300ms, transform 300ms;
+}
+
+.fade-exit {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.fade-exit-active {
+    opacity: 0;
+    transform: translateY(-20px);
+    transition: opacity 300ms, transform 300ms;
+}

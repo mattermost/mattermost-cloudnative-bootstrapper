@@ -1,0 +1,36 @@
+.ConnectedLoadingSpinner {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+
+    &__loading {
+        color: blue; // Assuming you want a default color for loading
+    }
+
+    &__succeeded {
+        .info {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        color: green; // Success state
+
+        svg {
+            color: green; // Ensure the icon matches the text color
+        }
+    }
+
+    &__failed {
+        .info {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        color: red; // Error state
+
+        svg {
+            color: red; // Ensure the icon matches the text color
+        }
+    }
+}
