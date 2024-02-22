@@ -1,0 +1,112 @@
+.InstallOperators {
+    display: flex;
+    height: 100vh; // Take full height of the viewport
+    background-image: url('../../static/bg.png');
+    background-size: cover;
+    
+    .leftPanel {
+        flex: 1;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        flex-direction: column;
+    
+        .title {
+            margin-bottom: 20px;
+        }
+    
+        .description {
+            max-width: 700px;
+        }
+    }
+    
+    .rightPanel {
+        flex: 1;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        .setup-card {
+            width: 540px;
+            box-sizing: border-box;
+            border: 1px solid rgba(63, 67, 80, 0.08);
+            border-radius: 8px;
+            box-shadow: 0 12px 32px 0 rgba(0, 0, 0, 0.12);
+            background-color: #FFF;
+    
+            .setup-card-content {
+                padding: 20px;
+    
+                .card-title {
+                    display: flex;
+                    align-items: center;
+                    gap: 0.5rem;
+                    h2 {
+                        border-radius: 4px;
+                        display:flex;
+                        align-items: center;
+                        img {
+                            border-radius: 4px;
+                        }
+                    }
+                }
+    
+                .details label {
+                    display: block;
+                    margin-bottom: 5px;
+                    font-weight: bold;
+                }
+    
+                .details td {
+                    word-wrap: break-word;
+                }
+    
+                .details pre {
+                    background-color: lightgrey;
+                    padding: 20px;
+                }
+                .details .MuiCard-root {
+                    margin-bottom: 12px;
+                }
+
+                .next-step-button {
+                    margin-top: 20px;
+                    display: flex;
+                    // justify-content: flex-end;
+                    .deployment-finished {
+                        color: #4caf50;
+                    }
+                }
+
+                .deploy-button {
+                    margin-top: 20px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                }
+            }
+        }
+    }
+    
+    
+    .fade-enter {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    
+    .fade-enter-active {
+        opacity: 1;
+        transform: translateY(0);
+        transition: opacity 300ms, transform 300ms;
+    }
+    
+    .fade-exit {
+        opacity: 1;
+        transform: translateY(0);
+    }
+    
+    .fade-exit-active {
+        opacity: 0;
+        transform: translateY(-20px);
+        transition: opacity 300ms, transform 300ms;
+    }
+}
