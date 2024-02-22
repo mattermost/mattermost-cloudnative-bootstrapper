@@ -55,6 +55,17 @@
                 word-wrap: break-word;
             }
 
+            .details .with-spinner {
+                p {
+                    display: flex;
+                    align-items: center;
+                }
+
+                [role="progressbar"] {
+                    margin-right: 10px;
+                }
+            }
+
             .GetCredentials label {
                 display: block;
                 margin-bottom: 5px;

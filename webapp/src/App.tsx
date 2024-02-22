@@ -15,6 +15,7 @@ import AWSPage from './pages/aws';
 import CreatingClusterLoadingScreen from './pages/aws/creating_cluster';
 import ProvisionClusterPage from './pages/aws/provision_cluster';
 import ClusterSummaryPage from './pages/cluster/cluster_summary';
+import InstallOperatorsPage from './pages/install_operators/install_operators';
 
 const useEnhancedEffect =
   typeof window !== 'undefined' ? React.useLayoutEffect : React.useEffect;
@@ -67,6 +68,12 @@ export default function JoyOrderDashboardTemplate() {
             <>
               <BootstrapperHeader currentStep={'cluster_summary'}/>
               <ClusterSummaryPage />
+            </>
+          } />
+          <Route path="/cluster/operators" element={
+            <>
+              <BootstrapperHeader currentStep={'install_mattermost'}/>
+              <InstallOperatorsPage />
             </>
           } />
         </Routes>

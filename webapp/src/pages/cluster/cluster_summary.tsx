@@ -129,7 +129,7 @@ export default function ClusterSummaryPage() {
                         </div>
                         <div className="next-step-button">
 
-                        <Button onClick={() => navigate('/deploy_mattermost')} size="lg" color="primary">Deploy Mattermost</Button>
+                        <Button onClick={() => navigate(`/cluster/operators?clusterName=${cluster?.Name}&type=eks`)} size="lg" color="primary">Deploy Mattermost</Button>
                         </div>
                     </div>
                 </div>

@@ -84,7 +84,6 @@ export default function NodeGroupCreationForm(props: Props) {
                 <label>Subnets</label>
                 <DynamicRows onChange={handleSubnetChanges} />
                 <Button className="submit" onClick={props.handleSubmit} size="lg" color="primary" disabled={!props.createNodeGroupButtonEnabled}>Create Node Group</Button>
-
             </div>
         </CSSTransition>
     );

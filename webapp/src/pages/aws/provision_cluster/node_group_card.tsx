@@ -15,11 +15,12 @@ interface NodeGroupCardProps {
 interface TypographyComponentProps {
     label: string;
     value: string | JSX.Element;
+    className?: string;
 }
 
-const TypographyComponent: React.FC<TypographyComponentProps> = ({ label, value }) => {
+const TypographyComponent: React.FC<TypographyComponentProps> = ({ label, value, className }) => {
     return (
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8}}>
+        <div className={className} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8}}>
             <Typography fontWeight="md" mr={2}> {/* Bold label with right margin */}
                 {label}
             </Typography>
@@ -49,7 +50,7 @@ const NodeGroupCard: React.FC<NodeGroupCardProps> = ({ name, instanceType, statu
         <Card sx={{ minWidth: 275 }} style={{boxShadow: '0 12px 32px 0 rgba(0, 0, 0, 0.12)', borderRadius: '8px', border: '1px solid rgba(63, 67, 80, 0.08)'}}>
             <CardContent sx={{ display: 'flex', flexDirection: 'column' }}> 
                 <TypographyComponent label="Nodegroup Name:" value={name} />
-                <TypographyComponent label="Status:" value={ChipWithSpinner(status)} />
+                <TypographyComponent className={'with-spinner'} label="Status:" value={ChipWithSpinner(status)} />
                 <TypographyComponent label="Instance Type:" value={instanceType} />
                 <TypographyComponent label="AMI:" value={nodeGroup.AmiType || ''} /> 
                 <TypographyComponent 

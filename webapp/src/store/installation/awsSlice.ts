@@ -58,6 +58,9 @@ export const getEKSCluster = createAsyncThunk("aws/getEKSCluster", async (cluste
 });
 
 export const getEKSNodeGroups = createAsyncThunk("aws/getEKSNodeGroups", async (clusterName: string) => {
+    if (clusterName === '' || clusterName === undefined) {
+        return [];
+    }
     const response = await fetchEKSNodeGroups(clusterName);
     return response;
 });
@@ -69,6 +72,9 @@ export const createNodeGroup = createAsyncThunk("aws/createNodeGroup", async ({c
 
 
 export const getKubeConfig = createAsyncThunk("aws/getKubeConfig", async (clusterName: string) => {
+    if (clusterName === '' || clusterName === undefined) {
+        return "";
+    }
     const response = await fetchEKSKubeConfig(clusterName);
     return response;
 });

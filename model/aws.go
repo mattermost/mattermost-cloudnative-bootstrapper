@@ -1,9 +1,12 @@
 package model
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
+	"os"
 	"sync"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -12,6 +15,10 @@ import (
 	"github.com/aws/aws-sdk-go/service/eks"
 	"github.com/aws/aws-sdk-go/service/iam"
 	"github.com/aws/aws-sdk-go/service/sts"
+	"github.com/mattermost/mattermost-cloud-dash/internal/logger"
+	"helm.sh/helm/v3/pkg/action"
+	"helm.sh/helm/v3/pkg/cli"
+	"k8s.io/client-go/tools/clientcmd"
 )
 
 // Define a struct to hold AWS credentials
@@ -67,27 +74,33 @@ func SetAWSCredentials(accessKeyID, secretAccessKey string) {
 func GetAWSCredentials() AWSCredentials {
 	lock.Lock()
 	defer lock.Unlock()
+	if awsCreds.AccessKeyID == "" || awsCreds.SecretAccessKey == "" {
+		awsCreds = AWSCredentials{
+			AccessKeyID:     os.Getenv("AWS_ACCESS_KEY_ID"),
+			SecretAccessKey: os.Getenv("AWS_SECRET_ACCESS_KEY"),
+		}
+	}
 	return awsCreds
 }
 
 func NewEKSClient() *EKSClient {
-	lock.Lock()
-	defer lock.Unlock()
-	// if eksClient == nil {
-	// awsCredentials := GetAWSCredentials()
-	// fmt.Println(awsCredentials)
-	sess, err := session.NewSession(&aws.Config{
-		// Credentials: credentials.NewStaticCredentials(awsCredentials.AccessKeyID, awsCredentials.SecretAccessKey, ""),
-		Region: aws.String("us-east-1"), // Specify the appropriate AWS region
-	})
-	if err != nil {
-		panic(fmt.Errorf("failed to create session: %v", err))
+	if eksClient == nil {
+		awsCredentials := GetAWSCredentials()
+		sess, err := session.NewSession(&aws.Config{
+			Credentials: credentials.NewStaticCredentials(awsCredentials.AccessKeyID, awsCredentials.SecretAccessKey, ""),
+			Region:      aws.String("us-east-1"), // Specify the appropriate AWS region
+		})
+		if err != nil {
+			panic(fmt.Errorf("failed to create session: %v", err))
+		}
+		eksClient = &EKSClient{
+			EKSClient: eks.New(sess),
+			lock:      &sync.Mutex{},
+		}
 	}
-	eksClient = &EKSClient{
-		EKSClient: eks.New(sess),
-		lock:      &sync.Mutex{},
-	}
-	// }
+
+	eksClient.lock.Lock()
+	defer eksClient.lock.Unlock()
 	return eksClient
 }
 
@@ -180,4 +193,53 @@ func NewCreateNodeGroupRequestFromReader(reader io.Reader) (*CreateNodegroupRequ
 		return nil, err
 	}
 	return &createNodeGroupRequest, nil
+}
+
+func AuthenticatedHelmClient(c context.Context, clusterName string) (*action.Install, *cli.EnvSettings, error) {
+	eksClient := NewEKSClient().EKSClient
+	result, err := eksClient.DescribeCluster(&eks.DescribeClusterInput{
+		Name: aws.String(clusterName),
+	})
+
+	if err != nil {
+		logger.FromContext(c).WithError(err).Error("Failed to describe EKS cluster")
+		return nil, nil, err
+	}
+
+	clientConfig, err := BuildHelmConfig(result.Cluster)
+	if err != nil {
+		logger.FromContext(c).WithError(err).Error("Failed to build helm config")
+		return nil, nil, err
+	}
+
+	rawConfig, err := clientConfig.RawConfig()
+	if err != nil {
+		logger.FromContext(c).WithError(err).Error("Failed to get raw config")
+		return nil, nil, err
+	}
+
+	kubeconfigBytes, err := clientcmd.Write(rawConfig)
+	if err != nil {
+		logger.FromContext(c).WithError(err).Error("Failed to write kubeconfig")
+		return nil, nil, err
+	}
+
+	restClientGetter, err := NewRESTClientGetter(string(kubeconfigBytes), "mattermost-operator")
+	if err != nil {
+		logger.FromContext(c).WithError(err).Error("Failed to create rest client getter")
+		return nil, nil, err
+	}
+
+	settings := cli.New()
+	actionConfig := new(action.Configuration)
+
+	err = actionConfig.Init(restClientGetter, settings.Namespace(), "memory", log.Printf)
+	if err != nil {
+		logger.FromContext(c).WithError(err).Error("Failed to init action config")
+		return nil, nil, err
+	}
+
+	installClient := action.NewInstall(actionConfig)
+
+	return installClient, settings, nil
 }

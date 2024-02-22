@@ -21,7 +21,6 @@ export default function SubnetEntry(props: Props) {
     const [rows, setRows] = useState<Row[]>([{ id: 1, value: '' }]);
 
     useEffect(() => {
-        console.log(rows);
         props.onChange?.(rows);
     }, [rows])
 

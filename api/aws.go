@@ -14,9 +14,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/mattermost/mattermost-cloud-dash/internal/logger"
 	"github.com/mattermost/mattermost-cloud-dash/model"
-	"helm.sh/helm/v3/pkg/action"
 	"helm.sh/helm/v3/pkg/chart/loader"
-	"helm.sh/helm/v3/pkg/cli"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/tools/clientcmd"
 )
@@ -27,16 +25,18 @@ func initAWS(apiRouter *mux.Router, context *Context) {
 	}
 
 	awsRouter := apiRouter.PathPrefix("/aws").Subrouter()
-	// awsRouter.Handle("/list", addContext(handleListAWS)).Methods(http.MethodGet)
 	awsRouter.Handle("/set_credentials", addContext(handleSetAWSCredentials)).Methods(http.MethodPost)
 	awsRouter.Handle("/eks_roles", addContext(handleListEKSRoles)).Methods(http.MethodGet)
 	awsRouter.Handle("/eks_create", addContext(handleCreateEKS)).Methods(http.MethodPost)
-	awsRouter.Handle("/eks_cluster/{name:[A-Za-z0-9_-]+}", addContext(handleGetEKS)).Methods(http.MethodGet)
-	awsRouter.Handle("/eks_cluster/{name:[A-Za-z0-9_-]+}/nodegroups", addContext(handleGetEKSNodeGroups)).Methods(http.MethodGet)
-	awsRouter.Handle("/eks_cluster/{name:[A-Za-z0-9_-]+}/nodegroups", addContext(handleCreateNodeGroup)).Methods(http.MethodPost)
-	awsRouter.Handle("/eks_cluster/{name:[A-Za-z0-9_-]+}/kubeconfig", addContext(handleGetEKSKubeConfig)).Methods(http.MethodGet)
-	awsRouter.Handle("/eks_cluster/{name:[A-Za-z0-9_-]+}/deploy_mattermost_operator", addContext(handleDeployMattermostOperator)).Methods(http.MethodPost)
-	awsRouter.Handle("/eks_cluster/{name:[A-Za-z0-9_-]+}/namespaces", addContext(handleGetClusterNamespaces)).Methods(http.MethodGet)
+
+	clusterNameRouter := awsRouter.PathPrefix("/cluster/{name:[A-Za-z0-9_-]+}").Subrouter()
+	clusterNameRouter.Handle("", addContext(handleGetEKS)).Methods(http.MethodGet)
+	clusterNameRouter.Handle("/nodegroups", addContext(handleGetEKSNodeGroups)).Methods(http.MethodGet)
+	clusterNameRouter.Handle("/nodegroups", addContext(handleCreateNodeGroup)).Methods(http.MethodPost)
+	clusterNameRouter.Handle("/kubeconfig", addContext(handleGetEKSKubeConfig)).Methods(http.MethodGet)
+	clusterNameRouter.Handle("/deploy_mattermost_operator", addContext(handleDeployMattermostOperator)).Methods(http.MethodPost)
+	clusterNameRouter.Handle("/deploy_nginx_operator", addContext(handleDeployNginxOperator)).Methods(http.MethodPost)
+	clusterNameRouter.Handle("/namespaces", addContext(handleGetClusterNamespaces)).Methods(http.MethodGet)
 }
 
 func handleSetAWSCredentials(c *Context, w http.ResponseWriter, r *http.Request) {
@@ -291,6 +291,7 @@ func handleGetEKSKubeConfig(c *Context, w http.ResponseWriter, r *http.Request) 
 	if err != nil {
 		logger.FromContext(c.Ctx).WithError(err).Error("Failed to describe EKS cluster")
 		w.WriteHeader(http.StatusInternalServerError)
+		return
 	}
 
 	config, err := model.BuildHelmConfig(result.Cluster)
@@ -318,14 +319,65 @@ func handleGetEKSKubeConfig(c *Context, w http.ResponseWriter, r *http.Request) 
 	w.Write(kubeconfigBytes)
 }
 
+func handleDeployNginxOperator(c *Context, w http.ResponseWriter, r *http.Request) {
+	c.Ctx = logger.WithField(c.Ctx, "action", "deploy-ingress-nginx")
+	c.Ctx = logger.WithNamespace(c.Ctx, "ingress-nginx")
+
+	vars := mux.Vars(r)
+	clusterName := vars["name"]
+	if clusterName == "" || clusterName == "undefined" {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	c.Ctx = logger.WithClusterName(c.Ctx, clusterName)
+
+	installClient, settings, err := model.AuthenticatedHelmClient(c.Ctx, clusterName)
+	if err != nil {
+		logger.FromContext(c.Ctx).WithError(err).Error("Failed to authenticate helm client")
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	installClient.Namespace = "ingress-nginx"
+	installClient.ReleaseName = "ingress-nginx"
+	installClient.CreateNamespace = true
+
+	installClient.ChartPathOptions.RepoURL = "https://kubernetes.github.io/ingress-nginx"
+	cp, err := installClient.ChartPathOptions.LocateChart("ingress-nginx", settings)
+	if err != nil {
+		logger.FromContext(c.Ctx).WithError(err).Error("Failed to locate chart")
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	chartReq, err := loader.Load(cp)
+	if err != nil {
+		logger.FromContext(c.Ctx).WithError(err).Error("Failed to load chart")
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	rel, err := installClient.Run(chartReq, nil)
+	if err != nil {
+		logger.FromContext(c.Ctx).WithError(err).Error("Failed to install mattermost operator")
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	if rel != nil {
+		json.NewEncoder(w).Encode(rel)
+	} else {
+		logger.FromContext(c.Ctx).Error("An unknown error has occurred")
+		w.WriteHeader(http.StatusInternalServerError)
+	}
+}
+
 func handleGetClusterNamespaces(c *Context, w http.ResponseWriter, r *http.Request) {
 	eksClientStruct := model.NewEKSClient()
 	eksClient := eksClientStruct.EKSClient
-	logger.FromContext(c.Ctx).Info("Getting EKS kubeconfig")
 	vars := mux.Vars(r)
 	clusterName := vars["name"]
 
-	if clusterName == "" {
+	if clusterName == "" || clusterName == "undefined" {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
@@ -354,13 +406,11 @@ func handleGetClusterNamespaces(c *Context, w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	json.NewEncoder(w).Encode(namespaces)
+	json.NewEncoder(w).Encode(namespaces.Items)
 
 }
 
 func handleDeployMattermostOperator(c *Context, w http.ResponseWriter, r *http.Request) {
-	eksClientStruct := model.NewEKSClient()
-	eksClient := eksClientStruct.EKSClient
 	logger.FromContext(c.Ctx).Info("Getting EKS kubeconfig")
 	vars := mux.Vars(r)
 	clusterName := vars["name"]
@@ -370,55 +420,13 @@ func handleDeployMattermostOperator(c *Context, w http.ResponseWriter, r *http.R
 		return
 	}
 
-	result, err := eksClient.DescribeCluster(&eks.DescribeClusterInput{
-		Name: aws.String(clusterName),
-	})
+	installClient, settings, err := model.AuthenticatedHelmClient(c.Ctx, clusterName)
 
 	if err != nil {
-		logger.FromContext(c.Ctx).WithError(err).Error("Failed to describe EKS cluster")
+		logger.FromContext(c.Ctx).WithError(err).Error("Failed to authenticate helm client")
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-
-	clientConfig, err := model.BuildHelmConfig(result.Cluster)
-	if err != nil {
-		logger.FromContext(c.Ctx).WithError(err).Error("Failed to build helm config")
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-
-	rawConfig, err := clientConfig.RawConfig()
-	if err != nil {
-		logger.FromContext(c.Ctx).WithError(err).Error("Failed to get raw config")
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-
-	kubeconfigBytes, err := clientcmd.Write(rawConfig)
-	if err != nil {
-		logger.FromContext(c.Ctx).WithError(err).Error("Failed to write kubeconfig")
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-
-	restClientGetter, err := model.NewRESTClientGetter(string(kubeconfigBytes), "mattermost-operator")
-	if err != nil {
-		logger.FromContext(c.Ctx).WithError(err).Error("Failed to create rest client getter")
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-
-	settings := cli.New()
-	actionConfig := new(action.Configuration)
-
-	err = actionConfig.Init(restClientGetter, settings.Namespace(), "memory", log.Printf)
-	if err != nil {
-		logger.FromContext(c.Ctx).WithError(err).Error("Failed to init action config")
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-
-	installClient := action.NewInstall(actionConfig)
 
 	installClient.Namespace = "mattermost-operator"
 	installClient.ReleaseName = "mattermost-operator"
@@ -447,6 +455,9 @@ func handleDeployMattermostOperator(c *Context, w http.ResponseWriter, r *http.R
 
 	if rel != nil {
 		json.NewEncoder(w).Encode(rel)
+	} else {
+		w.WriteHeader(http.StatusInternalServerError)
+		logger.FromContext(c.Ctx).Error("An unknown error has occurred")
 	}
 
 }

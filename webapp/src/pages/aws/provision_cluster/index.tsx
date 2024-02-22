@@ -20,6 +20,7 @@ export default function ProvisionClusterPage() {
     const [countdown, setCountdown] = useState(11);
     const createNodeGroup = useSelector((state: RootState) => state.aws.createNodeGroup);
     const createNodeGroupButtonEnabled = useSelector(createNodeGroupValid);
+    const createNodeGroupRequestState = useSelector((state: RootState) => state.aws.createNodeGroupRequestState);
 
     useEffect(() => {
         if (typeof cluster === 'undefined') {
@@ -71,7 +72,7 @@ export default function ProvisionClusterPage() {
         }
 
         const nodeGroup = nodeGroups[0];
-        if (nodeGroup.Status === 'ACTIVE' || nodeGroup.Status === 'DELETING' || nodeGroup.Status === 'FAILED') {
+        if (nodeGroup.Status === 'ACTIVE' || nodeGroup.Status === 'FAILED') {
             // If the node group status is one of the final states, stop the refresh.
             return;
         }
@@ -110,6 +111,8 @@ export default function ProvisionClusterPage() {
         dispatch(createEKSNodeGroup({ clusterName: cluster?.Name as string, createNodeGroup }) as any)
     }
 
+    console.log(!nodeGroups || nodeGroups?.length === 0);
+
     return (
         <div className="SetupPage">
             <div className="leftPanel">
@@ -127,8 +130,8 @@ export default function ProvisionClusterPage() {
                         <div className="details">
                             {nodeGroups?.map((nodeGroup) => (
                                 <NodeGroupCard
-                                    key={nodeGroup.NodegroupName!}
-                                    name={nodeGroup.NodegroupName!}
+                                    key={nodeGroup.NodegroupName || ''}
+                                    name={nodeGroup.NodegroupName || ''}
                                     instanceType={nodeGroup.InstanceTypes!.join(', ')}
                                     status={nodeGroup.Status!}
                                     nodeGroup={nodeGroup}
@@ -138,7 +141,7 @@ export default function ProvisionClusterPage() {
                                 <div className="next-step">
                                     <Button disabled={nodeGroups[0].Status !== 'ACTIVE'} onClick={() => navigate(`/cluster/summary?clusterName=${cluster?.Name}&type=eks`)} size="lg" color="primary">Next Step</Button>
                                 </div>}
-                            {!nodeGroups || nodeGroups?.length === 0 && <>
+                            {!nodeGroups && <>
                                 <label>Node Groups</label>
                                 <p>Select a preset based on the number of users you'll have on Mattermost. If you're between user counts, it's best to size-up.</p>
                                 <Select onChange={(event, newValue) => handlePresetChange(newValue as string)} size="sm" placeholder="Node Group Preset">

@@ -100,3 +100,11 @@ func WithNonSpillingFields(ctx context.Context, fields logrus.Fields) context.Co
 	logger := FromContext(ctx).WithFields(fields)
 	return WithLogger(ctx, logger)
 }
+
+func WithNamespace(ctx context.Context, namespace string) context.Context {
+	return WithField(ctx, "namespace", namespace)
+}
+
+func WithClusterName(ctx context.Context, clusterName string) context.Context {
+	return WithField(ctx, "clusterName", clusterName)
+}

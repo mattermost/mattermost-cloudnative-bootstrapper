@@ -16,14 +16,7 @@ export default function BootstrapperHeader({ currentStep }: Props) {
         { key: 'provision_cluster', label: 'Provision Cluster' },
         { key: 'cluster_summary', label: 'Cluster Summary'},
         { key: 'install_operator', label: 'Install Operator' },
-        { key: 'install_mattermost', label: 'Install Mattermost' },
-        { key: 'install_database', label: 'Install Database' },
-        { key: 'install_storage', label: 'Install Storage' },
-        { key: 'install_ingress', label: 'Install Ingress' },
-        { key: 'install_monitoring', label: 'Install Monitoring' },
-        { key: 'install_logging', label: 'Install Logging' },
-        { key: 'install_license', label: 'Install License' },
-        { key: 'install_complete', label: 'Install Complete' }
+        { key: 'install_mattermost', label: 'Install Operators' },
     ]
     const currentStepIndex = breadcrumbSteps.findIndex((step) => step.key === currentStep);
     const stepsSoFar = breadcrumbSteps.slice(0, currentStepIndex);

@@ -28,7 +28,6 @@ const InstallationEditModal: React.FC<Props> = ({ open, onClose, onSubmit, insta
 
         // Call the onSubmit function with the patch request
         onSubmit(patchRequest as PatchInstallationRequest);
-        console.log(patchRequest);
     };
 
     const handleFormChange = (data: any) => {
