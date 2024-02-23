@@ -6,18 +6,20 @@ import reportWebVitals from './reportWebVitals';
 import '@fontsource/inter';
 import { store } from './store'
 import { Provider } from 'react-redux';
-import { BrowserRouter } from 'react-router-dom'
+import { HashRouter } from 'react-router-dom'
 
+console.log("LOADING");
 const root = ReactDOM.createRoot(
   document.getElementById('root') as HTMLElement
 );
+
 root.render(
   <React.StrictMode>
-    <BrowserRouter>
+    <HashRouter>
       <Provider store={store}>
         <App />
       </Provider>
-    </BrowserRouter>
+    </HashRouter>
   </React.StrictMode>
 );
 

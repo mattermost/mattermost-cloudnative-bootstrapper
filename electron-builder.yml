@@ -1,0 +1,21 @@
+productName: mattermost-operator-bootstrapper  # Your app name
+appId: com.mattermost.mattermost-operator-bootstrapper # Unique app identifier
+
+# Where to look for your frontend build
+files: 
+  - "webapp/build/**/*" # Adjust the path to your React build output
+  - "build/**/*"  # Include your backend binaries
+  - "assets/**/*" # Include any assets you want to package with your app
+
+# Specify target platforms and build configurations
+# win:
+#   target: nsis
+#   icon: assets/appIcon.ico
+mac:
+  target: dmg
+  icon: assets/appIcon.icns
+linux:
+  target: AppImage
+  icon: assets/appIcon.png
+
+asar: true

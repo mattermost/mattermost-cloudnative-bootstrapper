@@ -34,18 +34,13 @@ export default function JoyOrderDashboardTemplate() {
     }
   }, [status]);
 
+  console.log("HELLO WORLD");
+
   return (
     <MaterialCssVarsProvider theme={{ [MATERIAL_THEME_ID]: materialTheme }}>
       <JoyCssVarsProvider disableTransitionOnChange>
         <CssBaseline />
         <Routes>
-          <Route path="/" element={
-            <>
-              <BootstrapperHeader currentStep={'setup'}/>
-              <SetupPage />
-            </>
-          }>
-          </Route>
           <Route path="/aws" element={
             <>
               <BootstrapperHeader currentStep={'create_eks_cluster'}/>
@@ -76,6 +71,13 @@ export default function JoyOrderDashboardTemplate() {
               <InstallOperatorsPage />
             </>
           } />
+          <Route path="/" element={
+            <>
+              <BootstrapperHeader currentStep={'setup'}/>
+              <SetupPage />
+            </>
+          }>
+          </Route>
         </Routes>
       </JoyCssVarsProvider>
     </MaterialCssVarsProvider>

@@ -1,0 +1,53 @@
+{
+  "name": "mattermost-operator-bootstrapper",
+  "version": "0.0.1",
+  "description": "A desktop application for bootstrapping the Mattermost Operator and its dependencies, plus some optional utilities",
+  "main": "main.js",
+  "build": {
+    "appId": "com.mattermost.mattermost-operator-bootstrapper",
+    "files": [
+      "webapp/build/**/*",
+      "main.js",
+      "package.json",
+      "build/**/*",
+      "assets/**/*"
+    ],
+    "directories": {
+      "buildResources": "assets"
+    },
+    "mac": {
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "NODE_ENV=development concurrently \"electron main.js\" \"cd webapp && npm start\"",
+    "react-build": "cd webapp && npm run build",  
+    "go-build": "make build_macos", 
+    "build": "npm run react-build && npm run go-build && electron-builder",
+    "build-electron": "electron-builder"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nickmisasi/mattermost-cloud-dashboard.git"
+  },
+  "author": "Nick Misasi",
+  "license": "UNLICENSED",
+  "bugs": {
+    "url": "https://github.com/nickmisasi/mattermost-cloud-dashboard/issues"
+  },
+  "homepage": "https://github.com/nickmisasi/mattermost-cloud-dashboard#readme",
+  "devDependencies": {
+    "concurrently": "^8.2.2",
+    "electron": "^29.0.1",
+    "electron-builder": "^24.12.0"
+  }
+}

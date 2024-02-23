@@ -8,6 +8,7 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
+	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/eks"
 	"github.com/aws/aws-sdk-go/service/iam"
@@ -59,9 +60,11 @@ func handleSetAWSCredentials(c *Context, w http.ResponseWriter, r *http.Request)
 }
 
 func handleListEKSRoles(c *Context, w http.ResponseWriter, r *http.Request) {
+	awsCredentials := model.GetAWSCredentials()
 
 	sess, err := session.NewSession(&aws.Config{
-		Region: aws.String("us-east-1"), // Change to your preferred region
+		Region:      aws.String("us-east-1"), // Change to your preferred region
+		Credentials: credentials.NewStaticCredentials(awsCredentials.AccessKeyID, awsCredentials.SecretAccessKey, ""),
 	})
 	if err != nil {
 		log.Fatalf("Error creating session: %v", err)
