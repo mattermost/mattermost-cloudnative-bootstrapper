@@ -17,33 +17,30 @@ function createWindow() {
         minWidth: 1500,
         title: 'Mattermost Bootstrapper Utility',
     });
-    // if (isDevelopment) {
-        // win.loadURL('http://localhost:3000'); // Assuming React dev server
-    // } else {
-        const indexPath = path.join(__dirname, 'webapp', 'build', 'index.html');
+    if (isDevelopment) {
+        win.loadURL('http://localhost:3000'); // Assuming React dev server
+    } else {
+        const indexPath = path.join(app.getAppPath(), 'webapp', 'build', 'index.html');
         console.log(indexPath);
         win.loadFile(indexPath); 
-    // }
+    }
 }
 
 app.whenReady().then(() => {
     createWindow();
-    // if (isDevelopment) {
-        // exec('/Users/nickmisasi/go/bin/cdash server')
-    // } else {
+    if (isDevelopment) {
+        exec('/Users/nickmisasi/go/bin/cdash server')
+    } else {
         execFile(path.join(__dirname, 'build', 'mmbs-mac_arm64'), (error, stdout, stderr) => {
             if (error) {
-                fs.writeFileSync('/Users/nickmisasi/workspace/mattermost-cloud-dash/backend-error.log', `Error: ${error.message}`);
                 console.error(`Error: ${error.message}`);
                 return;
             }
             if (stderr) {
-                fs.writeFileSync('/Users/nickmisasi/workspace/mattermost-cloud-dash/backend-stderr.log', `Error: ${stderr}`);
                 console.error(`Error: ${stderr}`);
                 return;
             }
-            fs.writeFileSync('/Users/nickmisasi/workspace/mattermost-cloud-dash/backend-stdout.log', `stdout: ${stdout}`);
             console.log(`stdout: ${stdout}`);
         });
-    // }
+    }
 });
