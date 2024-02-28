@@ -22,9 +22,6 @@ export default function SetupPage() {
     const requestState = useSelector((state: RootState) => state.bootstrapper.status)
 
     const handleSubmit = async () => {
-        console.log('Cloud Provider:', cloudProvider);
-        console.log('Kubernetes Option:', kubernetesOption);
-        console.log('Credentials:', credentials);
         dispatch(setAndCheckCloudCredentials({credentials, cloudProvider}) as any)
     }
 
@@ -54,7 +51,7 @@ export default function SetupPage() {
                             <GetCredentials cloudProvider={cloudProvider} kubernetesOption={kubernetesOption} onCredentialsChange={(credentials) => dispatch(setCloudCredentials(credentials))}/>
                             {cloudProvider && kubernetesOption && credentials.accessKeyId && credentials.accessKeySecret && requestState !== 'succeeded' && <Button onClick={handleSubmit} size="lg" color="primary">Submit</Button>}
                             <ConnectedLoadingSpinner state={requestState} />
-                            {requestState === 'succeeded' && <Button size="lg" color="primary" onClick={() => {navigate(`/${cloudProvider}`)}}>Next Step</Button>}
+                            {requestState === 'succeeded' && <Button size="lg" color="primary" onClick={() => {navigate(`/${cloudProvider}/${kubernetesOption}`)}}>Next Step</Button>}
                         </div>
                     </div>
                 </div>

@@ -1,14 +1,13 @@
 import React, { useEffect, useState } from 'react';
 
-
 import { useDispatch } from 'react-redux';
 import { useSelector } from 'react-redux';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import './cluster_summary.scss';
 import { RootState } from '../../store';
-import { createNodeGroupValid, getEKSCluster, getEKSNodeGroups, setCreateNodeGroup, createNodeGroup as createEKSNodeGroup, getKubeConfig } from '../../store/installation/awsSlice';
+import { getEKSCluster, getEKSNodeGroups, getKubeConfig } from '../../store/installation/awsSlice';
 import { Accordion, AccordionDetails, AccordionSummary, Button, Table, Typography } from '@mui/joy';
-import { CheckOutlined, ExpandMoreOutlined } from '@mui/icons-material';
+import { CheckOutlined } from '@mui/icons-material';
 
 
 export default function ClusterSummaryPage() {

@@ -1,5 +1,5 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
-import { fetchAWSPotentialARNs, createEKSCluster as createCluster, getEKSCluster as getCluster, fetchEKSNodeGroups, createEKSNodeGroup, fetchEKSKubeConfig } from "../../client/client";
+import { fetchAWSPotentialARNs, createEKSCluster as createCluster, getEKSCluster as getCluster, fetchEKSNodeGroups, createEKSNodeGroup, fetchEKSKubeConfig, fetchEKSClusters } from "../../client/client";
 import { RootState } from "..";
 import { AWSCluster, AWSNodeGroup, CreateAWSNodeGroup, CreateEKSClusterRequest } from "../../types/bootstrapper";
 
@@ -8,6 +8,7 @@ export interface AWSState {
     arnFetchStatus: 'idle' | 'loading' | 'failed' | 'succeeded';
     createNodeGroupRequestState: 'idle' | 'loading' | 'failed' | 'succeeded';
     fetchKubeConfigStatus: 'idle' | 'loading' | 'failed' | 'succeeded';
+    potentialClustersFetchStatus: 'idle' | 'loading' | 'failed' | 'succeeded';
     error?: string | undefined;
     kubernetesOption: string;
     region: string;
@@ -15,6 +16,7 @@ export interface AWSState {
     selectedARN: string;
     kubernetesVersion: string;
     possibleARNs?: string[];
+    possibleEKSClusters?: string[];
     securityGroupIds?: string[];
     subnetIds?: string[];
     eksCluster?: AWSCluster;
@@ -28,6 +30,7 @@ const initialState: AWSState = {
     arnFetchStatus: 'idle',
     createNodeGroupRequestState: 'idle',
     fetchKubeConfigStatus: 'idle',
+    potentialClustersFetchStatus: 'idle',
     kubernetesOption: '',
     region: '',
     selectedARN: '',
@@ -76,6 +79,11 @@ export const getKubeConfig = createAsyncThunk("aws/getKubeConfig", async (cluste
         return "";
     }
     const response = await fetchEKSKubeConfig(clusterName);
+    return response;
+});
+
+export const getEKSClusters = createAsyncThunk("aws/getEKSClusters", async () => {
+    const response = await fetchEKSClusters();
     return response;
 });
 
@@ -168,6 +176,15 @@ export const awsSlice = createSlice({
             state.kubeconfig = action.payload;
         }).addCase(getKubeConfig.rejected, (state, action) => {
             state.fetchKubeConfigStatus = 'failed';
+            state.error = action.error.message;
+        });
+        builder.addCase(getEKSClusters.pending, (state) => {
+            state.potentialClustersFetchStatus = 'loading';
+        }).addCase(getEKSClusters.fulfilled, (state, action) => {
+            state.potentialClustersFetchStatus = 'succeeded';
+            state.possibleEKSClusters = action.payload;
+        }).addCase(getEKSClusters.rejected, (state, action) => {
+            state.potentialClustersFetchStatus = 'failed';
             state.error = action.error.message;
         });
     }

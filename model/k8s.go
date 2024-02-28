@@ -6,12 +6,96 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/eks"
+	mmclientv1alpha1 "github.com/mattermost/mattermost-operator/pkg/client/clientset/versioned"
+	mmclientv1beta1 "github.com/mattermost/mattermost-operator/pkg/client/v1beta1/clientset/versioned"
+	apixclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/tools/clientcmd/api"
 	"sigs.k8s.io/aws-iam-authenticator/pkg/token"
 )
+
+// KubeClient interfaces with a Kubernetes cluster in the same way kubectl would.
+type KubeClient struct {
+	config                     *rest.Config
+	Clientset                  kubernetes.Interface
+	ApixClientset              apixclient.Interface
+	MattermostClientsetV1Alpha mmclientv1alpha1.Interface
+	MattermostClientsetV1Beta  mmclientv1beta1.Interface
+}
+
+func NewK8sClientClusterName(clusterName string) (*KubeClient, error) {
+
+	eksClientStruct := NewEKSClient()
+	eksClient := eksClientStruct.EKSClient
+
+	result, err := eksClient.DescribeCluster(&eks.DescribeClusterInput{
+		Name: aws.String(clusterName),
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	cluster := result.Cluster
+
+	gen, err := token.NewGenerator(true, false)
+	if err != nil {
+		return nil, err
+	}
+	opts := &token.GetTokenOptions{
+		ClusterID: aws.StringValue(cluster.Name),
+	}
+	tok, err := gen.GetWithOptions(opts)
+	if err != nil {
+		return nil, err
+	}
+	ca, err := base64.StdEncoding.DecodeString(aws.StringValue(cluster.CertificateAuthority.Data))
+	if err != nil {
+		return nil, err
+	}
+
+	config := &rest.Config{
+		Host:        aws.StringValue(cluster.Endpoint),
+		BearerToken: tok.Token,
+		TLSClientConfig: rest.TLSClientConfig{
+			CAData: ca,
+		},
+	}
+
+	clientset, err := kubernetes.NewForConfig(config)
+	if err != nil {
+		return nil, err
+	}
+
+	mattermostV1AlphaClientset, err := mmclientv1alpha1.NewForConfig(config)
+	if err != nil {
+		return nil, err
+	}
+
+	mattermostV1BetaClientset, err := mmclientv1beta1.NewForConfig(config)
+	if err != nil {
+		return nil, err
+	}
+
+	// monitoringV1Clientset, err := monitoringclientV1.NewForConfig(config)
+	// if err != nil {
+	// 	return nil, err
+	// }
+
+	// slothV1Clientset, err := slothclientV1.NewForConfig(config)
+	// if err != nil {
+	// 	return nil, err
+	// }
+
+	return &KubeClient{
+		config:                     config,
+		Clientset:                  clientset,
+		ApixClientset:              apixclient.NewForConfigOrDie(config),
+		MattermostClientsetV1Alpha: mattermostV1AlphaClientset,
+		MattermostClientsetV1Beta:  mattermostV1BetaClientset,
+	}, nil
+}
 
 func NewClientset(cluster *eks.Cluster) (*kubernetes.Clientset, error) {
 	gen, err := token.NewGenerator(true, false)

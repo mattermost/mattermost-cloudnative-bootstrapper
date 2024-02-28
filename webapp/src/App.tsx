@@ -16,6 +16,7 @@ import CreatingClusterLoadingScreen from './pages/aws/creating_cluster';
 import ProvisionClusterPage from './pages/aws/provision_cluster';
 import ClusterSummaryPage from './pages/cluster/cluster_summary';
 import InstallOperatorsPage from './pages/install_operators/install_operators';
+import ExistingAWSPage from './pages/aws/choose_existing';
 
 const useEnhancedEffect =
   typeof window !== 'undefined' ? React.useLayoutEffect : React.useEffect;
@@ -34,17 +35,21 @@ export default function JoyOrderDashboardTemplate() {
     }
   }, [status]);
 
-  console.log("HELLO WORLD");
-
   return (
     <MaterialCssVarsProvider theme={{ [MATERIAL_THEME_ID]: materialTheme }}>
       <JoyCssVarsProvider disableTransitionOnChange>
         <CssBaseline />
         <Routes>
-          <Route path="/aws" element={
+          <Route path="/aws/new" element={
             <>
               <BootstrapperHeader currentStep={'create_eks_cluster'}/>
               <AWSPage />
+            </>
+          } />
+          <Route path="/aws/existing" element={
+            <>
+              <BootstrapperHeader currentStep={'create_eks_cluster'}/>
+              <ExistingAWSPage />
             </>
           } />
           <Route path="/aws/creating_cluster" element={

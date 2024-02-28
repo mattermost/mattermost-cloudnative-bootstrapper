@@ -90,6 +90,12 @@ export async function getEKSCluster(clusterName: string) {
     return data;
 }
 
+export async function fetchEKSClusters() {
+    const response = await fetch(`${url}/api/v1/aws/eks_clusters`);
+    const data = await response.json();
+    return data;
+}
+
 export async function fetchEKSNodeGroups(clusterName: string) {
     const response = await fetch(`${url}/api/v1/aws/cluster/${clusterName}/nodegroups`);
     const data = await response.json();

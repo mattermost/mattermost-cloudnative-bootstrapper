@@ -65,9 +65,6 @@ function GetCredentials({ cloudProvider, kubernetesOption, onCredentialsChange }
                             <Input name="accessKeySecret" value={credentials.accessKeySecret} onChange={handleInputChange} placeholder="Access Key Secret" type="password" />
                         </div>
                     </div>
-
-                    <label>Kubecfg string</label>
-                    <Textarea minRows={2} name="kubecfg" value={credentials.kubecfg} onChange={handleInputChange} placeholder="kubecfg string" />
                 </>
             )}
         </div>
