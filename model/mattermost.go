@@ -6,51 +6,52 @@ import (
 )
 
 type CreateMattermostWorkspaceRequest struct {
-	License                    string `json:"license"` // For the license file contents
+	License                    string `json:"enterpriseLicense"` // For the license file contents
 	InstallationName           string `json:"installationName"`
 	Size                       string `json:"size"` // Size for the Mattermost instance
-	FullDomainName             string `json:"fullDomainName"`
+	FullDomainName             string `json:"domainName"`
 	Version                    string `json:"version"`
+	CreateDatabase             bool   `json:"createDBForMe"`
 	DBConnectionString         string `json:"dbConnectionString"`
 	DBReplicasConnectionString string `json:"dbReplicasConnectionString"`
-	S3AccessKey                string `json:"s3AccessKey"`
-	S3SecretKey                string `json:"s3SecretKey"`
+	CreateS3Bucket             bool   `json:"createS3ForMe"`
+	S3BucketURL                string `json:"url"`
+	S3BucketName               string `json:"bucketName"`
+	S3AccessKey                string `json:"accessKeyId"`
+	S3SecretKey                string `json:"accessKeySecret"`
 }
 
 func (c *CreateMattermostWorkspaceRequest) IsValid() bool {
-	if c.License == "" {
-		return false
-	}
 
 	if c.InstallationName == "" {
 		return false
 	}
 
-	if c.Size == "" {
-		return false
-	}
+	// if c.Size == "" {
+	// 	return false
+	// }
 
 	if c.FullDomainName == "" {
 		return false
 	}
 
-	if c.Version == "" {
+	// if c.Version == "" {
+	// 	return false
+	// }
+
+	if !c.CreateDatabase && c.DBConnectionString == "" {
 		return false
 	}
 
-	if c.DBConnectionString == "" {
+	if !c.CreateDatabase && c.DBReplicasConnectionString == "" {
 		return false
 	}
 
-	if c.DBReplicasConnectionString == "" {
+	if !c.CreateS3Bucket && c.S3AccessKey == "" {
 		return false
 	}
 
-	if c.S3AccessKey == "" {
-		return false
-	}
-
-	if c.S3SecretKey == "" {
+	if !c.CreateS3Bucket && c.S3SecretKey == "" {
 		return false
 	}
 

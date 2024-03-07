@@ -1,0 +1,149 @@
+.CreateWorkspacePage {
+    display: flex;
+    height: 100vh; // Take full height of the viewport
+    background-image: url('../../static/bg.png');
+    background-size: cover;
+    
+    .leftPanel {
+        flex: 1;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        flex-direction: column;
+        // background-color: #f0f0f0; // Just for visibility, adjust as needed
+    
+        .title {
+            // Style your title as needed
+            margin-bottom: 20px;
+        }
+    
+        .description {
+            max-width: 526px;
+        }
+    }
+    
+    .rightPanel {
+        flex: 1;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        // background-color: #ffffff; // Just for visibility, adjust as needed
+    
+        // Add styles for your inputs and form elements here
+    
+        .setup-card {
+            width: 540px;
+            box-sizing: border-box;
+            border: 1px solid rgba(63, 67, 80, 0.08);
+            border-radius: 8px;
+            box-shadow: 0 12px 32px 0 rgba(0, 0, 0, 0.12);
+            background-color: #FFF;
+    
+            .setup-card-content {
+                padding: 20px;
+    
+                .inputs label {
+                    display: block;
+                    margin-bottom: 5px;
+                    font-weight: bold;
+                }
+
+                .inputs .initial-fetch-spinner {
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                    height: 100px;
+                }
+
+                .inputs .database-connection {
+                    margin-top: 20px;
+                    >*:not(:last-child) {
+                        margin-bottom: 12px;
+                    }
+                }
+
+                .inputs .filestore-connection {
+                    margin-top: 20px;
+                    >*:not(:last-child) {
+                        margin-bottom: 12px;
+                    }
+                }
+
+                .creation-result {
+                    display: flex;
+                    flex-direction: column; /* Stack items vertically */
+                    align-items: center; /* Center items horizontally */
+                    justify-content: center; /* Center items vertically */
+                }
+
+                .inputs .workspace-info {
+                    >*:not(:last-child) {
+                        margin-bottom: 12px;
+                    }
+                }
+    
+                .inputs>*:not(:last-child) {
+                    margin-bottom: 20px;
+                }
+    
+                .GetCredentials label {
+                    display: block;
+                    margin-bottom: 5px;
+                    font-weight: bold;
+                }
+    
+                .GetCredentials input,
+                .GetCredentials textarea {
+                    margin-bottom: 20px;
+                    width: 100%;
+                }
+    
+                .credentials {
+                    .credentials-row {
+                        display: flex;
+                        justify-content: space-between;
+                    }
+    
+                    .credentials-column {
+                        flex: 1;
+                        margin-right: 10px;
+                    }
+    
+                    .credentials-column:last-child {
+                        margin-right: 0;
+                    }
+                }
+
+                .submit-button {
+                    margin-top: 20px;
+                    display: flex;
+                    justify-content: right;
+                }
+    
+            }
+        }
+    }
+    
+    
+    .fade-enter {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    
+    .fade-enter-active {
+        opacity: 1;
+        transform: translateY(0);
+        transition: opacity 300ms, transform 300ms;
+    }
+    
+    .fade-exit {
+        opacity: 1;
+        transform: translateY(0);
+    }
+    
+    .fade-exit-active {
+        opacity: 0;
+        transform: translateY(-20px);
+        transition: opacity 300ms, transform 300ms;
+    }
+}

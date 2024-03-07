@@ -5,6 +5,13 @@ export type CloudCredentials = {
     kubeconfig: string;
 }
 
+export type Release = {
+    Name: string; 
+    Version: number;
+    Namespace: string;
+    Status: string;
+};
+
 export enum AWSRegions {
     US_EAST_2 = 'us-east-2',
     US_EAST_1 = 'us-east-1',

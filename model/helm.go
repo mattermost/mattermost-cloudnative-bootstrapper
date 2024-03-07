@@ -61,3 +61,10 @@ func (r *RESTClientGetter) ToRESTMapper() (meta.RESTMapper, error) {
 func (r *RESTClientGetter) ToRawKubeConfigLoader() clientcmd.ClientConfig {
 	return r.clientconfig
 }
+
+type InstalledReleases struct {
+	Name      string
+	Version   string
+	Namespace string
+	Status    string
+}

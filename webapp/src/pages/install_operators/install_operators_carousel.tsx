@@ -4,9 +4,10 @@ import { useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { RootState } from '../../store';
 import { Button, CircularProgress } from '@mui/joy';
-import { deployMariner, deployMattermostOperator, deployNginxOperator, deployProvisioner } from '../../store/installation/bootstrapperSlice';
+import { deployCloudNativePG, deployMariner, deployMattermostOperator, deployNginxOperator, deployProvisioner } from '../../store/installation/bootstrapperSlice';
 import InstallMattermost from './install_mattermost';
 import InstallNginx from './install_nginx';
+import CloudNativePGLogo from '../../static/cloudnativepglogo.png';
 import MattermostLogo from '../../static/mattermost-operator-logo.jpg';
 import NginxLogo from '../../static/Nginx logo.svg';
 import MarinerLogo from '../../static/mariner-logo.png';
@@ -37,6 +38,12 @@ export default function InstallOperatorsCarousel({ onSuccess, onError }: Props) 
             description: 'The Nginx Operator provides ingress support for your cluster\'s various installations. Please wait while we deploy it to your cluster. This may take a few minutes.',
             component: null,
             icon: <img src={NginxLogo} alt="Nginx Operator" style={{ height: '29px', marginRight: '12px' }} />,
+        },
+        'cnpg': {
+            title: 'CloudNative PG',
+            description: 'The Cloud Native PG Operator provides a way to create managed PostgreSQL databases for your Mattermost workspaces to use. Please wait while we deploy it to your cluster. This may take a few minutes.',
+            component: null,
+            icon: <img src={CloudNativePGLogo} alt="CloudNative PG" style={{ height: '29px', marginRight: '12px' }} />,
         },
         'provisioner': {
             title: 'Mattermost Provisioning Server',
@@ -89,6 +96,8 @@ export default function InstallOperatorsCarousel({ onSuccess, onError }: Props) 
                 return deployProvisioner;
             case 'mariner':
                 return deployMariner;
+            case 'cnpg':
+                return deployCloudNativePG;
             default:
                 return null;
         }

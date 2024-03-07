@@ -9,6 +9,9 @@ import (
 	mmclientv1alpha1 "github.com/mattermost/mattermost-operator/pkg/client/clientset/versioned"
 	mmclientv1beta1 "github.com/mattermost/mattermost-operator/pkg/client/v1beta1/clientset/versioned"
 	apixclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
@@ -23,10 +26,10 @@ type KubeClient struct {
 	ApixClientset              apixclient.Interface
 	MattermostClientsetV1Alpha mmclientv1alpha1.Interface
 	MattermostClientsetV1Beta  mmclientv1beta1.Interface
+	DynamicClient              *dynamic.DynamicClient
 }
 
 func NewK8sClientClusterName(clusterName string) (*KubeClient, error) {
-
 	eksClientStruct := NewEKSClient()
 	eksClient := eksClientStruct.EKSClient
 
@@ -78,15 +81,10 @@ func NewK8sClientClusterName(clusterName string) (*KubeClient, error) {
 		return nil, err
 	}
 
-	// monitoringV1Clientset, err := monitoringclientV1.NewForConfig(config)
-	// if err != nil {
-	// 	return nil, err
-	// }
-
-	// slothV1Clientset, err := slothclientV1.NewForConfig(config)
-	// if err != nil {
-	// 	return nil, err
-	// }
+	dynamicClient, err := dynamic.NewForConfig(config)
+	if err != nil {
+		return nil, err
+	}
 
 	return &KubeClient{
 		config:                     config,
@@ -94,7 +92,19 @@ func NewK8sClientClusterName(clusterName string) (*KubeClient, error) {
 		ApixClientset:              apixclient.NewForConfigOrDie(config),
 		MattermostClientsetV1Alpha: mattermostV1AlphaClientset,
 		MattermostClientsetV1Beta:  mattermostV1BetaClientset,
+		DynamicClient:              dynamicClient,
 	}, nil
+}
+
+func ConvertToUnstructured(obj interface{}) (*unstructured.Unstructured, error) {
+	// convert to unstructured.Unstructured
+	unstructuredMap, err := runtime.DefaultUnstructuredConverter.ToUnstructured(obj)
+	if err != nil {
+		return nil, err
+	}
+
+	unstructuredObj := &unstructured.Unstructured{Object: unstructuredMap}
+	return unstructuredObj, nil
 }
 
 func NewClientset(cluster *eks.Cluster) (*kubernetes.Clientset, error) {

@@ -73,7 +73,6 @@ export const createNodeGroup = createAsyncThunk("aws/createNodeGroup", async ({c
     return response;
 });
 
-
 export const getKubeConfig = createAsyncThunk("aws/getKubeConfig", async (clusterName: string) => {
     if (clusterName === '' || clusterName === undefined) {
         return "";

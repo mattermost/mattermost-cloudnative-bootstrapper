@@ -1,16 +1,18 @@
 import { configureStore } from '@reduxjs/toolkit'
-import installationsSlice from './installation/installationSlice'
-import clustersSlice from './installation/clusterSlice'
 import bootstrapperSlice from './installation/bootstrapperSlice'
 import awsSlice from './installation/awsSlice'
+import dashboardSlice from './installation/dashboardSlice'
+import { dashboardApi } from '../client/dashboardApi'
 
 export const store = configureStore({
     reducer: {
-        installations: installationsSlice,
-        clusters: clustersSlice,
+        dashboard: dashboardSlice,
         bootstrapper: bootstrapperSlice,
         aws: awsSlice,
+        [dashboardApi.reducerPath]: dashboardApi.reducer,
     },
+    middleware: (getDefaultMiddleware) => 
+    getDefaultMiddleware().concat(dashboardApi.middleware),
 })
 
 // Infer the `RootState` and `AppDispatch` types from the store itself

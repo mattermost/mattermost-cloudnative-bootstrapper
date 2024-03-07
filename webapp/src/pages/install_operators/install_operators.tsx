@@ -7,12 +7,13 @@ import MattermostLogo from '../../static/mattermost-operator-logo.jpg';
 import NginxLogo from '../../static/Nginx logo.svg';
 import MarinerLogo from '../../static/mariner-logo.png';
 import ProvisionerLogo from '../../static/provisioner-logo.png';
+import CloudNativePGLogo from '../../static/cloudnativepglogo.png';
 import './install_operators.scss';
 import { RootState } from '../../store';
 import { getEKSCluster, getEKSNodeGroups, getKubeConfig } from '../../store/installation/awsSlice';
 import OperatorCard from './operator_card';
 import { Button } from '@mui/joy';
-import { getNamespaces, requiredUtilitiesAreDeployed, setUtilities, setUtilityDeploymentState } from '../../store/installation/bootstrapperSlice';
+import { getInstalledHelmReleases, getNamespaces, requiredUtilitiesAreDeployed, setUtilities, setUtilityDeploymentState } from '../../store/installation/bootstrapperSlice';
 import InstallOperatorsCarousel from './install_operators_carousel';
 
 export type KubeUtility = {
@@ -45,6 +46,15 @@ export const allUtilities: KubeUtility[] = [
         deploymentRequestState: 'idle',
     },
     {
+        displayName: 'CloudNative PG',
+        key: 'cnpg',
+        operatorLogoUrl: CloudNativePGLogo,
+        operatorDescription: 'The CloudNative PG Operator provides a way to create managed PostgreSQL databases for your Mattermost workspaces to use',
+        isRequired: false,
+        isChecked: false,
+        deploymentRequestState: 'idle',
+    },
+    {
         displayName: 'Mattermost Provisioning Server',
         key: 'provisioner',
         operatorLogoUrl: ProvisionerLogo,
@@ -61,7 +71,7 @@ export const allUtilities: KubeUtility[] = [
         isRequired: false,
         isChecked: false,
         deploymentRequestState: 'idle',
-    },
+    }
 ];
 
 export default function InstallOperatorsPage() {
@@ -73,6 +83,9 @@ export default function InstallOperatorsPage() {
     const [isDeploying, setIsDeploying] = useState(false);
     const [deploymentFinished, setDeploymentFinished] = useState(false);
     const namespaces = useSelector((state: RootState) => state.bootstrapper.cluster.namespaces);
+
+    // TODO: Wire this in - currently it's just looking at the namespace to see if something's deployed, but these actually contain the Helm deployment status
+    const releases = useSelector((state: RootState) => state.bootstrapper.cluster.releases);
     const requiredUtilitiesDeployed = useSelector(requiredUtilitiesAreDeployed);
 
     useEffect(() => {
@@ -84,10 +97,12 @@ export default function InstallOperatorsPage() {
             }
             dispatch(getEKSCluster(clusterName) as any);
             dispatch(getNamespaces(clusterName) as any);
+            // dispatch(getInstalledHelmReleases(clusterName) as any);
         } else {
             dispatch(getEKSNodeGroups(cluster?.Name as string) as any);
             dispatch(getKubeConfig(cluster?.Name as string) as any);
             dispatch(getNamespaces(cluster?.Name as string) as any);
+            // dispatch(getInstalledHelmReleases(cluster?.Name as string) as any);
         }
 
     }, [])
@@ -97,7 +112,6 @@ export default function InstallOperatorsPage() {
     }, [utilities])
 
     useEffect(() => {
-        console.log(namespaces);
         namespaces.forEach((namespace) => {
             dispatch(setUtilityDeploymentState({ utility: namespace, deploymentRequestState: 'succeeded', isChecked: true }))
         })
@@ -165,7 +179,7 @@ export default function InstallOperatorsPage() {
                         <div className="next-step-button">
                             <Button onClick={() => setIsDeploying(true)} disabled={deploymentFinished || numSelectedUtilities === 0} size="lg" color="primary">Deploy {numSelectedUtilities > 0 && <>{numSelectedUtilities} {numSelectedUtilities > 1 ? 'Utilities' : 'Utility'} </>}</Button>
                             {deploymentFinished && <div className="deployment-finished">Utilities installed successfully!</div>}
-                            {requiredUtilitiesDeployed && <Button onClick={() => navigate(`/summary?clusterName=${cluster?.Name}`)} size="lg" color="primary">Finish</Button>}
+                            {requiredUtilitiesDeployed && <Button onClick={() => navigate(`/create_mattermost_workspace?clusterName=${cluster?.Name}&type=aws`)} size="lg" color="primary">Create Mattermost Workspace</Button>}
                         </div>
                     </div>
                 </div>

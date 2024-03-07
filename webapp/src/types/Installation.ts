@@ -1,172 +1,118 @@
 import { ExternalDatabaseConfig, SingleTenantDatabaseConfig } from './database';
 
-export interface Installation {
-    ID: string;
-    OwnerID: string;
-    GroupID?: string;
-    GroupSequence?: number;
-    Version: string;
-    Image: string;
-    Name: string;
-    Database: string;
-    SingleTenantDatabaseConfig?: SingleTenantDatabaseConfig;
-    ExternalDatabaseConfig?: ExternalDatabaseConfig;
-    Filestore: string;
-    License: string;
-    AllowedIPRanges?: AllowedIPRange[];
-    MattermostEnv: EnvVarMap;
-    PriorityEnv: EnvVarMap;
-    Size: string;
-    Affinity: string;
-    State: string;
-    CRVersion: string;
-    CreateAt: number;
-    DeleteAt: number;
-    DeletionPendingExpiry?: number;
-    APISecurityLock: boolean;
-    DeletionLocked: boolean;
-    LockAcquiredBy?: string;
-    LockAcquiredAt: number;
-    GroupOverrides?: Record<string, string>;
-    configMergedWithGroup: boolean;
-    configMergeGroupSequence: number;
-};
 
-
-export type CreateInstallationRequest = {
-    Name: string;
-    OwnerID: string;
-    GroupID: string;
-    Version: string;
-    Image: string;
-    DNS?: string;
-    DNSNames?: string[];
-    License: string;
-    Size: string;
-    Affinity: string;
-    Database: string;
-    Filestore: string;
-    APISecurityLock: boolean;
-    DeletionLocked: boolean;
-    MattermostEnv: EnvVarMap;
-    PriorityEnv: EnvVarMap;
-    Annotations: string[];
-    GroupSelectionAnnotations: string[];
-    // SingleTenantDatabaseConfig?: SingleTenantDatabaseRequest;
-    // ExternalDatabaseConfig?: ExternalDatabaseRequest;
-};
-
-
-type EnvVarMap = Record<string, EnvVar>;
-
-
-export interface EnvVar {
-    value?: string;
+export interface CreateMattermostWorkspaceRequest {
+    accessKeyId: string;
+    accessKeySecret: string;
+    bucketName: string
+    createDBForMe: boolean;
+    createS3ForMe: boolean;
+    dbConnectionString: string;
+    dbReplicasConnectionString: string;
+    domainName: string;
+    enterpriseLicense?: string;
+    installationName: string;
+    url: string;
 }
 
-
-export function isEnvVarMap(obj: any): obj is EnvVarMap {
-    if (obj && typeof obj === 'object') {
-        return Object.values(obj).every(
-            (value) => typeof value === 'object' && ('value' in value! || value === null)
-        );
-    }
-
-    return false;
+export interface Mattermost {
+    kind: string;
+    apiVersion: string;
+    metadata: Metadata;
+    spec: Spec;
+    status: Status;
 }
 
-export type AllowedIPRange = {
-    CIDRBlock: string;
-    Description: string;
-    Enabled: boolean;
-    OwnerID?: string;
-};
+export interface Metadata {
+    name: string;
+    namespace: string;
+    uid: string;
+    resourceVersion: string;
+    generation: number;
+    creationTimestamp: string;
+    managedFields: ManagedField[];
+}
 
-export const filestoreOptions = [
-    'aws-s3',
-    'minio',
-    'aws-multitenant-s3',
-    'bifrost',
-];
+export interface ManagedField {
+    manager: string;
+    operation: string;
+    apiVersion: string;
+    time: string;
+    fieldsType: string;
+    fieldsV1?: FieldsV1; // Could be optional
+}
 
-export const databaseOptions = [
-    'mysql-operator',
-    'aws-rds',
-    'aws-rds-postgres',
-    'aws-multitenant-rds-mysql',
-    'aws-multitenant-rds-postgres',
-    'aws-multitenant-rds-postgres-pgbouncer',
-    'perseus',
-    'external',
-];
+export interface FieldsV1 {
+}
 
+export interface Spec {
+    image: string;
+    version: string;
+    replicas: number;
+    mattermostEnv: MattermostEnvItem[];
+    licenseSecret: string;
+    ingressName: string;
+    ingress: Ingress;
+    imagePullPolicy: string;
+    database: Database;
+    fileStore: FileStore;
+    elasticSearch: Record<string, any>; // Assuming flexibility here
+    scheduling: Scheduling;
+    probes: Probes;
+    podExtensions: Record<string, any>; // Assuming flexibility here
+}
 
+export interface MattermostEnvItem {
+    name: string;
+    value: string;
+} 
 
-export interface PatchInstallationRequest {
-    OwnerID?: string;
-    Image?: string;
-    Version?: string;
-    Size?: string;
-    License?: string;
-    AllowedIPRanges?: AllowedIPRange[]; // Assuming AllowedIPRanges type definition exists
-    OverrideIPRanges?: boolean;
-    PriorityEnv: EnvVar;
-    MattermostEnv: EnvVar;
-};
+export interface Ingress {
+    enabled: boolean;
+    host: string;
+    annotations: Record<string, string>; 
+    ingressClass: string;
+}
 
-export const patchInstallationJSONSchema = {
-    type: 'object',
-    properties: {
-        OwnerID: { type: 'string', title: 'Owner ID' },
-        Image: { type: 'string', title: 'Image' },
-        Version: { type: 'string', title: 'Version' },
-        Size: { type: 'string', title: 'Size' },
-        License: { type: 'string', title: 'License' },
-        OverrideIPRanges: { type: 'boolean', title: 'Override IP Ranges' },
-        // PriorityEnv: {
-        //     type: "object",
-        //     additionalProperties: {
-        //         type: "string",
-        //     }
-        // },
-        // MattermostEnv: {
-        //     type: "object",
-        //     additionalProperties: {
-        //         type: "string",
-        //     }
-        // },
-    },
-};
+export interface Database {
+    external: ExternalConfig; 
+}
 
-export const patchInstallationUISchema = {
-    OwnerID: {
-        'ui:placeholder': 'Enter Owner ID',
-    },
-    Image: {
-        'ui:placeholder': 'Enter Image URL',
-    },
-    Version: {
-        'ui:placeholder': 'Enter Version',
-    },
-    Size: {
-        'ui:placeholder': 'Enter Size',
-    },
-    License: {
-        'ui:widget': 'textarea',
-        'ui:placeholder': 'Enter License details',
-    },
-    AllowedIPRanges: {
-        // Define UI settings for AllowedIPRanges if needed
-    },
-    OverrideIPRanges: {
-        'ui:widget': 'checkbox',
-    },
-    // PriorityEnv: {
-    //     // Define UI settings for PriorityEnv if needed
-    //     "ui:widget": "textarea"
-    // },
-    // MattermostEnv: {
-    //     // Define UI settings for MattermostEnv if needed
-    //     "ui:widget": "textarea"
-    // },
-};
+export interface FileStore {
+    external: ExternalConfig; 
+}
+
+export interface ExternalConfig {
+    url?: string;
+    bucket?: string;
+    secret: string;
+}
+
+export interface Scheduling {
+    resources: Resources;
+}
+
+export interface Resources {
+    limits: ResourceValues;
+    requests: ResourceValues;
+}
+
+export interface ResourceValues {
+    cpu: string;
+    memory: string;
+}
+
+export interface Probes {
+    livenessProbe: Record<string, any>; // Assuming flexibility here
+    readinessProbe: Record<string, any>; // Assuming flexibility here
+}
+
+export interface Status {
+    state: string;
+    version: string;
+    image: string;
+    endpoint: string;
+    replicas: number;
+    updatedReplicas: number;
+    observedGeneration: number;
+}

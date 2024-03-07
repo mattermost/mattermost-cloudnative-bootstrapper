@@ -14,8 +14,10 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/eks"
 	"github.com/aws/aws-sdk-go/service/iam"
+	"github.com/aws/aws-sdk-go/service/rds"
 	"github.com/aws/aws-sdk-go/service/sts"
 	"github.com/mattermost/mattermost-cloud-dash/internal/logger"
+	helmclient "github.com/mittwald/go-helm-client"
 	"helm.sh/helm/v3/pkg/action"
 	"helm.sh/helm/v3/pkg/cli"
 	"k8s.io/client-go/tools/clientcmd"
@@ -40,6 +42,88 @@ type CreateEKSClusterRequest struct {
 	SubnetIDs         []*string `json:"subnetIds"`
 }
 
+type CreateRDSDatabaseRequest struct {
+	DBInstanceIdentifier string `json:"dbInstanceIdentifier"`
+	DBName               string `json:"dbName"`
+	DBEngine             string `json:"dbEngine"`
+	DBEngineVersion      string `json:"dbEngineVersion"`
+	DBInstanceClass      string `json:"dbInstanceClass"`
+	MasterUsername       string `json:"masterUsername"`
+	MasterPassword       string `json:"masterPassword"`
+	AllocatedStorage     int64  `json:"allocatedStorage"`
+	SubnetGroup          string `json:"subnetGroup"`
+}
+
+func (c *CreateRDSDatabaseRequest) ToCreateDBInstanceInput() *rds.CreateDBInstanceInput {
+	return &rds.CreateDBInstanceInput{
+		DBInstanceIdentifier: aws.String(c.DBInstanceIdentifier),
+		DBName:               aws.String(c.DBName),
+		Engine:               aws.String(c.DBEngine),
+		EngineVersion:        aws.String(c.DBEngineVersion),
+		DBInstanceClass:      aws.String(c.DBInstanceClass),
+		MasterUsername:       aws.String(c.MasterUsername),
+		MasterUserPassword:   aws.String(c.MasterPassword),
+		AllocatedStorage:     &c.AllocatedStorage,
+		DBSubnetGroupName:    aws.String(c.SubnetGroup),
+	}
+}
+
+func (c *CreateRDSDatabaseRequest) SetDefaults() {
+	c.DBEngine = "postgres"
+	c.DBEngineVersion = "13.14"
+}
+
+func (c *CreateRDSDatabaseRequest) IsValid() bool {
+	if c.DBInstanceIdentifier == "" {
+		return false
+	}
+
+	if c.DBName == "" {
+		return false
+	}
+
+	// PGSQL only
+	if c.DBEngine != "" {
+		return false
+	}
+
+	// WE SET THE TERMS FOR THE DB ENGINE VERSION
+	if c.DBEngineVersion != "" {
+		return false
+	}
+
+	if c.DBInstanceClass == "" {
+		return false
+	}
+
+	if c.MasterUsername == "" {
+		return false
+	}
+
+	if c.MasterPassword == "" {
+		return false
+	}
+
+	if c.AllocatedStorage == 0 {
+		return false
+	}
+
+	if c.SubnetGroup == "" {
+		return false
+	}
+
+	return true
+}
+
+func NewCreateRDSDatabaseRequestFromReader(reader io.Reader) (*CreateRDSDatabaseRequest, error) {
+	var createRDSDatabaseRequest CreateRDSDatabaseRequest
+	err := json.NewDecoder(reader).Decode(&createRDSDatabaseRequest)
+	if err != nil {
+		return nil, err
+	}
+	return &createRDSDatabaseRequest, nil
+}
+
 func NewCreateEKSClusterRequestFromReader(reader io.Reader) (*CreateEKSClusterRequest, error) {
 	var createEKSClusterRequest CreateEKSClusterRequest
 	err := json.NewDecoder(reader).Decode(&createEKSClusterRequest)
@@ -59,6 +143,13 @@ type EKSClient struct {
 }
 
 var eksClient *EKSClient
+
+type RDSClient struct {
+	RDSClient *rds.RDS
+	lock      *sync.Mutex
+}
+
+var rdsClient *RDSClient
 
 // Function to set AWS credentials
 func SetAWSCredentials(accessKeyID, secretAccessKey string) {
@@ -81,6 +172,27 @@ func GetAWSCredentials() AWSCredentials {
 		}
 	}
 	return awsCreds
+}
+
+func NewRDSClient() *RDSClient {
+	if rdsClient == nil {
+		awsCredentials := GetAWSCredentials()
+		sess, err := session.NewSession(&aws.Config{
+			Credentials: credentials.NewStaticCredentials(awsCredentials.AccessKeyID, awsCredentials.SecretAccessKey, ""),
+			Region:      aws.String("us-east-1"), // Specify the appropriate AWS region
+		})
+		if err != nil {
+			panic(fmt.Errorf("failed to create session: %v", err))
+		}
+		rdsClient = &RDSClient{
+			RDSClient: rds.New(sess),
+			lock:      &sync.Mutex{},
+		}
+	}
+
+	rdsClient.lock.Lock()
+	defer rdsClient.lock.Unlock()
+	return rdsClient
 }
 
 func NewEKSClient() *EKSClient {
@@ -195,7 +307,7 @@ func NewCreateNodeGroupRequestFromReader(reader io.Reader) (*CreateNodegroupRequ
 	return &createNodeGroupRequest, nil
 }
 
-func AuthenticatedHelmClient(c context.Context, clusterName string) (*action.Install, *cli.EnvSettings, error) {
+func AuthenticatedHelmClient(c context.Context, clusterName string) (*action.Install, *action.Configuration, *cli.EnvSettings, error) {
 	eksClient := NewEKSClient().EKSClient
 	result, err := eksClient.DescribeCluster(&eks.DescribeClusterInput{
 		Name: aws.String(clusterName),
@@ -203,31 +315,31 @@ func AuthenticatedHelmClient(c context.Context, clusterName string) (*action.Ins
 
 	if err != nil {
 		logger.FromContext(c).WithError(err).Error("Failed to describe EKS cluster")
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 
 	clientConfig, err := BuildHelmConfig(result.Cluster)
 	if err != nil {
 		logger.FromContext(c).WithError(err).Error("Failed to build helm config")
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 
 	rawConfig, err := clientConfig.RawConfig()
 	if err != nil {
 		logger.FromContext(c).WithError(err).Error("Failed to get raw config")
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 
 	kubeconfigBytes, err := clientcmd.Write(rawConfig)
 	if err != nil {
 		logger.FromContext(c).WithError(err).Error("Failed to write kubeconfig")
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 
 	restClientGetter, err := NewRESTClientGetter(string(kubeconfigBytes), "mattermost-operator")
 	if err != nil {
 		logger.FromContext(c).WithError(err).Error("Failed to create rest client getter")
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 
 	settings := cli.New()
@@ -236,10 +348,38 @@ func AuthenticatedHelmClient(c context.Context, clusterName string) (*action.Ins
 	err = actionConfig.Init(restClientGetter, settings.Namespace(), "memory", log.Printf)
 	if err != nil {
 		logger.FromContext(c).WithError(err).Error("Failed to init action config")
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 
 	installClient := action.NewInstall(actionConfig)
+	return installClient, actionConfig, settings, nil
+}
 
-	return installClient, settings, nil
+func AuthenticatedHelmGoClient(c context.Context, clusterName string, namespace string) (helmclient.Client, error) {
+	k8sClient, err := NewK8sClientClusterName(clusterName)
+
+	if err != nil {
+		return nil, err
+	}
+
+	opt := &helmclient.RestConfClientOptions{
+		Options: &helmclient.Options{
+			Namespace:        namespace,
+			RepositoryCache:  "/tmp/.helmcache",
+			RepositoryConfig: "/tmp/.helmrepo",
+			Debug:            true,
+			Linting:          true, // Change this to false if you don't want linting.
+			DebugLog: func(format string, v ...interface{}) {
+				logger.FromContext(c).Debug(fmt.Sprintf(format, v...))
+			},
+		},
+		RestConfig: k8sClient.config,
+	}
+
+	helmClient, err := helmclient.NewClientFromRestConf(opt)
+	if err != nil {
+		return nil, err
+	}
+
+	return helmClient, nil
 }

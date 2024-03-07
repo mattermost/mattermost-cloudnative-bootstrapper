@@ -17,6 +17,8 @@ import ProvisionClusterPage from './pages/aws/provision_cluster';
 import ClusterSummaryPage from './pages/cluster/cluster_summary';
 import InstallOperatorsPage from './pages/install_operators/install_operators';
 import ExistingAWSPage from './pages/aws/choose_existing';
+import CreateWorkspacePage from './pages/mattermost/create_workspace';
+import InstallationDashboard from './pages/dashboard';
 
 const useEnhancedEffect =
   typeof window !== 'undefined' ? React.useLayoutEffect : React.useEffect;
@@ -75,6 +77,15 @@ export default function JoyOrderDashboardTemplate() {
               <BootstrapperHeader currentStep={'install_mattermost'}/>
               <InstallOperatorsPage />
             </>
+          } />
+          <Route path ="/create_mattermost_workspace" element={
+            <>
+              <BootstrapperHeader currentStep={'create_mattermost_workspace'}/>
+              <CreateWorkspacePage />
+            </>
+          } />
+          <Route path="/dashboard" element={
+            <InstallationDashboard />
           } />
           <Route path="/" element={
             <>

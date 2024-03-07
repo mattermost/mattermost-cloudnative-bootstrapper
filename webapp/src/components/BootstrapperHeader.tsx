@@ -17,6 +17,7 @@ export default function BootstrapperHeader({ currentStep }: Props) {
         { key: 'cluster_summary', label: 'Cluster Summary'},
         { key: 'install_operator', label: 'Install Operator' },
         { key: 'install_mattermost', label: 'Install Operators' },
+        { key: 'create_mattermost_workspace', label: 'Create Mattermost Workspace'}
     ]
     const currentStepIndex = breadcrumbSteps.findIndex((step) => step.key === currentStep);
     const stepsSoFar = breadcrumbSteps.slice(0, currentStepIndex);

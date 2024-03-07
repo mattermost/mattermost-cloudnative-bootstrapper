@@ -1,20 +1,17 @@
 export type Cluster = {
-    ID: string;
-    State: string;
-    Provider: string;
-    ProviderMetadataAWS?: AWSMetadata;
-    Provisioner: string;
-    ProvisionerMetadataKops?: KopsMetadata;
-    ProvisionerMetadataEKS?: EKSMetadata;
-    // UtilityMetadata?: UtilityMetadata;
-    AllowInstallations: boolean;
-    CreateAt: number;
-    DeleteAt: number;
-    APISecurityLock: boolean;
-    LockAcquiredBy?: string | null;
-    LockAcquiredAt: number;
-    Networking: string;
+	ClientRequestToken?: string;
+	CreatedAt?: Date;
+	Endpoint?: string;
+	Id?: string;
+	Name?: string;
+	PlatformVersion?: string;
+	RoleArn?: string;
+	Status?: ClusterStatus; 
+	Tags?: { [key: string]: string };
+	Version?: string;
 };
+
+export type ClusterStatus = "CREATING" | "ACTIVE" | "DELETING" | "FAILED" | "UPDATING";
 
 
 export type AWSMetadata = {

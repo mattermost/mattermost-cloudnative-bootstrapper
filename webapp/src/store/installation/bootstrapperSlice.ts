@@ -1,11 +1,13 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
-import { CloudCredentials } from "../../types/bootstrapper";
-import { setAndCheckCloudCredentials as setCredentials, deployMattermostOperator as depMattermostOperator, deployNginxOperator as depNginxOperator, fetchEKSNamespaces } from '../../client/client';
+import { CloudCredentials, Release } from "../../types/bootstrapper";
+import { setAndCheckCloudCredentials as setCredentials, deployMattermostOperator as depMattermostOperator, deployNginxOperator as depNginxOperator, deployCloudNativePG as depCloudNativePG, fetchEKSNamespaces, fetchInstalledHelmReleases, doCreateMattermostWorkspace } from '../../client/client';
 import { KubeUtility, allUtilities } from "../../pages/install_operators/install_operators";
 import { RootState } from "..";
+import { CreateMattermostWorkspaceRequest } from "../../types/Installation";
 
 export interface BootstrapperState {
     status: 'idle' | 'loading' | 'failed' | 'succeeded';
+    createMattermostWorkspaceRequestStatus: 'idle' | 'loading' | 'failed' | 'succeeded';
     error?: string | undefined;
     cloudProvider: string;
     kubernetesOption: string;
@@ -13,17 +15,20 @@ export interface BootstrapperState {
     utilities: KubeUtility[];
     cluster: {
         namespacesRequestStatus: 'idle' | 'loading' | 'failed' | 'succeeded',
+        releasesRequestStatus: 'idle' | 'loading' | 'failed' | 'succeeded',
         namespaces: string[]
+        releases: Release[];
     };
 }
 
 const initialState: BootstrapperState = {
     status: 'idle',
+    createMattermostWorkspaceRequestStatus: 'idle',
     cloudProvider: '',
     kubernetesOption: '',
     cloudCredentials: { accessKeyId: '', accessKeySecret: '', region: '', kubeconfig: '' },
     utilities: allUtilities,
-    cluster: {namespacesRequestStatus: 'idle', namespaces: []},
+    cluster: {namespacesRequestStatus: 'idle', releasesRequestStatus: 'idle', namespaces: [], releases: []},
 }
 
 export const setAndCheckCloudCredentials = createAsyncThunk("bootstrapper/setAndCheckCloudCredentials", async ({ credentials, cloudProvider }: { credentials: CloudCredentials, cloudProvider: string }) => {
@@ -44,6 +49,21 @@ export const deployMattermostOperator = createAsyncThunk("bootstrapper/deployMat
 export const deployNginxOperator = createAsyncThunk("bootstrapper/deployNginxOperator", async (clusterName: string) => {
     const response = await depNginxOperator(clusterName)
     return {utility: 'ingress-nginx', ...response};
+});
+
+export const deployCloudNativePG = createAsyncThunk("bootstrapper/deployCloudNativePG", async (clusterName: string) => {
+    const response = await depCloudNativePG(clusterName);
+    return {utility: 'cnpg', ...response};
+});
+
+export const getInstalledHelmReleases = createAsyncThunk("bootstrapper/getInstalledHelmReleases", async (clusterName: string) => {
+    const response = await fetchInstalledHelmReleases(clusterName);
+    return response;
+});
+
+export const createMattermostWorkspace = createAsyncThunk("bootstrapper/createMattermostWorkspace", async ({clusterName, workspaceInfo}:{clusterName: string, workspaceInfo: CreateMattermostWorkspaceRequest}) => {
+    const response = await doCreateMattermostWorkspace(clusterName, workspaceInfo);
+    return response;
 });
 
 export const deployMariner = createAsyncThunk("bootstrapper/deployMariner", async (clusterName: string) => {
@@ -79,7 +99,10 @@ export const bootstrapperSlice = createSlice({
                 }
                 return util;
             });
-        }
+        },
+        setCreateWorkspaceRequestState: (state, action) => {
+            state.createMattermostWorkspaceRequestStatus = action.payload;
+        },
     },
     extraReducers: (builder) => {
         builder
@@ -147,6 +170,43 @@ export const bootstrapperSlice = createSlice({
                 return utility;
             });
         });
+        builder.addCase(deployCloudNativePG.pending, (state, action) => {
+            state.utilities = state.utilities.map((utility) => {
+                if (utility.key === 'cnpg') {
+                    return { ...utility, deploymentRequestState: 'loading' }
+                }
+                return utility;
+            });
+        }).addCase(deployCloudNativePG.fulfilled, (state, action) => {
+            state.utilities = state.utilities.map((utility) => {
+                if (utility.key === 'cnpg') {
+                    return { ...utility, deploymentRequestState: 'succeeded' }
+                }
+                return utility;
+            });
+        }).addCase(deployCloudNativePG.rejected, (state, action) => {
+            state.utilities = state.utilities.map((utility) => {
+                if (utility.key === 'cnpg') {
+                    return { ...utility, deploymentRequestState: 'failed' }
+                }
+                return utility;
+            });
+        });
+        builder.addCase(getInstalledHelmReleases.pending, (state) => {
+            state.cluster.releasesRequestStatus = 'loading';
+        }).addCase(getInstalledHelmReleases.fulfilled, (state, action) => {
+            state.cluster.releasesRequestStatus = 'succeeded';
+            state.cluster.releases = action.payload;
+        }).addCase(getInstalledHelmReleases.rejected, (state) => {
+            state.cluster.releasesRequestStatus = 'failed';
+        });
+        builder.addCase(createMattermostWorkspace.pending, (state) => {
+            state.createMattermostWorkspaceRequestStatus = 'loading';
+        }).addCase(createMattermostWorkspace.fulfilled, (state) => {
+            state.createMattermostWorkspaceRequestStatus = 'succeeded';
+        }).addCase(createMattermostWorkspace.rejected, (state) => {
+            state.createMattermostWorkspaceRequestStatus = 'failed';
+        });
     }
 });
 
@@ -159,8 +219,11 @@ export const requiredUtilitiesAreDeployed = (state: RootState) => {
     return requiredUtilities.every((utility: KubeUtility) => utility.isRequired && utility.deploymentRequestState === 'succeeded');
 }
 
+export const hasDeployedHelmChart = (state: RootState, chartName: string) => {
+    return state.bootstrapper.cluster.releases.some((release) => release.Name === chartName);
+}
 
-export const { setCloudProvider, setCloudCredentials, setKubernetesOption, setUtilities, setUtilityDeploymentState } = bootstrapperSlice.actions;
+export const { setCloudProvider, setCloudCredentials, setKubernetesOption, setUtilities, setUtilityDeploymentState, setCreateWorkspaceRequestState } = bootstrapperSlice.actions;
 
 
 export default bootstrapperSlice.reducer;
