@@ -1,3 +1,52 @@
 .Dashboard {
-    padding: 20px;
+    padding: 32px;
+    height: 100vh; // Take full height of the viewport
+    background-image: url('../../static/bg.png');
+    background-size: cover;
+
+    .title {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        .start-bootstrapper-button {
+            height: 48px;
+        }
+    }
+
+    .cluster-select-dropdown {
+        margin-top: 20px;
+        width: 300px;
+    }
+
+    .installation-cards {
+        display: flex;
+        flex-wrap: wrap;
+    }
+
+
+    .installations-section-error {
+        margin-top: 100px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: red;
+    }
+
+    .installations-section-empty {
+        margin-top: 100px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        >button {
+            outline: none;
+            background-color: none;
+        }
+    }
+
+    .installations-section-loading {
+        margin-top: 100px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
 }

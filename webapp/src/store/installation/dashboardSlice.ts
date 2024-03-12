@@ -1,7 +1,9 @@
 import { createSlice } from "@reduxjs/toolkit";
+import { Mattermost, PatchMattermostWorkspaceRequest } from "../../types/Installation";
 
 export interface DashboardState {
     selectedClusterName?: string;
+    installationToEdit?: PatchMattermostWorkspaceRequest;
 }
 
 const initialState: DashboardState = {
@@ -14,14 +16,17 @@ export const dashboardSlice = createSlice({
     reducers: {
         setSelectedClusterName: (state, action) => {
             state.selectedClusterName = action.payload;
-        }
+        },
+        setInstallationToEdit: (state, action) => {
+            state.installationToEdit = action.payload;
+        },
     },
     extraReducers: (builder) => {
     },
 });
 
 
-export const {setSelectedClusterName} = dashboardSlice.actions;
+export const {setSelectedClusterName, setInstallationToEdit} = dashboardSlice.actions;
 
 
 export default dashboardSlice.reducer;

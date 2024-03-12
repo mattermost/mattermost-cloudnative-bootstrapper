@@ -1,0 +1,17 @@
+.edit-installation-modal {
+    .edit-inputs {
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        > *:not(:last-child) {
+            margin-bottom: 10px;
+        }
+
+        .submit-button {
+            margin-top: 20px;
+            float: right;
+        }
+    }
+}

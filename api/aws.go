@@ -58,9 +58,13 @@ func initAWS(apiRouter *mux.Router, context *Context) {
 	clusterNameRouter.Handle("/mattermost_operator", addContext(handleDeleteMattermostOperator)).Methods(http.MethodDelete)
 	clusterNameRouter.Handle("/nginx_operator", addContext(handleDeleteNginxOperator)).Methods(http.MethodDelete)
 	clusterNameRouter.Handle("/namespaces", addContext(handleGetClusterNamespaces)).Methods(http.MethodGet)
-	clusterNameRouter.Handle("/new_mm_workspace", addContext(handleCreateMattermostWorkspace)).Methods(http.MethodPost)
+	clusterNameRouter.Handle("/installation", addContext(handleCreateMattermostInstallation)).Methods(http.MethodPost)
 	clusterNameRouter.Handle("/installations", addContext(handleGetMattermostInstallations)).Methods(http.MethodGet)
 	clusterNameRouter.Handle("/cnpg/cluster", addContext(handleCreateCNPGCluster)).Methods(http.MethodPost)
+
+	installationNameRouter := clusterNameRouter.PathPrefix("/installation/{installationName:[A-Za-z0-9_-]+}").Subrouter()
+	installationNameRouter.Handle("", addContext(handleDeleteMattermostInstallation)).Methods(http.MethodDelete)
+	installationNameRouter.Handle("", addContext(handlePatchMattermostInstallation)).Methods(http.MethodPatch)
 }
 
 func handleSetAWSCredentials(c *Context, w http.ResponseWriter, r *http.Request) {
@@ -148,8 +152,10 @@ func handleCreateEKS(c *Context, w http.ResponseWriter, r *http.Request) {
 		ClientRequestToken: aws.String("1d2129a1-3d38-460a-9756-e5b91fddb951"),
 		Name:               create.ClusterName,
 		ResourcesVpcConfig: &eks.VpcConfigRequest{
-			SecurityGroupIds: create.SecurityGroupIDs,
-			SubnetIds:        create.SubnetIDs,
+			SecurityGroupIds:      create.SecurityGroupIDs,
+			SubnetIds:             create.SubnetIDs,
+			EndpointPublicAccess:  aws.Bool(false),
+			EndpointPrivateAccess: aws.Bool(true),
 		},
 		RoleArn: create.RoleARN,
 		Version: create.KubernetesVersion,
@@ -616,7 +622,7 @@ func handleDeployPGOperator(c *Context, w http.ResponseWriter, r *http.Request) 
 
 	c.Ctx = logger.WithClusterName(c.Ctx, clusterName)
 
-	helmClient, err := model.AuthenticatedHelmGoClient(c.Ctx, clusterName, "cnpg")
+	helmClient, err := model.AuthenticatedHelmGoClient(c.Ctx, clusterName, "kube-system")
 	if err != nil {
 		logger.FromContext(c.Ctx).WithError(err).Error("Failed to authenticate helm client")
 		w.WriteHeader(http.StatusInternalServerError)
@@ -650,7 +656,7 @@ func handleDeployPGOperator(c *Context, w http.ResponseWriter, r *http.Request) 
 	// Install a chart release.
 	// Note that helmclient.Options.Namespace should ideally match the namespace in chartSpec.Namespace.
 	if _, err := helmClient.InstallOrUpgradeChart(context.Background(), &chartSpec, nil); err != nil {
-		logger.FromContext(c.Ctx).WithError(err).Error("Failed to install mattermost operator")
+		logger.FromContext(c.Ctx).WithError(err).Error("Failed to install aws-ebs-csi-driver")
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -667,10 +673,17 @@ func handleDeployPGOperator(c *Context, w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
+	helmClient, err = model.AuthenticatedHelmGoClient(c.Ctx, clusterName, "cnpg-system")
+	if err != nil {
+		logger.FromContext(c.Ctx).WithError(err).Error("Failed to authenticate helm client")
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
 	chartSpec = helmclient.ChartSpec{
-		ReleaseName:     "cnpg",
+		ReleaseName:     "cnpg-system",
 		ChartName:       "cnpg/cloudnative-pg",
-		Namespace:       "cnpg",
+		Namespace:       "cnpg-system",
 		UpgradeCRDs:     true,
 		Wait:            true,
 		Timeout:         300 * time.Second,
@@ -681,7 +694,7 @@ func handleDeployPGOperator(c *Context, w http.ResponseWriter, r *http.Request) 
 	// Install a chart release.
 	// Note that helmclient.Options.Namespace should ideally match the namespace in chartSpec.Namespace.
 	if _, err := helmClient.InstallOrUpgradeChart(context.Background(), &chartSpec, nil); err != nil {
-		logger.FromContext(c.Ctx).WithError(err).Error("Failed to install mattermost operator")
+		logger.FromContext(c.Ctx).WithError(err).Error("Failed to install cnpg operator")
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -796,7 +809,101 @@ func handleCreateCNPGCluster(c *Context, w http.ResponseWriter, r *http.Request)
 	w.WriteHeader(http.StatusCreated)
 }
 
-func handleCreateMattermostWorkspace(c *Context, w http.ResponseWriter, r *http.Request) {
+func handlePatchMattermostInstallation(c *Context, w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	clusterName := vars["name"]
+	if clusterName == "" || clusterName == "undefined" {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	installationName := vars["installationName"]
+	if installationName == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	patchRequest, err := model.NewMattermostWorkspacePatchRequestFromReader(r.Body)
+	if err != nil {
+		logger.FromContext(c.Ctx).WithError(err).Error("Failed to parse patch mattermost workspace request")
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	if !patchRequest.IsValid() {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	kubeClient, err := model.NewK8sClientClusterName(clusterName)
+	if err != nil {
+		logger.FromContext(c.Ctx).WithError(err).Error("Failed to create clientset")
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	installation, err := kubeClient.MattermostClientsetV1Beta.MattermostV1beta1().Mattermosts(installationName).Get(context.TODO(), installationName, metav1.GetOptions{})
+	if err != nil {
+		logger.FromContext(c.Ctx).WithError(err).Error("Failed to get installation")
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	installation.Spec.Version = patchRequest.Version
+	installation.Spec.Image = patchRequest.Image
+
+	installation, err = kubeClient.MattermostClientsetV1Beta.MattermostV1beta1().Mattermosts(installationName).Update(context.TODO(), installation, metav1.UpdateOptions{})
+	if err != nil {
+		logger.FromContext(c.Ctx).WithError(err).Error("Failed to update installation")
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	json.NewEncoder(w).Encode(installation)
+
+}
+
+func handleDeleteMattermostInstallation(c *Context, w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	clusterName := vars["name"]
+	if clusterName == "" || clusterName == "undefined" {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	installationName := vars["installationName"]
+	if installationName == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	kubeClient, err := model.NewK8sClientClusterName(clusterName)
+	if err != nil {
+		logger.FromContext(c.Ctx).WithError(err).Error("Failed to create clientset")
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	// Delete the CRD
+
+	err = kubeClient.MattermostClientsetV1Beta.MattermostV1beta1().Mattermosts(installationName).Delete(context.TODO(), installationName, metav1.DeleteOptions{})
+	if err != nil {
+		logger.FromContext(c.Ctx).WithError(err).Error("Failed to delete CRD")
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	// Delete the namespace
+
+	err = kubeClient.Clientset.CoreV1().Namespaces().Delete(context.TODO(), installationName, metav1.DeleteOptions{})
+	if err != nil {
+		logger.FromContext(c.Ctx).WithError(err).Error("Failed to delete namespace")
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+}
+
+func handleCreateMattermostInstallation(c *Context, w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	clusterName := vars["name"]
 	if clusterName == "" || clusterName == "undefined" {

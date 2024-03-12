@@ -1,0 +1,39 @@
+.installation-card {
+    width: 350px; // Adjust as needed  
+    height: 300px;
+    margin: 15px;  
+    padding: 15px; 
+    border: 1px solid lightgray; 
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    border-radius: 8px;
+    &:hover {
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+        background-color: lightgrey;
+        .create-installation-card-icon {
+            >svg {
+                color: grey;
+            }
+        }
+    }
+
+    .button-container { /* Added styles for button area */
+        position: absolute; /* Make buttons absolute within card */
+        bottom: 15px; /* Position at bottom */
+        right: 15px; /* Position at right side */
+        display: flex; /* Arrange buttons horizontally */
+    }
+
+    .create-installation-card-icon {
+        height: 250px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        >svg {
+            width: 100px;
+            height: 100px;
+            margin: 0 auto;
+            display: block;
+            color: lightgrey;
+        }
+    }
+}

@@ -124,7 +124,7 @@ export async function fetchInstalledHelmReleases(clusterName: string) {
 
 
 export async function doCreateMattermostWorkspace(clusterName: string, installation: CreateMattermostWorkspaceRequest) {
-    const response = await fetch(`${baseUrl}/api/v1/aws/cluster/${clusterName}/new_mm_workspace`, {
+    const response = await fetch(`${baseUrl}/api/v1/aws/cluster/${clusterName}/installation`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'

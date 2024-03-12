@@ -3,6 +3,7 @@ package model
 import (
 	"encoding/json"
 	"io"
+	"regexp"
 )
 
 type CreateMattermostWorkspaceRequest struct {
@@ -19,6 +20,46 @@ type CreateMattermostWorkspaceRequest struct {
 	S3BucketName               string `json:"bucketName"`
 	S3AccessKey                string `json:"accessKeyId"`
 	S3SecretKey                string `json:"accessKeySecret"`
+}
+
+// PatchMattermostWorkspaceRequest represents the request body for patching Mattermost workspace.
+type PatchMattermostWorkspaceRequest struct {
+	Version  string `json:"version"`
+	Name     string `json:"name"`
+	Image    string `json:"image"`
+	Replicas int    `json:"replicas"`
+	License  string `json:"license"`
+	Endpoint string `json:"endpoint"`
+}
+
+// NewMattermostWorkspacePatchRequestFromReader creates a new PatchMattermostWorkspaceRequest from the provided io.Reader.
+func NewMattermostWorkspacePatchRequestFromReader(body io.Reader) (*PatchMattermostWorkspaceRequest, error) {
+	var req PatchMattermostWorkspaceRequest
+	err := json.NewDecoder(body).Decode(&req)
+	if err != nil {
+		return nil, err
+	}
+	return &req, nil
+}
+
+// IsValid checks if the PatchMattermostWorkspaceRequest is valid.
+func (req *PatchMattermostWorkspaceRequest) IsValid() bool {
+	// Check if the version is a valid semantic version
+	if !isValidSemanticVersion(req.Version) {
+		return false
+	}
+
+	// Add additional validation rules here as needed
+
+	return true
+}
+
+// isValidSemanticVersion checks if the provided string is a valid semantic version.
+func isValidSemanticVersion(version string) bool {
+	// Regular expression pattern for semantic versioning (e.g., 1.0.0)
+	pattern := `^\d+\.\d+\.\d+$`
+	match, err := regexp.MatchString(pattern, version)
+	return err == nil && match
 }
 
 func (c *CreateMattermostWorkspaceRequest) IsValid() bool {

@@ -15,6 +15,15 @@ export interface CreateMattermostWorkspaceRequest {
     url: string;
 }
 
+export interface PatchMattermostWorkspaceRequest {
+    version: string;
+    name: string;
+    image: string;
+    replicas: number;
+    license: string;
+    endpoint: string;
+}
+
 export interface Mattermost {
     kind: string;
     apiVersion: string;
