@@ -1,13 +1,16 @@
 package api
 
 import (
+	"fmt"
 	"net/http"
 	"reflect"
 	"runtime"
 	"strings"
 
+	"github.com/gorilla/mux"
 	"github.com/mattermost/awat/model"
 	"github.com/mattermost/mattermost-cloud-dash/internal/logger"
+	"github.com/mattermost/mattermost-cloud-dash/providers"
 	provisioner "github.com/mattermost/mattermost-cloud/model"
 	"github.com/sirupsen/logrus"
 )
@@ -32,6 +35,11 @@ func (h contextHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		context.Pagination = requestPagination
 	}
 
+	muxVars := mux.Vars(r)
+	cloudProviderName := muxVars["cloudProvider"]
+
+	context.CloudProviderName = cloudProviderName
+
 	h.handler(context, ww, r)
 }
 
@@ -39,6 +47,28 @@ func newContextHandler(context *Context, handler contextHandlerFunc) *contextHan
 	// Obtain the handler function name to be used for API metrics.
 	splitFuncName := strings.Split((runtime.FuncForPC(reflect.ValueOf(handler).Pointer()).Name()), ".")
 	context.Ctx = logger.Init(context.Ctx, logrus.DebugLevel)
+
+	// Get the appropriate provider instance
+	var provider providers.CloudProvider
+	var err error
+	switch context.CloudProviderName {
+	case "aws":
+		provider = providers.GetAWSProvider()
+	// case "gcp":
+	//     provider = &GCPCloudProvider{}
+	// ... other cases
+	default:
+		err = fmt.Errorf("unsupported cloud provider: %s", context.CloudProviderName)
+		logger.FromContext(context.Ctx).WithError(err).Error("failed to parse cloud provider")
+	}
+
+	if err != nil {
+		// TODO: Graceful error handling and exit
+		return nil
+	}
+
+	// Associate with context
+	context.CloudProvider = provider
 	return &contextHandler{
 		context:     context,
 		handler:     handler,
