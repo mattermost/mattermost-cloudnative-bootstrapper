@@ -1,7 +1,6 @@
 package api
 
 import (
-	"fmt"
 	"net/http"
 	"reflect"
 	"runtime"
@@ -40,17 +39,7 @@ func (h contextHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	context.CloudProviderName = cloudProviderName
 
-	h.handler(context, ww, r)
-}
-
-func newContextHandler(context *Context, handler contextHandlerFunc) *contextHandler {
-	// Obtain the handler function name to be used for API metrics.
-	splitFuncName := strings.Split((runtime.FuncForPC(reflect.ValueOf(handler).Pointer()).Name()), ".")
-	context.Ctx = logger.Init(context.Ctx, logrus.DebugLevel)
-
-	// Get the appropriate provider instance
 	var provider providers.CloudProvider
-	var err error
 	switch context.CloudProviderName {
 	case "aws":
 		provider = providers.GetAWSProvider()
@@ -58,17 +47,25 @@ func newContextHandler(context *Context, handler contextHandlerFunc) *contextHan
 	//     provider = &GCPCloudProvider{}
 	// ... other cases
 	default:
-		err = fmt.Errorf("unsupported cloud provider: %s", context.CloudProviderName)
+		// err = fmt.Errorf("unsupported cloud provider: %s", context.CloudProviderName)
 		logger.FromContext(context.Ctx).WithError(err).Error("failed to parse cloud provider")
 	}
 
-	if err != nil {
-		// TODO: Graceful error handling and exit
-		return nil
-	}
+	// if err != nil {
+	// 	// TODO: Graceful error handling and exit
+	// 	return nil
+	// }
 
 	// Associate with context
 	context.CloudProvider = provider
+
+	h.handler(context, ww, r)
+}
+
+func newContextHandler(context *Context, handler contextHandlerFunc) *contextHandler {
+	// Obtain the handler function name to be used for API metrics.
+	splitFuncName := strings.Split((runtime.FuncForPC(reflect.ValueOf(handler).Pointer()).Name()), ".")
+	context.Ctx = logger.Init(context.Ctx, logrus.DebugLevel)
 	return &contextHandler{
 		context:     context,
 		handler:     handler,

@@ -47,8 +47,12 @@ var awsClientOnce sync.Once
 
 func GetAWSProvider() *AWSProvider {
 	awsClientOnce.Do(func() {
+		credentials := &model.Credentials{
+			AccessKeyID:     os.Getenv("AWS_ACCESS_KEY_ID"),
+			SecretAccessKey: os.Getenv("AWS_SECRET_ACCESS_KEY"),
+		}
 		awsProviderInstance = &AWSProvider{
-			Credentials:     &model.Credentials{},
+			Credentials:     credentials,
 			credentialsLock: &sync.Mutex{},
 		}
 	})
@@ -72,6 +76,11 @@ func (a *AWSProvider) NewEKSClient() *EKSClient {
 	once := &sync.Once{}
 	lock := &sync.Mutex{}
 
+	if a.EKSClient != nil {
+		once = a.EKSClient.once
+		lock = a.EKSClient.lock
+	}
+
 	once.Do(func() {
 		awsCredentials := a.GetAWSCredentials()
 		sess, err := session.NewSession(&aws.Config{
@@ -82,19 +91,21 @@ func (a *AWSProvider) NewEKSClient() *EKSClient {
 			panic(fmt.Errorf("failed to create session: %v", err))
 		}
 		eksClient = eks.New(sess)
+		a.EKSClient = &EKSClient{
+			Client: eksClient,
+			once:   once,
+			lock:   lock,
+		}
 	})
 
-	return &EKSClient{
-		Client: eksClient,
-		once:   once,
-		lock:   lock,
-	}
+	return a.EKSClient
 }
 
 func (a *AWSProvider) SetCredentials(c context.Context, credentials *model.Credentials) error {
 	a.credentialsLock.Lock()
-	defer a.credentialsLock.Unlock()
 	a.Credentials = credentials
+	a.credentialsLock.Unlock()
+	a.NewEKSClient()
 
 	return nil
 }
@@ -162,9 +173,7 @@ func (a *AWSProvider) ListRoles(c context.Context) ([]*model.SupportedRolesRespo
 }
 
 func (a *AWSProvider) ListClusters(c context.Context) ([]*string, error) {
-	a.EKSClient.lock.Lock()
-	defer a.EKSClient.lock.Unlock()
-	eksClient := a.EKSClient.Client
+	eksClient := a.NewEKSClient().Client
 	result, err := eksClient.ListClusters(&eks.ListClustersInput{})
 	if err != nil {
 		return nil, err
@@ -174,9 +183,7 @@ func (a *AWSProvider) ListClusters(c context.Context) ([]*string, error) {
 }
 
 func (a *AWSProvider) CreateCluster(c context.Context, create *model.CreateClusterRequest) (*model.Cluster, error) {
-	a.EKSClient.lock.Lock()
-	defer a.EKSClient.lock.Unlock()
-	eksClient := a.EKSClient.Client
+	eksClient := a.NewEKSClient().Client
 
 	input := &eks.CreateClusterInput{
 		ClientRequestToken: aws.String("1d2129a1-3d38-460a-9756-e5b91fddb951"),
@@ -223,9 +230,7 @@ func (a *AWSProvider) CreateCluster(c context.Context, create *model.CreateClust
 }
 
 func (a *AWSProvider) GetCluster(c context.Context, name string) (*model.Cluster, error) {
-	a.EKSClient.lock.Lock()
-	defer a.EKSClient.lock.Unlock()
-	eksClient := a.EKSClient.Client
+	eksClient := a.NewEKSClient().Client
 
 	result, err := eksClient.DescribeCluster(&eks.DescribeClusterInput{
 		Name: aws.String(name),
@@ -238,9 +243,7 @@ func (a *AWSProvider) GetCluster(c context.Context, name string) (*model.Cluster
 }
 
 func (a *AWSProvider) GetNodegroups(c context.Context, clusterName string) ([]*model.ClusterNodegroup, error) {
-	a.EKSClient.lock.Lock()
-	defer a.EKSClient.lock.Unlock()
-	eksClient := a.EKSClient.Client
+	eksClient := a.NewEKSClient().Client
 
 	result, err := eksClient.ListNodegroups(&eks.ListNodegroupsInput{
 		ClusterName: aws.String(clusterName),
@@ -271,9 +274,7 @@ func (a *AWSProvider) GetNodegroups(c context.Context, clusterName string) ([]*m
 }
 
 func (a *AWSProvider) CreateNodegroup(c context.Context, name string, create *model.CreateNodegroupRequest) (*model.ClusterNodegroup, error) {
-	a.EKSClient.lock.Lock()
-	defer a.EKSClient.lock.Unlock()
-	eksClient := a.EKSClient.Client
+	eksClient := a.NewEKSClient().Client
 
 	instanceTypes := []*string{&create.InstanceType}
 
@@ -322,9 +323,7 @@ func (a *AWSProvider) CreateNodegroup(c context.Context, name string, create *mo
 }
 
 func (a *AWSProvider) GetKubeRestConfig(c context.Context, clusterName string) (*rest.Config, error) {
-	a.EKSClient.lock.Lock()
-	defer a.EKSClient.lock.Unlock()
-	eksClient := a.EKSClient.Client
+	eksClient := a.NewEKSClient().Client
 
 	result, err := eksClient.DescribeCluster(&eks.DescribeClusterInput{
 		Name: aws.String(clusterName),
@@ -363,10 +362,8 @@ func (a *AWSProvider) GetKubeRestConfig(c context.Context, clusterName string) (
 }
 
 func (a *AWSProvider) GetKubeConfig(c context.Context, clusterName string) (clientcmd.ClientConfig, error) {
-	a.EKSClient.lock.Lock()
-	defer a.EKSClient.lock.Unlock()
-	eksClient := a.EKSClient.Client
-
+	eksClient := a.NewEKSClient().Client
+	logger.FromContext(c).Errorf("eksClient: %s", clusterName)
 	result, err := eksClient.DescribeCluster(&eks.DescribeClusterInput{
 		Name: aws.String(clusterName),
 	})
