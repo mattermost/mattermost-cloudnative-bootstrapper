@@ -172,21 +172,21 @@ export const bootstrapperSlice = createSlice({
         });
         builder.addCase(deployCloudNativePG.pending, (state, action) => {
             state.utilities = state.utilities.map((utility) => {
-                if (utility.key === 'cnpg') {
+                if (utility.key === 'cnpg-system') {
                     return { ...utility, deploymentRequestState: 'loading' }
                 }
                 return utility;
             });
         }).addCase(deployCloudNativePG.fulfilled, (state, action) => {
             state.utilities = state.utilities.map((utility) => {
-                if (utility.key === 'cnpg') {
+                if (utility.key === 'cnpg-system') {
                     return { ...utility, deploymentRequestState: 'succeeded' }
                 }
                 return utility;
             });
         }).addCase(deployCloudNativePG.rejected, (state, action) => {
             state.utilities = state.utilities.map((utility) => {
-                if (utility.key === 'cnpg') {
+                if (utility.key === 'cnpg-system') {
                     return { ...utility, deploymentRequestState: 'failed' }
                 }
                 return utility;
