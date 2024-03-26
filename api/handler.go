@@ -6,8 +6,10 @@ import (
 	"runtime"
 	"strings"
 
+	"github.com/gorilla/mux"
 	"github.com/mattermost/awat/model"
 	"github.com/mattermost/mattermost-cloud-dash/internal/logger"
+	"github.com/mattermost/mattermost-cloud-dash/providers"
 	provisioner "github.com/mattermost/mattermost-cloud/model"
 	"github.com/sirupsen/logrus"
 )
@@ -31,6 +33,31 @@ func (h contextHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	} else {
 		context.Pagination = requestPagination
 	}
+
+	muxVars := mux.Vars(r)
+	cloudProviderName := muxVars["cloudProvider"]
+
+	context.CloudProviderName = cloudProviderName
+
+	var provider providers.CloudProvider
+	switch context.CloudProviderName {
+	case "aws":
+		provider = providers.GetAWSProvider()
+	// case "gcp":
+	//     provider = &GCPCloudProvider{}
+	// ... other cases
+	default:
+		// err = fmt.Errorf("unsupported cloud provider: %s", context.CloudProviderName)
+		logger.FromContext(context.Ctx).WithError(err).Error("failed to parse cloud provider")
+	}
+
+	// if err != nil {
+	// 	// TODO: Graceful error handling and exit
+	// 	return nil
+	// }
+
+	// Associate with context
+	context.CloudProvider = provider
 
 	h.handler(context, ww, r)
 }

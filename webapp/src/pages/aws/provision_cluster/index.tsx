@@ -141,7 +141,7 @@ export default function ProvisionClusterPage() {
                                 <div className="next-step">
                                     <Button disabled={nodeGroups[0].Status !== 'ACTIVE'} onClick={() => navigate(`/cluster/summary?clusterName=${cluster?.Name}&type=eks`)} size="lg" color="primary">Next Step</Button>
                                 </div>}
-                            {!nodeGroups && <>
+                            {(!nodeGroups || !nodeGroups?.length) && <>
                                 <label>Node Groups</label>
                                 <p>Select a preset based on the number of users you'll have on Mattermost. If you're between user counts, it's best to size-up.</p>
                                 <Select onChange={(event, newValue) => handlePresetChange(newValue as string)} size="sm" placeholder="Node Group Preset">

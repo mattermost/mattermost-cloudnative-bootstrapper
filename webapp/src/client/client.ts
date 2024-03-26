@@ -31,13 +31,13 @@ export async function setAndCheckCloudCredentials(credentials: CloudCredentials,
 }
 
 export async function fetchAWSPotentialARNs() {
-    const response = await fetch(`${baseUrl}/api/v1/aws/eks_roles`);
+    const response = await fetch(`${baseUrl}/api/v1/aws/roles`);
     const data = await response.json();
     return data;
 }
 
 export async function createEKSCluster(createEKSClusterRequest: CreateEKSClusterRequest) {
-    const response = await fetch(`${baseUrl}/api/v1/aws/eks_create`, {
+    const response = await fetch(`${baseUrl}/api/v1/aws/cluster`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'
