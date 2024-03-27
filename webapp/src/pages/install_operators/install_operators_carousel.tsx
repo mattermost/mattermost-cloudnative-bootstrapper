@@ -1,18 +1,14 @@
-import React, { useEffect, useState } from 'react';
-import { useDispatch } from 'react-redux';
+import React, { useEffect, useRef, useState } from 'react';
 import { useSelector } from 'react-redux';
-import { useNavigate } from 'react-router-dom';
+import { useMatch, useSearchParams } from 'react-router-dom';
 import { RootState } from '../../store';
-import { Button, CircularProgress } from '@mui/joy';
-import { deployCloudNativePG, deployMariner, deployMattermostOperator, deployNginxOperator, deployProvisioner } from '../../store/installation/bootstrapperSlice';
-import InstallMattermost from './install_mattermost';
-import InstallNginx from './install_nginx';
+import { Button} from '@mui/joy';
 import CloudNativePGLogo from '../../static/cloudnativepglogo.png';
 import MattermostLogo from '../../static/mattermost-operator-logo.jpg';
 import NginxLogo from '../../static/Nginx logo.svg';
 import MarinerLogo from '../../static/mariner-logo.png';
 import ProvisionerLogo from '../../static/provisioner-logo.png';
-
+import { useDeployCloudNativePGMutation, useDeployMattermostOperatorMutation, useDeployNginxOperatorMutation } from '../../client/bootstrapperApi';
 
 type Props = {
     onSuccess: () => void;
@@ -20,42 +16,53 @@ type Props = {
 }
 
 export default function InstallOperatorsCarousel({ onSuccess, onError }: Props) {
-    const dispatch = useDispatch();
-    const utilities = useSelector((state: RootState) => state.bootstrapper.utilities);
-    const cluster = useSelector((state: RootState) => state.aws.eksCluster);
+    const utilities = useSelector((state: RootState) => state.bootstrapper.utilities.filter((utility) => utility.deploymentRequestState !== 'succeeded'));
+    const cloudProvider = useMatch('/:cloudProvider/cluster/operators')?.params.cloudProvider!;
+    const [searchParams,] = useSearchParams();
+    const clusterName = searchParams.get('clusterName') || "";
     const [carouselIndex, setCarouselIndex] = useState(0);
-    const [isDeploying, setIsDeploying] = useState(false);
 
-    const cards: Record<string, { title: string; description: string; component: React.ReactElement | null, icon: React.ReactElement | null }> = {
+    const hasMutatorBeenCalled = useRef(false);
+
+    const mattermostMutator = useDeployMattermostOperatorMutation();
+    const nginxMutator = useDeployNginxOperatorMutation();
+    const cloudNativePGMutator = useDeployCloudNativePGMutation();
+
+    const cards: Record<string, { title: string; description: string; component: React.ReactElement | null, icon: React.ReactElement | null, mutator: any }> = {
         'mattermost-operator': {
             title: 'Mattermost Operator',
             description: 'Please wait while we deploy the Mattermost Operator to your cluster. This may take a few minutes.',
             component: null,
             icon: <img src={MattermostLogo} alt="Mattermost Operator" style={{ height: '29px', marginRight: '12px' }} />,
+            mutator: mattermostMutator,
         },
         'ingress-nginx': {
             title: 'Nginx Operator',
             description: 'The Nginx Operator provides ingress support for your cluster\'s various installations. Please wait while we deploy it to your cluster. This may take a few minutes.',
             component: null,
             icon: <img src={NginxLogo} alt="Nginx Operator" style={{ height: '29px', marginRight: '12px' }} />,
+            mutator: nginxMutator,
         },
         'cnpg-system': {
             title: 'CloudNative PG',
             description: 'The Cloud Native PG Operator provides a way to create managed PostgreSQL databases for your Mattermost workspaces to use. Please wait while we deploy it to your cluster. This may take a few minutes.',
             component: null,
             icon: <img src={CloudNativePGLogo} alt="CloudNative PG" style={{ height: '29px', marginRight: '12px' }} />,
+            mutator: cloudNativePGMutator,
         },
         'provisioner': {
             title: 'Mattermost Provisioning Server',
             description: 'The Mattermost Provisioning Server is used to manage Mattermost workspaces. Before we can deploy, we\'ll need more information.',
             component: <></>,
             icon: <img src={ProvisionerLogo} alt="Mattermost Provisioning Server" style={{ height: '29px', marginRight: '12px' }} />,
+            mutator: null,
         },
         'mariner': {
             title: 'Mattermost Mariner Dashboard',
             description: 'The Mattermost Mariner Dashboard provides a UI for managing Mattermost workspaces. Before we can deploy, we\'ll need more information.',
             component: <></>,
             icon: <img src={MarinerLogo} alt="Mattermost Mariner Dashboard" style={{ height: '29px', marginRight: '12px' }} />,
+            mutator: null,
         },
     };
 
@@ -63,68 +70,35 @@ export default function InstallOperatorsCarousel({ onSuccess, onError }: Props) 
 
     const card = cards[utilityInProgress.key];
 
+    const numSelectedUtilities = utilities.filter(
+        (utility) => utility.isChecked && utility.deploymentRequestState !== 'succeeded',
+    ).length;
+
     useEffect(() => {
-        console.log('carouselIndex', carouselIndex);
         if (carouselIndex + 1 > numSelectedUtilities) {
-            setIsDeploying(false);
             onSuccess();
-        } else if (card.component === null) {
-            console.log(card);
-            setIsDeploying(true);
+        } else if (card.component === null && !hasMutatorBeenCalled.current) {
+            hasMutatorBeenCalled.current = true;
             handleDeploy();
         } else {
-            setIsDeploying(false);
         }
     }, [carouselIndex])
 
+    if (!card.mutator) {
+        return null;
+    }
 
-    if (utilityInProgress.deploymentRequestState === 'succeeded') {
+    if (card.mutator[1].isSuccess) {
+        hasMutatorBeenCalled.current = false;
         setCarouselIndex(carouselIndex + 1);
     }
 
-    const numSelectedUtilities = utilities.filter(
-        (utility) => utility.isChecked,
-    ).length;
-
-    const getActionToDispatchFromUtilityKey = (utilityKey: string) => {
-        switch (utilityKey) {
-            case 'mattermost-operator':
-                return deployMattermostOperator;
-            case 'ingress-nginx':
-                return deployNginxOperator;
-            case 'provisioner':
-                return deployProvisioner;
-            case 'mariner':
-                return deployMariner;
-            case 'cnpg-system':
-                return deployCloudNativePG;
-            default:
-                return null;
-        }
-    };
+    if (card.mutator[1].isError) {
+        onError(card.mutator[1].error as string);
+    }
 
     const handleDeploy = async () => {
-        setIsDeploying(true);
-
-        console.log('handelDeploy');
-
-        try {
-            const actionToDispatch = getActionToDispatchFromUtilityKey(utilityInProgress.key);
-            if (actionToDispatch) {
-                await dispatch(actionToDispatch(cluster?.Name as string) as any); // Assuming your actions need cluster data
-            } else {
-                throw new Error(`Unsupported utility: ${utilityInProgress.key}`);
-            }
-            if (carouselIndex + 1 > numSelectedUtilities) {
-                onSuccess();
-            }
-        } catch (error) {
-            setIsDeploying(false);
-            onError((error as any).message || "Deployment failed.");
-        } finally {
-            // setIsDeploying(false);
-            setCarouselIndex(carouselIndex + 1);
-        }
+        card.mutator[0]({ clusterName, cloudProvider });
     };
 
     return (
@@ -145,7 +119,7 @@ export default function InstallOperatorsCarousel({ onSuccess, onError }: Props) 
                             {card.component}
                         </div>
                     <div className="deploy-button">
-                        <Button onClick={handleDeploy} loading={isDeploying}>Deploy</Button>
+                        <Button onClick={handleDeploy} loading={card.mutator[1].isLoading}>Deploy</Button>
                     </div>
                     </div>
                 </div>

@@ -1,8 +1,5 @@
 import React, { useEffect } from 'react';
 import { Release } from '../../types/bootstrapper';
-import { useSelector } from 'react-redux';
-import { hasDeployedHelmChart } from '../../store/installation/bootstrapperSlice';
-import { RootState } from '../../store';
 import { Input, Option, Select } from '@mui/joy';
 
 
@@ -14,7 +11,7 @@ type DBConnectionInputProps = {
 export type DBConnectionDetails = {createDBForMe: boolean, dbConnectionString: string, dbReplicasConnectionString: string}
 
 export default function DBConnection({releases, onChange}: DBConnectionInputProps) {
-    const hasDeployedPGOperator = useSelector((state: RootState) => hasDeployedHelmChart(state, 'cnpg-system'));
+    const hasDeployedPGOperator = releases.some((release) => release.Name === 'cnpg-system');;
     const [createForMe, setCreateForMe] = React.useState<boolean | null>(null);
     const [dbConnectionString, setDBConnectionString] = React.useState('');
     const [dbReplicasConnectionString, setDBReplicasConnectionString] = React.useState('');

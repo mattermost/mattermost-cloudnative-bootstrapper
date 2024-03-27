@@ -1,36 +1,33 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { Button, Option, Select } from '@mui/joy';
 
 import { useDispatch } from 'react-redux';
 
 import { AWSRegions } from '../../types/bootstrapper';
-import { getEKSCluster, getEKSClusters, setEksClusterName,  setRegion } from '../../store/installation/awsSlice';
+import { setEksClusterName,  setRegion } from '../../store/installation/awsSlice';
 import { useSelector } from 'react-redux';
 import { RootState } from '../../store';
 import './aws_page.scss';
-import { useNavigate } from 'react-router-dom';
+import { useMatch, useNavigate } from 'react-router-dom';
 import ClusterSelectDropdown from './cluster_select_dropdown';
-import ConnectedLoadingSpinner from '../../components/common/connected_loading_spinner';
+import { useGetClusterQuery, useGetPossibleClustersQuery } from '../../client/bootstrapperApi';
+import RTKConnectedLoadingSpinner from '../../components/common/rtk_connected_loading_spinner';
 
 export default function ExistingAWSPage() {
     const dispatch = useDispatch();
     const navigate = useNavigate();
+    const cloudProvider = useMatch('/:cloudProvider/existing')?.params.cloudProvider!;
 
     const clusterName = useSelector((state: RootState) => state.aws.clusterName);
-    const possibleEKSClusters = useSelector((state: RootState) => state.aws.possibleEKSClusters);
-    const fetchEKSClusterStatus = useSelector((state: RootState) => state.aws.status);
-
     const region = useSelector((state: RootState) => state.aws.region);
 
-    useEffect(() => {
-        dispatch(getEKSClusters() as any);
-    }, [region])
+    const {data: possibleClusters, isLoading, isError, isSuccess} = useGetPossibleClustersQuery({cloudProvider, region}, {
+        skip: cloudProvider === '' || !region,
+    });
 
-    useEffect(() => {
-        if (clusterName !== '') {
-            dispatch(getEKSCluster(clusterName) as any);
-        }
-    }, [clusterName])
+    const {isLoading: clusterLoading, isError: clusterError, isSuccess: clusterSuccess} = useGetClusterQuery({cloudProvider, clusterName}, {
+        skip: clusterName === '',
+    });
 
     return (
         <div className="AWSPage">
@@ -53,11 +50,11 @@ export default function ExistingAWSPage() {
                                     <Option value={region}>{region}</Option>
                                 ))}
                             </Select>
-                            <ClusterSelectDropdown onChange={(newValue) => {dispatch(setEksClusterName(newValue) as any)}} clusters={possibleEKSClusters || []}/>
-                            <ConnectedLoadingSpinner state={fetchEKSClusterStatus} />
+                            <ClusterSelectDropdown onChange={(newValue) => {dispatch(setEksClusterName(newValue) as any)}} clusters={possibleClusters || []}/>
+                            <RTKConnectedLoadingSpinner isError={isError || clusterError} isSuccess={isSuccess && clusterSuccess} isLoading={isLoading || clusterLoading} />
                             <div className="button-row">
                                 <Button  size="md" color="primary" variant="plain" onClick={() => {navigate(`/aws/new`)}}>Create New Instead</Button>
-                                {clusterName && <Button size="lg" color="primary" onClick={() => {navigate(`/cluster/summary?clusterName=${clusterName}`)}}>Next Step</Button>}
+                                {clusterName && <Button size="lg" color="primary" onClick={() => {navigate(`${cloudProvider}/cluster/summary?clusterName=${clusterName}`)}}>Next Step</Button>}
                             </div>
                         </div>
                     </div>

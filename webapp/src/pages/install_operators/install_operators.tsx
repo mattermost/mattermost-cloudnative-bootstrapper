@@ -2,7 +2,7 @@ import React, {useEffect, useState} from 'react';
 
 import { useDispatch } from 'react-redux';
 import { useSelector } from 'react-redux';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useMatch, useNavigate, useSearchParams } from 'react-router-dom';
 import MattermostLogo from '../../static/mattermost-operator-logo.jpg';
 import NginxLogo from '../../static/Nginx logo.svg';
 import MarinerLogo from '../../static/mariner-logo.png';
@@ -13,8 +13,10 @@ import { RootState } from '../../store';
 import { getEKSCluster, getEKSNodeGroups, getKubeConfig } from '../../store/installation/awsSlice';
 import OperatorCard from './operator_card';
 import { Button } from '@mui/joy';
-import { getInstalledHelmReleases, getNamespaces, requiredUtilitiesAreDeployed, setUtilities, setUtilityDeploymentState } from '../../store/installation/bootstrapperSlice';
+import { requiredUtilitiesAreDeployed, setUtilities, setUtilityDeploymentState } from '../../store/installation/bootstrapperSlice';
 import InstallOperatorsCarousel from './install_operators_carousel';
+import { useGetClusterQuery, useGetInstalledHelmReleasesQuery } from '../../client/bootstrapperApi';
+import RTKConnectedLoadingSpinner from '../../components/common/rtk_connected_loading_spinner';
 
 export type KubeUtility = {
     displayName: string;
@@ -78,49 +80,30 @@ export default function InstallOperatorsPage() {
     const dispatch = useDispatch();
     const navigate = useNavigate();
     const [searchParams,] = useSearchParams();
+    const cloudProvider = useMatch('/:cloudProvider/cluster/operators')?.params.cloudProvider!;
+    const clusterName = searchParams.get('clusterName') || "";
     const utilities = useSelector((state: RootState) => state.bootstrapper.utilities);
-    const cluster = useSelector((state: RootState) => state.aws.eksCluster);
     const [isDeploying, setIsDeploying] = useState(false);
     const [deploymentFinished, setDeploymentFinished] = useState(false);
-    const namespaces = useSelector((state: RootState) => state.bootstrapper.cluster.namespaces);
 
     // TODO: Wire this in - currently it's just looking at the namespace to see if something's deployed, but these actually contain the Helm deployment status
-    const releases = useSelector((state: RootState) => state.bootstrapper.cluster.releases);
-    const requiredUtilitiesDeployed = useSelector(requiredUtilitiesAreDeployed);
+    const {data: releases, isLoading: isReleasesLoading, isFetching: isReleasesFetching, isSuccess: isReleasesSuccess, isError: isReleasesError, refetch: refetchReleases} = useGetInstalledHelmReleasesQuery({cloudProvider, clusterName}, {skip: cloudProvider === '' || !clusterName});
+
+    const {data: cluster} = useGetClusterQuery({cloudProvider, clusterName}, {
+        skip: cloudProvider === '' || !clusterName,
+    });
 
     useEffect(() => {
-        if (typeof cluster === 'undefined') {
-            const clusterName = searchParams.get('clusterName');
-            if (!clusterName) {
-                navigate('/aws');
-                return;
-            }
-            dispatch(getEKSCluster(clusterName) as any);
-            dispatch(getNamespaces(clusterName) as any);
-            // dispatch(getInstalledHelmReleases(clusterName) as any);
-        } else {
-            dispatch(getEKSNodeGroups(cluster?.Name as string) as any);
-            dispatch(getKubeConfig(cluster?.Name as string) as any);
-            dispatch(getNamespaces(cluster?.Name as string) as any);
-            // dispatch(getInstalledHelmReleases(cluster?.Name as string) as any);
-        }
+        releases?.forEach((release) => {
+            dispatch(setUtilityDeploymentState({ utility: release.Name, deploymentRequestState: 'succeeded', isChecked: true }))
+        })
+    }, [releases?.length])
 
-    }, [])
+    const requiredUtilitiesDeployed = useSelector(requiredUtilitiesAreDeployed);
 
     useEffect(() => {
         setDeploymentFinished(false);
     }, [utilities])
-
-    useEffect(() => {
-        namespaces.forEach((namespace) => {
-            dispatch(setUtilityDeploymentState({ utility: namespace, deploymentRequestState: 'succeeded', isChecked: true }))
-        })
-    }, [namespaces])
-
-    useEffect(() => {
-        dispatch(getKubeConfig(cluster?.Name as string) as any);
-        dispatch(getEKSNodeGroups(cluster?.Name as string) as any);
-    }, [cluster?.Name]);
 
     const numSelectedUtilities = utilities.filter((utility) => utility.isChecked && utility.deploymentRequestState !== 'succeeded').length;
 
@@ -128,6 +111,7 @@ export default function InstallOperatorsPage() {
         return (
             <InstallOperatorsCarousel
                 onSuccess={() => {
+                    refetchReleases();
                     setIsDeploying(false);
                     setDeploymentFinished(true)
                 }}
@@ -177,9 +161,12 @@ export default function InstallOperatorsPage() {
                             }
                         </div>
                         <div className="next-step-button">
-                            <Button onClick={() => setIsDeploying(true)} disabled={deploymentFinished || numSelectedUtilities === 0} size="lg" color="primary">Deploy {numSelectedUtilities > 0 && <>{numSelectedUtilities} {numSelectedUtilities > 1 ? 'Utilities' : 'Utility'} </>}</Button>
-                            {deploymentFinished && <div className="deployment-finished">Utilities installed successfully!</div>}
-                            {requiredUtilitiesDeployed && <Button onClick={() => navigate(`/create_mattermost_workspace?clusterName=${cluster?.Name}&type=aws`)} size="lg" color="primary">Create Mattermost Workspace</Button>}
+                            {isReleasesLoading || isReleasesFetching && <RTKConnectedLoadingSpinner isSuccess={isReleasesSuccess} isError={isReleasesError} isLoading={isReleasesLoading} isFetching={isReleasesFetching}/>}
+                            {!isReleasesLoading && isReleasesSuccess && !isReleasesFetching && <>
+                                <Button onClick={() => setIsDeploying(true)} disabled={deploymentFinished || numSelectedUtilities === 0} size="lg" color="primary">Deploy {numSelectedUtilities > 0 && <>{numSelectedUtilities} {numSelectedUtilities > 1 ? 'Utilities' : 'Utility'} </>}</Button>
+                                {deploymentFinished && <div className="deployment-finished">Utilities installed successfully!</div>}
+                                {requiredUtilitiesDeployed && <Button onClick={() => navigate(`/create_mattermost_workspace?clusterName=${cluster?.Name}&type=aws`)} size="lg" color="primary">Create Mattermost Workspace</Button>}
+                            </>}
                         </div>
                     </div>
                 </div>

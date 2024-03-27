@@ -9,6 +9,7 @@ export type Cluster = {
 	Status?: ClusterStatus; 
 	Tags?: { [key: string]: string };
 	Version?: string;
+    Arn?: string;
 };
 
 export type ClusterStatus = "CREATING" | "ACTIVE" | "DELETING" | "FAILED" | "UPDATING";

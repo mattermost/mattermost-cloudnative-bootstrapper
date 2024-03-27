@@ -1,42 +1,34 @@
-import React, { useEffect, useState } from 'react';
-
-import { useDispatch } from 'react-redux';
-import { useSelector } from 'react-redux';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import React, { useState } from 'react';
+import { useMatch, useNavigate, useSearchParams } from 'react-router-dom';
 import './cluster_summary.scss';
-import { RootState } from '../../store';
-import { getEKSCluster, getEKSNodeGroups, getKubeConfig } from '../../store/installation/awsSlice';
 import { Accordion, AccordionDetails, AccordionSummary, Button, Table, Typography } from '@mui/joy';
 import { CheckOutlined } from '@mui/icons-material';
-
+import { useGetClusterQuery, useGetKubeConfigQuery, useGetNodegroupsQuery } from '../../client/bootstrapperApi';
 
 export default function ClusterSummaryPage() {
-    const dispatch = useDispatch();
     const navigate = useNavigate();
+    const cloudProvider = useMatch('/:cloudProvider/cluster/summary')?.params.cloudProvider!;
     const [searchParams,] = useSearchParams();
-    const cluster = useSelector((state: RootState) => state.aws.eksCluster);
-    const nodeGroups = useSelector((state: RootState) => state.aws.nodeGroups);
-    const kubeconfig = useSelector((state: RootState) => state.aws.kubeconfig);
     const [copiedToClipboard, setCopiedToClipboard] = useState(false);
 
-    useEffect(() => {
-        if (typeof cluster === 'undefined') {
-            const clusterName = searchParams.get('clusterName');
-            if (!clusterName) {
-                navigate('/aws');
-                return;
-            }
-            dispatch(getEKSCluster(clusterName) as any);
-        } else {
-            dispatch(getEKSNodeGroups(cluster?.Name as string) as any);
-            dispatch(getKubeConfig(cluster?.Name as string) as any);
-        }
-    }, [])
+    const clusterName = searchParams.get('clusterName') || "";
+    
+    const {data: cluster, isSuccess: isClusterSuccess} = useGetClusterQuery({cloudProvider, clusterName}, {
+        skip: cloudProvider === '' || !clusterName,
+    });
 
-    useEffect(() => {
-        dispatch(getKubeConfig(cluster?.Name as string) as any);
-        dispatch(getEKSNodeGroups(cluster?.Name as string) as any);
-    }, [cluster?.Name]);
+    const {data: nodeGroups} = useGetNodegroupsQuery({cloudProvider, clusterName}, {
+        skip: cloudProvider === '' || !clusterName || !isClusterSuccess,
+    });
+
+    const {data: kubeconfig} = useGetKubeConfigQuery({clusterName, cloudProvider}, {
+        skip: !isClusterSuccess,
+    });
+
+    if (!clusterName) {
+        navigate(`/${cloudProvider}`);
+        return null;
+    }
 
     const tableRow = (key: string, value: string) => (
         <tr>
@@ -56,6 +48,7 @@ export default function ClusterSummaryPage() {
 
 
     const handleDownloadKubeConfig = () => {
+        if(!kubeconfig) return;
         const element = document.createElement('a');
         const file = new Blob([kubeconfig], { type: 'text/plain' }); 
         element.href = URL.createObjectURL(file);
@@ -65,6 +58,7 @@ export default function ClusterSummaryPage() {
     }
 
     const handleCopyToClipboard = () => {
+        if (!kubeconfig) return;
         navigator.clipboard.writeText(kubeconfig)
         .then(() => {
             setCopiedToClipboard(true);
@@ -127,8 +121,7 @@ export default function ClusterSummaryPage() {
                             </Accordion>
                         </div>
                         <div className="next-step-button">
-
-                        <Button onClick={() => navigate(`/cluster/operators?clusterName=${cluster?.Name}&type=eks`)} size="lg" color="primary">Deploy Mattermost</Button>
+                        <Button onClick={() => navigate(`/${cloudProvider}/cluster/operators?clusterName=${cluster?.Name}`)} size="lg" color="primary">Deploy Mattermost</Button>
                         </div>
                     </div>
                 </div>

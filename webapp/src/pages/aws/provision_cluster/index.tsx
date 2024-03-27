@@ -139,7 +139,8 @@ export default function ProvisionClusterPage() {
                             ))}
                             {nodeGroups && nodeGroups?.length > 0 &&
                                 <div className="next-step">
-                                    <Button disabled={nodeGroups[0].Status !== 'ACTIVE'} onClick={() => navigate(`/cluster/summary?clusterName=${cluster?.Name}&type=eks`)} size="lg" color="primary">Next Step</Button>
+                                    {/* TODO: Update with variable cloudProvider */}
+                                    <Button disabled={nodeGroups[0].Status !== 'ACTIVE'} onClick={() => navigate(`/aws/cluster/summary?clusterName=${cluster?.Name}&type=eks`)} size="lg" color="primary">Next Step</Button>
                                 </div>}
                             {(!nodeGroups || !nodeGroups?.length) && <>
                                 <label>Node Groups</label>
