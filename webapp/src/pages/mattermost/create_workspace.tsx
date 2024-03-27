@@ -1,55 +1,39 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { Button, CircularProgress } from '@mui/joy';
 
-
-import { useDispatch } from 'react-redux';
-import { useSelector } from 'react-redux';
-import { RootState } from '../../store';
-import { createMattermostWorkspace, getInstalledHelmReleases, getNamespaces, setCreateWorkspaceRequestState } from '../../store/installation/bootstrapperSlice';
-
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useMatch, useNavigate, useSearchParams } from 'react-router-dom';
 
 import './create_workspace.scss';
-import { getEKSCluster } from '../../store/installation/awsSlice';
 import DBConnection, { DBConnectionDetails } from './db_connection';
 import FilestoreConnection, { FilestoreConnectionDetails } from './filestore_connection';
 import { CSSTransition } from 'react-transition-group';
 import WorkspaceInfo, { WorkspaceInfoDetails } from './workspace_info';
-
+import { useGetClusterQuery, useGetInstalledHelmReleasesQuery } from '../../client/bootstrapperApi';
+import { useCreateMattermostWorkspaceMutation } from '../../client/dashboardApi';
 
 export default function CreateWorkspacePage() {
-    const dispatch = useDispatch();
     const navigate = useNavigate();
     const [searchParams,] = useSearchParams();
-    const cluster = useSelector((state: RootState) => state.aws.eksCluster);
-    const releases = useSelector((state: RootState) => state.bootstrapper.cluster.releases);
+    const clusterName = searchParams.get('clusterName') || "";
+    const cloudProvider = useMatch('/:cloudProvider/create_mattermost_workspace')?.params.cloudProvider!;
     const [dbConnection, setDBConnection] = useState({} as DBConnectionDetails);
     const [filestoreConnection, setFilestoreConnection] = useState({} as FilestoreConnectionDetails);
     const [workspaceInfo, setWorkspaceInfo] = useState({} as WorkspaceInfoDetails)
-    const createWorkspaceRequestStatus = useSelector((state: RootState) => state.bootstrapper.createMattermostWorkspaceRequestStatus);
 
-    useEffect(() => {
-        if (typeof cluster === 'undefined') {
-            const clusterName = searchParams.get('clusterName');
-            if (!clusterName) {
-                navigate('/aws');
-                return;
-            }
-            dispatch(getEKSCluster(clusterName) as any);
-            dispatch(getNamespaces(clusterName) as any);
-            dispatch(getInstalledHelmReleases(clusterName) as any);
-        } else {
-            dispatch(getNamespaces(cluster?.Name as string) as any);
-            dispatch(getInstalledHelmReleases(cluster?.Name as string) as any);
-        }
-    }, [])
+    const { data: cluster, isSuccess: isGetClusterSuccess } = useGetClusterQuery({ cloudProvider, clusterName }, {
+        skip: cloudProvider === '' || !clusterName,
+    });
 
-    const informationFetched = useSelector((state: RootState) => {
-        return state.bootstrapper.cluster.releasesRequestStatus === 'succeeded' && state.bootstrapper.cluster.namespacesRequestStatus === 'succeeded';
-    })
+    const { data: releases, isSuccess: isGetReleasesSuccess } = useGetInstalledHelmReleasesQuery({ clusterName, cloudProvider }, {
+        skip: cloudProvider === '' || !clusterName,
+    });
+
+    const [createWorkspace, { isUninitialized: isCreateWorkspaceUninitialized, isLoading: isCreateWorkspaceLoading, isError: isCreateWorkspaceError, isSuccess: isCreateWorkspaceSuccess, reset: resetCreateWorkspace }] = useCreateMattermostWorkspaceMutation();
+
+    const informationFetched = isGetClusterSuccess && isGetReleasesSuccess;
 
     const handleCreateWorkspace = () => {
-        dispatch(createMattermostWorkspace({ clusterName: cluster!.Name!, workspaceInfo: { ...filestoreConnection, ...dbConnection, ...workspaceInfo } }) as any);
+        createWorkspace({ clusterName, cloudProvider, workspaceInfo: { ...filestoreConnection, ...dbConnection, ...workspaceInfo } })
     };
 
     const formComplete = () => {
@@ -97,12 +81,12 @@ export default function CreateWorkspacePage() {
         return (
             <>
                 <h3>Workspace creation failed</h3>
-                <div><Button size="lg" color="primary" onClick={() => dispatch(setCreateWorkspaceRequestState('idle'))}>Retry</Button></div>
+                <div><Button size="lg" color="primary" onClick={() => resetCreateWorkspace()}>Retry</Button></div>
             </>
         )
     }
 
-    if (createWorkspaceRequestStatus !== 'idle') {
+    if (!isCreateWorkspaceUninitialized) {
         return (
             <div className="CreateWorkspacePage">
                 <div className="leftPanel">
@@ -115,9 +99,9 @@ export default function CreateWorkspacePage() {
                     <div className="setup-card">
                         <div className="setup-card-content">
                             <div className="creation-result">
-                                {createWorkspaceRequestStatus === 'loading' && <LoadingCreationComponent />}
-                                {createWorkspaceRequestStatus === 'succeeded' && <SuccessComponent />}
-                                {createWorkspaceRequestStatus === 'failed' && <ErrorComponent />}
+                                {isCreateWorkspaceLoading && <LoadingCreationComponent />}
+                                {isCreateWorkspaceSuccess && <SuccessComponent />}
+                                {isCreateWorkspaceError && <ErrorComponent />}
                             </div>
                         </div>
                     </div>
@@ -145,7 +129,7 @@ export default function CreateWorkspacePage() {
                             {informationFetched &&
                                 <div>
                                     <WorkspaceInfo onChange={(change) => setWorkspaceInfo(change)} />
-                                    <DBConnection releases={releases} onChange={(change) => setDBConnection(change)} />
+                                    <DBConnection releases={releases || []} onChange={(change) => setDBConnection(change)} />
                                     <FilestoreConnection onChange={(change) => setFilestoreConnection(change)} />
                                 </div>
                             }

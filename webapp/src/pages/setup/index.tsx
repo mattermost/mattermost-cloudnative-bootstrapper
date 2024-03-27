@@ -7,10 +7,10 @@ import GetCredentials from './get_credentials';
 import { useDispatch } from 'react-redux';
 import { useSelector } from 'react-redux';
 import { RootState } from '../../store';
-import { setAndCheckCloudCredentials, setCloudCredentials, setCloudProvider, setKubernetesOption } from '../../store/installation/bootstrapperSlice';
-import ConnectedLoadingSpinner from '../../components/common/connected_loading_spinner';
+import { setCloudCredentials, setCloudProvider, setKubernetesOption } from '../../store/installation/bootstrapperSlice';
 import { useNavigate } from 'react-router-dom';
-
+import { useSetAndCheckCloudCredentialsMutation } from '../../client/bootstrapperApi';
+import RTKConnectedLoadingSpinner from '../../components/common/rtk_connected_loading_spinner';
 
 export default function SetupPage() {
     const dispatch = useDispatch();
@@ -19,10 +19,10 @@ export default function SetupPage() {
     const cloudProvider = useSelector((state: RootState) => state.bootstrapper.cloudProvider)
     const kubernetesOption = useSelector((state: RootState) => state.bootstrapper.kubernetesOption)
     const credentials = useSelector((state: RootState) => state.bootstrapper.cloudCredentials)
-    const requestState = useSelector((state: RootState) => state.bootstrapper.status)
+    const [setCredentials, result] = useSetAndCheckCloudCredentialsMutation();
 
     const handleSubmit = async () => {
-        dispatch(setAndCheckCloudCredentials({credentials, cloudProvider}) as any)
+        setCredentials({credentials, cloudProvider});
     }
 
     return (
@@ -49,9 +49,9 @@ export default function SetupPage() {
                             </Select>
                             <SelectKubernetesOption cloudProvider={cloudProvider} onChange={(value) => dispatch(setKubernetesOption(value))} />
                             <GetCredentials cloudProvider={cloudProvider} kubernetesOption={kubernetesOption} onCredentialsChange={(credentials) => dispatch(setCloudCredentials(credentials))}/>
-                            {cloudProvider && kubernetesOption && credentials.accessKeyId && credentials.accessKeySecret && requestState !== 'succeeded' && <Button onClick={handleSubmit} size="lg" color="primary">Submit</Button>}
-                            <ConnectedLoadingSpinner state={requestState} />
-                            {requestState === 'succeeded' && <Button size="lg" color="primary" onClick={() => {navigate(`/${cloudProvider}/${kubernetesOption}`)}}>Next Step</Button>}
+                            {cloudProvider && kubernetesOption && credentials.accessKeyId && credentials.accessKeySecret && !result.isSuccess && <Button onClick={handleSubmit} size="lg" color="primary">Submit</Button>}
+                            <RTKConnectedLoadingSpinner isLoading={result.isLoading} isSuccess={result.isSuccess} isError={result.isError} />
+                            {result.isSuccess && <Button size="lg" color="primary" onClick={() => {navigate(`/${cloudProvider}/${kubernetesOption}`)}}>Next Step</Button>}
                         </div>
                     </div>
                 </div>

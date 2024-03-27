@@ -48,7 +48,7 @@ export default function JoyOrderDashboardTemplate() {
               <AWSPage />
             </>
           } />
-          <Route path="/aws/existing" element={
+          <Route path="/:cloudProvider/existing" element={
             <>
               <BootstrapperHeader currentStep={'create_eks_cluster'}/>
               <ExistingAWSPage />
@@ -66,19 +66,19 @@ export default function JoyOrderDashboardTemplate() {
               <ProvisionClusterPage />
             </>
           } />
-          <Route path="/cluster/summary" element={
+          <Route path="/:cloudProvider/cluster/summary" element={
             <>
               <BootstrapperHeader currentStep={'cluster_summary'}/>
               <ClusterSummaryPage />
             </>
           } />
-          <Route path="/cluster/operators" element={
+          <Route path="/:cloudProvider/cluster/operators" element={
             <>
               <BootstrapperHeader currentStep={'install_mattermost'}/>
               <InstallOperatorsPage />
             </>
           } />
-          <Route path ="/create_mattermost_workspace" element={
+          <Route path ="/:cloudProvider/create_mattermost_workspace" element={
             <>
               <BootstrapperHeader currentStep={'create_mattermost_workspace'}/>
               <CreateWorkspacePage />
