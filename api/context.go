@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/mattermost/mattermost-cloud-dash/providers"
 	provisioner "github.com/mattermost/mattermost-cloud/model"
 )
 
@@ -14,6 +15,8 @@ type Context struct {
 	Environment       string
 	ProvisionerClient *provisioner.Client
 	Pagination        provisioner.Paging
+	CloudProviderName string
+	CloudProvider     providers.CloudProvider
 }
 
 func (c *Context) Clone() *Context {
@@ -22,6 +25,8 @@ func (c *Context) Clone() *Context {
 		Ctx:               c.Ctx,
 		Environment:       c.Environment,
 		ProvisionerClient: c.ProvisionerClient,
+		CloudProviderName: c.CloudProviderName,
+		CloudProvider:     c.CloudProvider,
 	}
 }
 

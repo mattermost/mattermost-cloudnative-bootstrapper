@@ -47,7 +47,7 @@ export const allUtilities: KubeUtility[] = [
     },
     {
         displayName: 'CloudNative PG',
-        key: 'cnpg',
+        key: 'cnpg-system',
         operatorLogoUrl: CloudNativePGLogo,
         operatorDescription: 'The CloudNative PG Operator provides a way to create managed PostgreSQL databases for your Mattermost workspaces to use',
         isRequired: false,

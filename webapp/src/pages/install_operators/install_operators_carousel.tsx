@@ -39,7 +39,7 @@ export default function InstallOperatorsCarousel({ onSuccess, onError }: Props) 
             component: null,
             icon: <img src={NginxLogo} alt="Nginx Operator" style={{ height: '29px', marginRight: '12px' }} />,
         },
-        'cnpg': {
+        'cnpg-system': {
             title: 'CloudNative PG',
             description: 'The Cloud Native PG Operator provides a way to create managed PostgreSQL databases for your Mattermost workspaces to use. Please wait while we deploy it to your cluster. This may take a few minutes.',
             component: null,
@@ -96,7 +96,7 @@ export default function InstallOperatorsCarousel({ onSuccess, onError }: Props) 
                 return deployProvisioner;
             case 'mariner':
                 return deployMariner;
-            case 'cnpg':
+            case 'cnpg-system':
                 return deployCloudNativePG;
             default:
                 return null;
