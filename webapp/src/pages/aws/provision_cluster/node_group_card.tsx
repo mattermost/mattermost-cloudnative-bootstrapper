@@ -2,14 +2,14 @@ import React from 'react';
 import Card from '@mui/joy/Card';
 import CardContent from '@mui/joy/CardContent';
 import Typography from '@mui/joy/Typography';
-import { AWSNodeGroup } from '../../../types/bootstrapper';
 import { Chip, CircularProgress } from '@mui/joy';
+import { Nodegroup } from '../../../types/Cluster';
 
 interface NodeGroupCardProps {
     name: string;
     instanceType: string;
     status: string;
-    nodeGroup: AWSNodeGroup;
+    nodeGroup: Nodegroup;
 }
 
 interface TypographyComponentProps {

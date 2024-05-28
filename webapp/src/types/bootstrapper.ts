@@ -1,3 +1,5 @@
+import { CreateNodegroup } from "./Cluster";
+
 export type CloudCredentials = {
     accessKeyId: string;
     accessKeySecret: string;
@@ -6,7 +8,7 @@ export type CloudCredentials = {
 }
 
 export type Release = {
-    Name: string; 
+    Name: string;
     Version: number;
     Namespace: string;
     Status: string;
@@ -52,63 +54,8 @@ export enum SupportedKubernetesVersions {
     V1_26 = '1.26',
 };
 
-export type CreateEKSClusterRequest = {
-    region: string;
-    clusterName: string;
-    kubernetesVersion: string;
-    securityGroupIds: string[];
-    subnetIds: string[];
-    roleArn: string;
-}
-
-export type AWSClusterStatus = "CREATING" | "ACTIVE" | "DELETING" | "FAILED" | "UPDATING";
-
-export type AWSCluster =  {
-	Arn?: string;
-	ClientRequestToken?: string;
-	CreatedAt?: Date;
-	Endpoint?: string;
-	Id?: string;
-	Name?: string;
-	PlatformVersion?: string;
-	RoleArn?: string;
-	Status?: AWSClusterStatus; 
-	Tags?: { [key: string]: string };
-	Version?: string;
-}
-
-export type AWSNodeGroup = {
-    AmiType?: string;
-    ClusterName?: string;
-    CreationRoleArn?: string;
-    InstanceTypes?: string[];
-    Labels?: { [key: string]: string };
-    NodegroupName?: string;
-    ReleaseVersion?: string;
-    RemoteAccess?: { [key: string]: string };
-    ScalingConfig?: { [key: string]: string };
-    Status?: string;
-    Tags?: { [key: string]: string };
-    UpdatedAt?: Date;
-    subnetIds: string[];
-    NodeRole: string;
-}
-
-export type CreateAWSNodeGroup = {
-    preset: string;
-    nodeGroupName: string;
-    instanceType: string;
-    scalingConfig: { minSize: number, maxSize: number };
-    amiType: string;
-    releaseVersion: string;
-    labels: { [key: string]: string };
-    tags: { [key: string]: string };
-    roleARN?: string;
-    subnetIds?: string[];
-}
-
 type AWSNodeGroupPresets = {
-    [presetName: string]: CreateAWSNodeGroup;
+    [presetName: string]: CreateNodegroup;
 };
 
 export const awsNodeGroupPresets: AWSNodeGroupPresets = {
@@ -129,8 +76,8 @@ export const awsNodeGroupPresets: AWSNodeGroupPresets = {
         scalingConfig: { minSize: 2, maxSize: 2 },
         amiType: "AL2_x86_64",
         releaseVersion: "1.21",
-        labels: { },
-        tags: { }
+        labels: {},
+        tags: {}
     },
     "100users": {
         preset: "100users",
@@ -139,8 +86,8 @@ export const awsNodeGroupPresets: AWSNodeGroupPresets = {
         scalingConfig: { minSize: 2, maxSize: 2 },
         amiType: "AL2_x86_64",
         releaseVersion: "1.21",
-        labels: { },
-        tags: { }
+        labels: {},
+        tags: {}
     },
     "1000users": {
         preset: "1000users",
@@ -149,28 +96,28 @@ export const awsNodeGroupPresets: AWSNodeGroupPresets = {
         scalingConfig: { minSize: 2, maxSize: 5 },
         amiType: "AL2_x86_64",
         releaseVersion: "1.21",
-        labels: { },
-        tags: { }
+        labels: {},
+        tags: {}
     },
     "5000users": {
         preset: "5000users",
         nodeGroupName: "",
         instanceType: "t3.large",
-        scalingConfig: { minSize: 3, maxSize: 10 }, 
+        scalingConfig: { minSize: 3, maxSize: 10 },
         amiType: "AL2_x86_64",
         releaseVersion: "1.21",
-        labels: { },
-        tags: { }
+        labels: {},
+        tags: {}
     },
     "10000users": {
         preset: "10000users",
         nodeGroupName: "",
         instanceType: "t3.Xlarge",
-        scalingConfig: { minSize: 4, maxSize: 15 }, 
+        scalingConfig: { minSize: 4, maxSize: 15 },
         amiType: "AL2_x86_64",
         releaseVersion: "1.21",
-        labels: { },
-        tags: { }
+        labels: {},
+        tags: {}
     },
     "25000users": {
         preset: "25000users",
@@ -179,8 +126,55 @@ export const awsNodeGroupPresets: AWSNodeGroupPresets = {
         scalingConfig: { minSize: 5, maxSize: 25 },
         amiType: "AL2_x86_64",
         releaseVersion: "1.21",
-        labels: { },
-        tags: { }
+        labels: {},
+        tags: {}
     }
 };
 
+
+interface ManagedField {
+    manager: string;
+    operation: string;
+    apiVersion: string;
+    time: string;
+    fieldsType: string;
+    fieldsV1: FieldsV1;
+}
+
+interface FieldsV1 {
+    "f:metadata": {
+        "f:labels": {
+            ".": any;
+            "f:kubernetes.io/metadata.name": any;
+            "f:name": any;
+        }
+    }
+}
+
+interface Labels {
+    "kubernetes.io/metadata.name": string;
+    name: string;
+}
+
+interface Metadata {
+    name: string;
+    uid: string;
+    resourceVersion: string;
+    creationTimestamp: string;
+    labels: Labels;
+    managedFields: ManagedField[];
+}
+
+interface Spec {
+    finalizers: string[];
+}
+
+interface Status {
+    phase: string;
+}
+
+export interface Namespace {
+    metadata: Metadata;
+    spec: Spec;
+    status: Status;
+}
