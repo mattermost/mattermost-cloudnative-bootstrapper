@@ -1,4 +1,4 @@
-import { CreateAWSNodeGroup, CreateEKSClusterRequest } from "../types/bootstrapper";
+import { CreateClusterRequest, CreateNodegroup } from "../types/Cluster";
 
 export const baseUrl = process.env.NODE_ENV == 'development' ? 'http://localhost:3000' : 'http://localhost:8070';
 
@@ -22,7 +22,7 @@ export async function fetchAWSPotentialARNs() {
     return data;
 }
 
-export async function createEKSCluster(createEKSClusterRequest: CreateEKSClusterRequest) {
+export async function createEKSCluster(createEKSClusterRequest: CreateClusterRequest) {
     const response = await fetch(`${baseUrl}/api/v1/aws/cluster`, {
         method: 'POST',
         headers: {
@@ -58,7 +58,7 @@ export async function fetchEKSKubeConfig(clusterName: string) {
     return data;
 }
 
-export async function createEKSNodeGroup(clusterName: string, createNodeGroup: CreateAWSNodeGroup) {
+export async function createEKSNodeGroup(clusterName: string, createNodeGroup: CreateNodegroup) {
     const response = await fetch(`${baseUrl}/api/v1/aws/cluster/${clusterName}/nodegroups`, {
         method: 'POST',
         headers: {

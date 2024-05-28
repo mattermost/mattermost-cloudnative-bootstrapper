@@ -1,3 +1,5 @@
+import { CreateNodegroup } from "./Cluster";
+
 export type CloudCredentials = {
     accessKeyId: string;
     accessKeySecret: string;
@@ -52,63 +54,8 @@ export enum SupportedKubernetesVersions {
     V1_26 = '1.26',
 };
 
-export type CreateEKSClusterRequest = {
-    region: string;
-    clusterName: string;
-    kubernetesVersion: string;
-    securityGroupIds: string[];
-    subnetIds: string[];
-    roleArn: string;
-}
-
-export type AWSClusterStatus = "CREATING" | "ACTIVE" | "DELETING" | "FAILED" | "UPDATING";
-
-export type AWSCluster = {
-    Arn?: string;
-    ClientRequestToken?: string;
-    CreatedAt?: Date;
-    Endpoint?: string;
-    Id?: string;
-    Name?: string;
-    PlatformVersion?: string;
-    RoleArn?: string;
-    Status?: AWSClusterStatus;
-    Tags?: { [key: string]: string };
-    Version?: string;
-}
-
-export type AWSNodeGroup = {
-    AmiType?: string;
-    ClusterName?: string;
-    CreationRoleArn?: string;
-    InstanceTypes?: string[];
-    Labels?: { [key: string]: string };
-    NodegroupName?: string;
-    ReleaseVersion?: string;
-    RemoteAccess?: { [key: string]: string };
-    ScalingConfig?: { [key: string]: string };
-    Status?: string;
-    Tags?: { [key: string]: string };
-    UpdatedAt?: Date;
-    subnetIds: string[];
-    NodeRole: string;
-}
-
-export type CreateAWSNodeGroup = {
-    preset: string;
-    nodeGroupName: string;
-    instanceType: string;
-    scalingConfig: { minSize: number, maxSize: number };
-    amiType: string;
-    releaseVersion: string;
-    labels: { [key: string]: string };
-    tags: { [key: string]: string };
-    roleARN?: string;
-    subnetIds?: string[];
-}
-
 type AWSNodeGroupPresets = {
-    [presetName: string]: CreateAWSNodeGroup;
+    [presetName: string]: CreateNodegroup;
 };
 
 export const awsNodeGroupPresets: AWSNodeGroupPresets = {

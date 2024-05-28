@@ -1,8 +1,8 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
-import { AWSNodeGroup, CloudCredentials, Namespace, Release } from "../types/bootstrapper";
+import { CloudCredentials, Namespace, Release } from "../types/bootstrapper";
 import { RootState } from '../store';
 import { baseUrl } from './client';
-import { Cluster } from '../types/Cluster';
+import { Cluster, Nodegroup } from '../types/Cluster';
 
 export const bootstrapperApi = createApi({
     reducerPath: 'bootstrapperApi',
@@ -23,7 +23,7 @@ export const bootstrapperApi = createApi({
         getCluster: builder.query<Cluster, {clusterName: string, cloudProvider: string}>({
             query: ({ clusterName, cloudProvider }: {clusterName: string, cloudProvider: string}) => `/${cloudProvider}/cluster/${clusterName}`,
         }),
-        getNodegroups: builder.query<AWSNodeGroup[], {cloudProvider: string, clusterName: string}>({
+        getNodegroups: builder.query<Nodegroup[], {cloudProvider: string, clusterName: string}>({
             query: ({ cloudProvider, clusterName }) => `/${cloudProvider}/cluster/${clusterName}/nodegroups`,
         }),
         getKubeConfig: builder.query<string, { cloudProvider: string, clusterName: string }>({

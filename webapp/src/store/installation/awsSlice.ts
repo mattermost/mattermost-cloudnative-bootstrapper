@@ -1,7 +1,7 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import { fetchAWSPotentialARNs, createEKSCluster as createCluster, getEKSCluster as getCluster, fetchEKSNodeGroups, createEKSNodeGroup, fetchEKSKubeConfig, fetchEKSClusters } from "../../client/client";
 import { RootState } from "..";
-import { AWSCluster, AWSNodeGroup, CreateAWSNodeGroup, CreateEKSClusterRequest } from "../../types/bootstrapper";
+import { Cluster, CreateClusterRequest, CreateNodegroup, Nodegroup } from "../../types/Cluster";
 
 export interface AWSState {
     status: 'idle' | 'loading' | 'failed' | 'succeeded';
@@ -19,9 +19,9 @@ export interface AWSState {
     possibleEKSClusters?: string[];
     securityGroupIds?: string[];
     subnetIds?: string[];
-    eksCluster?: AWSCluster;
-    nodeGroups?: AWSNodeGroup[];
-    createNodeGroup: CreateAWSNodeGroup; 
+    eksCluster?: Cluster;
+    nodeGroups?: Nodegroup[];
+    createNodeGroup: CreateNodegroup; 
     kubeconfig: string;
 }
 
@@ -41,7 +41,7 @@ const initialState: AWSState = {
     subnetIds: [],
     createNodeGroup: {
 
-    } as CreateAWSNodeGroup,
+    } as CreateNodegroup,
     kubeconfig: '',
 }
 
@@ -50,7 +50,7 @@ export const fetchPossibleARN = createAsyncThunk("aws/fetchPossibleARN", async (
     return response;
 })
 
-export const createEKSCluster = createAsyncThunk("aws/createEKSCluster", async (createEKSClusterRequest: CreateEKSClusterRequest) => {
+export const createEKSCluster = createAsyncThunk("aws/createEKSCluster", async (createEKSClusterRequest: CreateClusterRequest) => {
     const response = await createCluster(createEKSClusterRequest);
     return response;
 });
@@ -68,7 +68,7 @@ export const getEKSNodeGroups = createAsyncThunk("aws/getEKSNodeGroups", async (
     return response;
 });
 
-export const createNodeGroup = createAsyncThunk("aws/createNodeGroup", async ({clusterName, createNodeGroup}: {clusterName:string, createNodeGroup: CreateAWSNodeGroup}) => {
+export const createNodeGroup = createAsyncThunk("aws/createNodeGroup", async ({clusterName, createNodeGroup}: {clusterName:string, createNodeGroup: CreateNodegroup}) => {
     const response = await createEKSNodeGroup(clusterName, createNodeGroup);
     return response;
 });
@@ -202,7 +202,7 @@ export const getCreateEKSClusterRequest = (state: RootState) => {
         securityGroupIds: state.aws.securityGroupIds,
         subnetIds: state.aws.subnetIds,
         roleArn: state.aws.selectedARN
-    } as CreateEKSClusterRequest;
+    } as CreateClusterRequest;
 }
 
 export const createNodeGroupValid = (state: RootState) => {
