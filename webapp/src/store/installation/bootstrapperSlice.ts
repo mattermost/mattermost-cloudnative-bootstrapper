@@ -7,6 +7,7 @@ export interface BootstrapperState {
     cloudProvider: string;
     kubernetesOption: string;
     cloudCredentials: CloudCredentials;
+    clusterName?: string;
     utilities: KubeUtility[];
 }
 
@@ -21,6 +22,9 @@ export const bootstrapperSlice = createSlice({
     name: 'bootstrapper',
     initialState,
     reducers: {
+        setClusterName: (state, action) => {
+            state.clusterName = action.payload
+        },
         setCloudProvider: (state, action) => {
             state.cloudProvider = action.payload
         },

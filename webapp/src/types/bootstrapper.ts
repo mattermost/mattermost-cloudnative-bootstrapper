@@ -1,5 +1,12 @@
 import { CreateNodegroup } from "./Cluster";
 
+
+export type State = {
+    credentials: CloudCredentials;
+    provider: string;
+    clusterName: string;
+}
+
 export type CloudCredentials = {
     accessKeyId: string;
     accessKeySecret: string;

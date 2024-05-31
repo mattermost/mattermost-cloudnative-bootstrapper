@@ -1,5 +1,5 @@
 {
-  "name": "mattermost-cloud-dash",
+  "name": "mattermost-cloudnative-bootstrapper",
   "version": "0.1.0",
   "private": true,
   "proxy": "http://localhost:8070",

@@ -29,7 +29,7 @@ function createWindow() {
 app.whenReady().then(() => {
     createWindow();
     if (isDevelopment) {
-        exec('/Users/nickmisasi/go/bin/cdash server')
+        exec('/Users/nickmisasi/go/bin/mcnb server')
     } else {
         execFile(path.join(__dirname, 'build', 'mmbs-mac_arm64'), (error, stdout, stderr) => {
             if (error) {
