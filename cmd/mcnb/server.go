@@ -25,9 +25,13 @@ var serverCmd = &cobra.Command{
 		ctx := context.Background()
 		r := mux.NewRouter()
 
+		stateFilePath, _ := cmd.Flags().GetString("state-file-path")
+
 		ctx = logger.Init(ctx, logrus.DebugLevel)
 
-		apiContext, err := api.NewContext(ctx, "")
+		logger.FromContext(ctx).Infof("Using state file path: %s", stateFilePath)
+
+		apiContext, err := api.NewContext(ctx, stateFilePath)
 		if err != nil {
 			return err
 		}

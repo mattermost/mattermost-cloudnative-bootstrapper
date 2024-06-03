@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 
+	"github.com/mattermost/mattermost-cloudnative-bootstrapper/api"
 	"github.com/mattermost/mattermost-cloudnative-bootstrapper/internal/logger"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -20,6 +21,7 @@ var rootCmd = &cobra.Command{
 }
 
 func init() {
+	serverCmd.PersistentFlags().String("state-file-path", api.DefaultStateFilePath(), "Path to the state file. Defaults to ~/.mcnb/state.json")
 	rootCmd.AddCommand(serverCmd)
 }
 

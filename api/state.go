@@ -54,14 +54,14 @@ func handlePatchState(c *Context, w http.ResponseWriter, r *http.Request) {
 const stateFileName = "state.json"
 const stateFileDir = ".mcnb" // Mattermost CloudNative Bootstrapper
 
-func defaultStateFilePath() string {
+func DefaultStateFilePath() string {
 	homeDir, _ := os.UserHomeDir()
 	return filepath.Join(homeDir, stateFileDir, stateFileName)
 }
 
 func CheckStateExists(stateFilePath string) (bool, error) {
 	if stateFilePath == "" {
-		stateFilePath = defaultStateFilePath()
+		stateFilePath = DefaultStateFilePath()
 	}
 
 	_, err := os.Stat(stateFilePath)
@@ -78,7 +78,7 @@ func CheckStateExists(stateFilePath string) (bool, error) {
 
 func InitState(stateFilePath string) error {
 	if stateFilePath == "" {
-		stateFilePath = defaultStateFilePath()
+		stateFilePath = DefaultStateFilePath()
 	}
 
 	homeDir, _ := os.UserHomeDir()
@@ -103,7 +103,7 @@ func InitState(stateFilePath string) error {
 
 func GetState(stateFilePath string) (BootstrapperState, error) {
 	if stateFilePath == "" {
-		stateFilePath = defaultStateFilePath()
+		stateFilePath = DefaultStateFilePath()
 	}
 
 	var state BootstrapperState
@@ -122,7 +122,7 @@ func GetState(stateFilePath string) (BootstrapperState, error) {
 
 func SetState(stateFilePath string, state BootstrapperState) error {
 	if stateFilePath == "" {
-		stateFilePath = defaultStateFilePath()
+		stateFilePath = DefaultStateFilePath()
 	}
 
 	data, err := json.Marshal(state)
@@ -138,15 +138,15 @@ func SetState(stateFilePath string, state BootstrapperState) error {
 	return nil
 }
 
-func UpdateStateCredentials(stateFilePath string, credentials *model.Credentials) error {
-	state, err := GetState(stateFilePath)
+func UpdateStateCredentials(existingState BootstrapperState, credentials *model.Credentials) error {
+	state, err := GetState(existingState.StateFilePath)
 	if err != nil {
 		return err
 	}
 
 	state.Credentials = credentials
 
-	err = SetState(stateFilePath, state)
+	err = SetState(existingState.StateFilePath, state)
 	if err != nil {
 		return err
 	}

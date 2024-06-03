@@ -84,7 +84,7 @@ func handleSetCredentials(c *Context, w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = UpdateStateCredentials("", &credentials)
+	err = UpdateStateCredentials(c.BootstrapperState, &credentials)
 	if err != nil {
 		logger.FromContext(c.Ctx).WithError(err).Error("Failed to update state credentials - settings will not be persisted")
 	}

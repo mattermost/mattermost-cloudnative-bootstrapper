@@ -12,9 +12,10 @@ import (
 )
 
 type BootstrapperState struct {
-	Provider    string             `json:"provider"`
-	ClusterName string             `json:"clusterName"`
-	Credentials *model.Credentials `json:"credentials"`
+	Provider      string             `json:"provider"`
+	ClusterName   string             `json:"clusterName"`
+	Credentials   *model.Credentials `json:"credentials"`
+	StateFilePath string             `json:"stateFilePath"`
 	// TODO: Support setting a KubeConfigPath via CLI flag or env var for authentication
 	// KubeConfigPath string `json:"kubeConfigPath"`
 }
@@ -49,6 +50,8 @@ func NewContext(ctx context.Context, statePath string) (*Context, error) {
 		// Some other error occurred
 		return nil, err
 	}
+
+	state.StateFilePath = statePath
 
 	return &Context{
 		Ctx:               ctx,
