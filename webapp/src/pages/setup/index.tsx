@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import './setup.scss';
 import { Button, Option, Select } from '@mui/joy';
 import SelectKubernetesOption from './select_kubernetes_option';
@@ -20,9 +20,16 @@ export default function SetupPage() {
     const kubernetesOption = useSelector((state: RootState) => state.bootstrapper.kubernetesOption)
     const credentials = useSelector((state: RootState) => state.bootstrapper.cloudCredentials)
     const [setCredentials, result] = useSetAndCheckCloudCredentialsMutation();
+    const lastPageLocalStorage = localStorage.getItem('lastVisitedPage');
+
+
+
+    const [lastVisitedPage, setShowLastVisitedPage] = useState(lastPageLocalStorage);
+    const showLastVisitedPage = lastVisitedPage && lastVisitedPage !== '/' ? true : false;
+
 
     const handleSubmit = async () => {
-        setCredentials({credentials, cloudProvider});
+        setCredentials({ credentials, cloudProvider });
     }
 
     return (
@@ -40,18 +47,29 @@ export default function SetupPage() {
                             <h3>Setup</h3>
                         </div>
                         <div className="inputs">
-                            <label>Select Cloud Provider</label>
-                            <Select onChange={(event, newValue) => dispatch(setCloudProvider(newValue as string))} size="sm" placeholder="Cloud Provider">
-                                <Option value="aws">AWS</Option>
-                                <Option value="gcp">GCP</Option>
-                                <Option value="azure">Azure</Option>
-                                <Option value="custom">Custom</Option>
-                            </Select>
-                            <SelectKubernetesOption cloudProvider={cloudProvider} onChange={(value) => dispatch(setKubernetesOption(value))} />
-                            <GetCredentials cloudProvider={cloudProvider} kubernetesOption={kubernetesOption} onCredentialsChange={(credentials) => dispatch(setCloudCredentials(credentials))}/>
-                            {cloudProvider && kubernetesOption && credentials.accessKeyId && credentials.accessKeySecret && !result.isSuccess && <Button onClick={handleSubmit} size="lg" color="primary">Submit</Button>}
-                            <RTKConnectedLoadingSpinner isLoading={result.isLoading} isSuccess={result.isSuccess} isError={result.isError} />
-                            {result.isSuccess && <Button size="lg" color="primary" onClick={() => {navigate(`/${cloudProvider}/${kubernetesOption}`)}}>Next Step</Button>}
+                            {showLastVisitedPage &&
+                                <div className="resume_or_start_over">
+                                    <Button size="lg" color="primary" onClick={() => { navigate(lastVisitedPage!) }}>Continue Last Session</Button>
+                                    <Button size="lg" color="danger" variant="outlined" onClick={() => setShowLastVisitedPage("")}>Start Over</Button>
+                                </div>
+                            }
+                            {
+                                !showLastVisitedPage &&
+                                <>
+                                    <label>Select Cloud Provider</label>
+                                    <Select onChange={(event, newValue) => dispatch(setCloudProvider(newValue as string))} size="sm" placeholder="Cloud Provider">
+                                        <Option value="aws">AWS</Option>
+                                        <Option value="gcp">GCP</Option>
+                                        <Option value="azure">Azure</Option>
+                                        <Option value="custom">Custom</Option>
+                                    </Select>
+                                    <SelectKubernetesOption cloudProvider={cloudProvider} onChange={(value) => dispatch(setKubernetesOption(value))} />
+                                    <GetCredentials cloudProvider={cloudProvider} kubernetesOption={kubernetesOption} onCredentialsChange={(credentials) => dispatch(setCloudCredentials(credentials))} />
+                                    {cloudProvider && kubernetesOption && credentials.accessKeyId && credentials.accessKeySecret && !result.isSuccess && <Button onClick={handleSubmit} size="lg" color="primary">Submit</Button>}
+                                    <RTKConnectedLoadingSpinner isLoading={result.isLoading} isSuccess={result.isSuccess} isError={result.isError} />
+                                    {result.isSuccess && <Button size="lg" color="primary" onClick={() => { navigate(`/${cloudProvider}/${kubernetesOption}`) }}>Next Step</Button>}
+                                </>
+                            }
                         </div>
                     </div>
                 </div>

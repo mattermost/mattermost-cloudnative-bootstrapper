@@ -54,7 +54,7 @@ export default function ExistingAWSPage() {
                             <RTKConnectedLoadingSpinner isError={isError || clusterError} isSuccess={isSuccess && clusterSuccess} isLoading={isLoading || clusterLoading} />
                             <div className="button-row">
                                 <Button  size="md" color="primary" variant="plain" onClick={() => {navigate(`/aws/new`)}}>Create New Instead</Button>
-                                {clusterName && <Button size="lg" color="primary" onClick={() => {navigate(`${cloudProvider}/cluster/summary?clusterName=${clusterName}`)}}>Next Step</Button>}
+                                {clusterName && <Button size="lg" color="primary" onClick={() => {navigate(`/${cloudProvider}/cluster/summary?clusterName=${clusterName}`)}}>Next Step</Button>}
                             </div>
                         </div>
                     </div>

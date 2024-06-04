@@ -6,7 +6,7 @@ import {
   THEME_ID as MATERIAL_THEME_ID,
 } from '@mui/material/styles';
 import CssBaseline from '@mui/joy/CssBaseline';
-import { Route, Routes } from 'react-router-dom';
+import { Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import useScript from './useScript';
 
 import SetupPage from './pages/setup';
@@ -19,6 +19,7 @@ import InstallOperatorsPage from './pages/install_operators/install_operators';
 import ExistingAWSPage from './pages/aws/choose_existing';
 import CreateWorkspacePage from './pages/mattermost/create_workspace';
 import InstallationDashboard from './pages/dashboard';
+import RehydrateAndRedirect from './components/state';
 
 const useEnhancedEffect =
   typeof window !== 'undefined' ? React.useLayoutEffect : React.useEffect;
@@ -27,6 +28,20 @@ const materialTheme = materialExtendTheme();
 
 export default function JoyOrderDashboardTemplate() {
   const status = useScript(`https://unpkg.com/feather-icons`);
+  const location = useLocation();
+  const [initialLoad, setInitialLoad] = React.useState(true);
+
+  React.useEffect(() => {
+    if (initialLoad) {
+      setInitialLoad(false); // Prevent redirection on further navigation
+    }
+  }, [initialLoad]); // Only run once on initial load
+
+  React.useEffect(() => {
+    if (!initialLoad) { //Prevents infinite loop on load
+      localStorage.setItem('lastVisitedPage', `${location.pathname}${location.search}`);
+    }
+  }, [location, initialLoad]);
 
   useEnhancedEffect(() => {
     // Feather icon setup: https://github.com/feathericons/feather#4-replace
@@ -37,50 +52,52 @@ export default function JoyOrderDashboardTemplate() {
     }
   }, [status]);
 
+
   return (
     <MaterialCssVarsProvider theme={{ [MATERIAL_THEME_ID]: materialTheme }}>
+      <RehydrateAndRedirect />
       <JoyCssVarsProvider disableTransitionOnChange>
         <CssBaseline />
         <Routes>
           <Route path="/aws/new" element={
             <>
-              <BootstrapperHeader currentStep={'create_eks_cluster'}/>
+              <BootstrapperHeader currentStep={'create_eks_cluster'} />
               <AWSPage />
             </>
           } />
           <Route path="/:cloudProvider/existing" element={
             <>
-              <BootstrapperHeader currentStep={'create_eks_cluster'}/>
+              <BootstrapperHeader currentStep={'create_eks_cluster'} />
               <ExistingAWSPage />
             </>
           } />
           <Route path="/aws/creating_cluster" element={
             <>
-              <BootstrapperHeader currentStep={'wait_for_eks'}/>
+              <BootstrapperHeader currentStep={'wait_for_eks'} />
               <CreatingClusterLoadingScreen />
             </>
           } />
           <Route path="/aws/provision_cluster" element={
             <>
-              <BootstrapperHeader currentStep={'provision_cluster'}/>
+              <BootstrapperHeader currentStep={'provision_cluster'} />
               <ProvisionClusterPage />
             </>
           } />
           <Route path="/:cloudProvider/cluster/summary" element={
             <>
-              <BootstrapperHeader currentStep={'cluster_summary'}/>
+              <BootstrapperHeader currentStep={'cluster_summary'} />
               <ClusterSummaryPage />
             </>
           } />
           <Route path="/:cloudProvider/cluster/operators" element={
             <>
-              <BootstrapperHeader currentStep={'install_mattermost'}/>
+              <BootstrapperHeader currentStep={'install_mattermost'} />
               <InstallOperatorsPage />
             </>
           } />
-          <Route path ="/:cloudProvider/create_mattermost_workspace" element={
+          <Route path="/:cloudProvider/create_mattermost_workspace" element={
             <>
-              <BootstrapperHeader currentStep={'create_mattermost_workspace'}/>
+              <BootstrapperHeader currentStep={'create_mattermost_workspace'} />
               <CreateWorkspacePage />
             </>
           } />
@@ -89,7 +106,7 @@ export default function JoyOrderDashboardTemplate() {
           } />
           <Route path="/" element={
             <>
-              <BootstrapperHeader currentStep={'setup'}/>
+              <BootstrapperHeader currentStep={'setup'} />
               <SetupPage />
             </>
           }>

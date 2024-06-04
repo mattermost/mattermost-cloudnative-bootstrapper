@@ -4,14 +4,15 @@ import (
 	"context"
 	"os"
 
-	"github.com/mattermost/mattermost-cloud-dash/internal/logger"
+	"github.com/mattermost/mattermost-cloudnative-bootstrapper/api"
+	"github.com/mattermost/mattermost-cloudnative-bootstrapper/internal/logger"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
 
 var rootCmd = &cobra.Command{
-	Use:   "cdash",
-	Short: "Mattermost Cloud Dash runs a dashboard for the Mattermost Cloud Provisioner",
+	Use:   "mcnb",
+	Short: "mcnb runs the Mattermost Cloud Bootstrapper server",
 	Run: func(cmd *cobra.Command, args []string) {
 		_ = serverCmd.RunE(cmd, args)
 	},
@@ -20,8 +21,7 @@ var rootCmd = &cobra.Command{
 }
 
 func init() {
-	_ = rootCmd.MarkFlagRequired("provisioner-url")
-	rootCmd.PersistentFlags().String("provisioner-url", "", "The URL of the provisioning server.")
+	serverCmd.PersistentFlags().String("state-file-path", api.DefaultStateFilePath(), "Path to the state file. Defaults to ~/.mcnb/state.json")
 	rootCmd.AddCommand(serverCmd)
 }
 

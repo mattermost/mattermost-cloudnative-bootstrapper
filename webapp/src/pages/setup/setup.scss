@@ -43,6 +43,18 @@
         .setup-card-content {
             padding: 20px;
 
+            .resume_or_start_over {
+                padding: 24px;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                margin-bottom: 20px;
+
+                >button:not(:last-child) {
+                    margin-bottom: 12px;
+                }
+            }
+
             .inputs label {
                 display: block;
                 margin-bottom: 5px;

@@ -1,10 +1,10 @@
 {
-  "name": "mattermost-operator-bootstrapper",
+  "name": "mattermost-cloudnative-bootstrapper",
   "version": "0.0.1",
   "description": "A desktop application for bootstrapping the Mattermost Operator and its dependencies, plus some optional utilities",
   "main": "main.js",
   "build": {
-    "appId": "com.mattermost.mattermost-operator-bootstrapper",
+    "appId": "com.mattermost.mattermost-cloudnative-bootstrapper",
     "files": [
       "webapp/build/**/*",
       "main.js",
@@ -37,14 +37,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/nickmisasi/mattermost-cloud-dashboard.git"
+    "url": "git+https://github.com/nickmisasi/mattermost-cloudnative-bootstrapperboard.git"
   },
   "author": "Nick Misasi",
   "license": "UNLICENSED",
   "bugs": {
-    "url": "https://github.com/nickmisasi/mattermost-cloud-dashboard/issues"
+    "url": "https://github.com/nickmisasi/mattermost-cloudnative-bootstrapperboard/issues"
   },
-  "homepage": "https://github.com/nickmisasi/mattermost-cloud-dashboard#readme",
+  "homepage": "https://github.com/nickmisasi/mattermost-cloudnative-bootstrapperboard#readme",
   "devDependencies": {
     "concurrently": "^8.2.2",
     "electron": "^29.0.1",

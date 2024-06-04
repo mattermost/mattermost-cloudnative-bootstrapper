@@ -3,7 +3,7 @@ package providers
 import (
 	"context"
 
-	"github.com/mattermost/mattermost-cloud-dash/model"
+	"github.com/mattermost/mattermost-cloudnative-bootstrapper/model"
 	helmclient "github.com/mittwald/go-helm-client"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"

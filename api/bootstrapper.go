@@ -13,8 +13,8 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	cnpgv1 "github.com/cloudnative-pg/cloudnative-pg/api/v1"
 	"github.com/gorilla/mux"
-	"github.com/mattermost/mattermost-cloud-dash/internal/logger"
-	"github.com/mattermost/mattermost-cloud-dash/model"
+	"github.com/mattermost/mattermost-cloudnative-bootstrapper/internal/logger"
+	"github.com/mattermost/mattermost-cloudnative-bootstrapper/model"
 	helmclient "github.com/mittwald/go-helm-client"
 	"helm.sh/helm/v3/pkg/release"
 	"helm.sh/helm/v3/pkg/repo"
@@ -82,6 +82,11 @@ func handleSetCredentials(c *Context, w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		json.NewEncoder(w).Encode(response)
 		return
+	}
+
+	err = UpdateStateCredentials(c.BootstrapperState, &credentials)
+	if err != nil {
+		logger.FromContext(c.Ctx).WithError(err).Error("Failed to update state credentials - settings will not be persisted")
 	}
 
 	w.WriteHeader(http.StatusCreated)

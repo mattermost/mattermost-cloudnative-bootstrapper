@@ -8,9 +8,9 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/mattermost/awat/model"
-	"github.com/mattermost/mattermost-cloud-dash/internal/logger"
-	"github.com/mattermost/mattermost-cloud-dash/providers"
 	provisioner "github.com/mattermost/mattermost-cloud/model"
+	"github.com/mattermost/mattermost-cloudnative-bootstrapper/internal/logger"
+	"github.com/mattermost/mattermost-cloudnative-bootstrapper/providers"
 	"github.com/sirupsen/logrus"
 )
 

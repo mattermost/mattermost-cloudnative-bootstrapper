@@ -1,5 +1,5 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
-import { CloudCredentials, Namespace, Release } from "../types/bootstrapper";
+import { CloudCredentials, Namespace, Release, State } from "../types/bootstrapper";
 import { RootState } from '../store';
 import { baseUrl } from './client';
 import { Cluster, Nodegroup } from '../types/Cluster';
@@ -7,8 +7,11 @@ import { Cluster, Nodegroup } from '../types/Cluster';
 export const bootstrapperApi = createApi({
     reducerPath: 'bootstrapperApi',
     baseQuery: fetchBaseQuery({ baseUrl: `${baseUrl}/api/v1` }),
-    tagTypes: ['Namespaces', 'HelmReleases', 'MattermostWorkspace', 'NginxOperator', 'CloudNativePGOperator', 'MattermostOperator', 'NginxOperator', 'CloudNativePGOperator', 'CloudCredentials'],
+    tagTypes: ['BootstrapperState', 'Namespaces', 'HelmReleases', 'MattermostWorkspace', 'NginxOperator', 'CloudNativePGOperator', 'MattermostOperator', 'NginxOperator', 'CloudNativePGOperator', 'CloudCredentials'],
     endpoints: (builder) => ({
+        getState: builder.query<State, void>({
+            query: () => '/state/hydrate',
+        }),
         setAndCheckCloudCredentials: builder.mutation({
             query: ({ credentials, cloudProvider }) => ({
                 url: `${cloudProvider}/set_credentials`,
@@ -17,18 +20,18 @@ export const bootstrapperApi = createApi({
             }),
         }),
         // TODO: pass through the region once the backend supports it
-        getPossibleClusters: builder.query<string[], {cloudProvider: string, region: string}>({
-            query: ({cloudProvider, region}) => `/${cloudProvider}/clusters`,
+        getPossibleClusters: builder.query<string[], { cloudProvider: string, region: string }>({
+            query: ({ cloudProvider, region }) => `/${cloudProvider}/clusters`,
         }),
-        getCluster: builder.query<Cluster, {clusterName: string, cloudProvider: string}>({
-            query: ({ clusterName, cloudProvider }: {clusterName: string, cloudProvider: string}) => `/${cloudProvider}/cluster/${clusterName}`,
+        getCluster: builder.query<Cluster, { clusterName: string, cloudProvider: string }>({
+            query: ({ clusterName, cloudProvider }: { clusterName: string, cloudProvider: string }) => `/${cloudProvider}/cluster/${clusterName}`,
         }),
-        getNodegroups: builder.query<Nodegroup[], {cloudProvider: string, clusterName: string}>({
+        getNodegroups: builder.query<Nodegroup[], { cloudProvider: string, clusterName: string }>({
             query: ({ cloudProvider, clusterName }) => `/${cloudProvider}/cluster/${clusterName}/nodegroups`,
         }),
         getKubeConfig: builder.query<string, { cloudProvider: string, clusterName: string }>({
             query: (({ clusterName, cloudProvider }) => {
-                return { 
+                return {
                     url: `/${cloudProvider}/cluster/${clusterName}/kubeconfig`,
                     responseHandler: (response) => response.text(),
                 }
@@ -41,20 +44,20 @@ export const bootstrapperApi = createApi({
             query: ({ cloudProvider, clusterName }) => `/${cloudProvider}/cluster/${clusterName}/installed_charts`,
             providesTags: ['HelmReleases']
         }),
-        deployMattermostOperator: builder.mutation<undefined, {cloudProvider: string, clusterName: string}>({
-            query: ({clusterName, cloudProvider}) => ({
+        deployMattermostOperator: builder.mutation<undefined, { cloudProvider: string, clusterName: string }>({
+            query: ({ clusterName, cloudProvider }) => ({
                 url: `/${cloudProvider}/cluster/${clusterName}/deploy_mattermost_operator`,
                 method: 'POST',
             }),
         }),
-        deployNginxOperator: builder.mutation<undefined, {cloudProvider: string, clusterName: string}>({
-            query: ({clusterName, cloudProvider}) => ({
+        deployNginxOperator: builder.mutation<undefined, { cloudProvider: string, clusterName: string }>({
+            query: ({ clusterName, cloudProvider }) => ({
                 url: `/${cloudProvider}/cluster/${clusterName}/deploy_nginx_operator`,
                 method: 'POST',
             }),
         }),
-        deployCloudNativePG: builder.mutation<undefined, {cloudProvider: string, clusterName: string}>({
-            query: ({clusterName, cloudProvider}) => ({
+        deployCloudNativePG: builder.mutation<undefined, { cloudProvider: string, clusterName: string }>({
+            query: ({ clusterName, cloudProvider }) => ({
                 url: `/${cloudProvider}/cluster/${clusterName}/deploy_pg_operator`,
                 method: 'POST',
             }),
@@ -76,4 +79,5 @@ export const {
     useGetClusterQuery,
     useGetNodegroupsQuery,
     useGetKubeConfigQuery,
+    useGetStateQuery,
 } = bootstrapperApi;
