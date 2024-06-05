@@ -92,12 +92,12 @@ func (a *AWSProvider) NewEKSClient(region ...string) *EKSClient {
 		awsCredentials := a.GetAWSCredentials()
 		defaultRegion := "us-east-1" // Default region
 
-		if len(region) > 0 {
-			defaultRegion = region[0]
-		}
-
 		if len(awsCredentials.Region) > 0 {
 			defaultRegion = awsCredentials.Region
+		}
+
+		if len(region) > 0 {
+			defaultRegion = region[0]
 		}
 
 		sess, err := session.NewSession(&aws.Config{
