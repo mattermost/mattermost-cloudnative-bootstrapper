@@ -131,7 +131,6 @@ func handleListRoles(c *Context, w http.ResponseWriter, r *http.Request) {
 // TODO: Support looking in different regions based on query param
 func handleListClusters(c *Context, w http.ResponseWriter, r *http.Request) {
 	region := r.URL.Query().Get("region")
-	logger.FromContext(c.Ctx).Info("Listing clusters in reagion ", region)
 	result, err := c.CloudProvider.ListClusters(c.Ctx, region)
 	if err != nil {
 		logger.FromContext(c.Ctx).WithError(err).Error("Failed to list clusters")

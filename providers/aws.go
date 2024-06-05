@@ -45,11 +45,13 @@ type EKSClient struct {
 var awsProviderInstance *AWSProvider
 var awsClientOnce sync.Once
 
-func GetAWSProvider() *AWSProvider {
+func GetAWSProvider(credentials *model.Credentials) *AWSProvider {
 	awsClientOnce.Do(func() {
-		credentials := &model.Credentials{
-			AccessKeyID:     os.Getenv("AWS_ACCESS_KEY_ID"),
-			SecretAccessKey: os.Getenv("AWS_SECRET_ACCESS_KEY"),
+		if credentials == nil || credentials.AccessKeyID == "" || credentials.SecretAccessKey == "" {
+			credentials = &model.Credentials{
+				AccessKeyID:     os.Getenv("AWS_ACCESS_KEY_ID"),
+				SecretAccessKey: os.Getenv("AWS_SECRET_ACCESS_KEY"),
+			}
 		}
 		awsProviderInstance = &AWSProvider{
 			Credentials:     credentials,
@@ -93,6 +95,11 @@ func (a *AWSProvider) NewEKSClient(region ...string) *EKSClient {
 		if len(region) > 0 {
 			defaultRegion = region[0]
 		}
+
+		if len(awsCredentials.Region) > 0 {
+			defaultRegion = awsCredentials.Region
+		}
+
 		sess, err := session.NewSession(&aws.Config{
 			Credentials: credentials.NewStaticCredentials(awsCredentials.AccessKeyID, awsCredentials.SecretAccessKey, ""),
 			Region:      aws.String(defaultRegion), // Specify the appropriate AWS region
