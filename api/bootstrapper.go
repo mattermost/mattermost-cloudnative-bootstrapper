@@ -128,7 +128,6 @@ func handleListRoles(c *Context, w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(roles)
 }
 
-// TODO: Support looking in different regions based on query param
 func handleListClusters(c *Context, w http.ResponseWriter, r *http.Request) {
 	region := r.URL.Query().Get("region")
 	result, err := c.CloudProvider.ListClusters(c.Ctx, region)
