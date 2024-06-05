@@ -1,13 +1,11 @@
-import { Select, Option } from '@mui/joy';
 import React from 'react';
+import { Select, Option } from '@mui/joy';
 import { CSSTransition } from 'react-transition-group';
-
 
 type Props = {
     cloudProvider?: string;
     onChange: (value: string) => void;
 }
-
 
 export default function SelectKubernetesOption({ cloudProvider, onChange}: Props) {
     return (
@@ -16,7 +14,7 @@ export default function SelectKubernetesOption({ cloudProvider, onChange}: Props
                 <label>Select Kubernetes Option</label>
                 <Select onChange={(event, newValue) => onChange(newValue as string)} size="sm" placeholder="Kubernetes Option">
                     <Option value="existing">Use Existing</Option>
-                    <Option value="new">Create New</Option>
+                    {/* TODO: Uncomment when we fully support creation <Option value="new">Create New</Option> */}
                 </Select>
             </div>
         </CSSTransition>

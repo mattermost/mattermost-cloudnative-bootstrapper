@@ -56,24 +56,6 @@ export const allUtilities: KubeUtility[] = [
         isChecked: false,
         deploymentRequestState: 'idle',
     },
-    {
-        displayName: 'Mattermost Provisioning Server',
-        key: 'provisioner',
-        operatorLogoUrl: ProvisionerLogo,
-        operatorDescription: 'The Mattermost Provisioning Server is used to manage Mattermost workspaces',
-        isRequired: false,
-        isChecked: false,
-        deploymentRequestState: 'idle',
-    },
-    {
-        displayName: 'Mattermost Mariner Dashboard',
-        key: 'mariner',
-        operatorLogoUrl: MarinerLogo,
-        operatorDescription: 'The Mattermost Mariner Dashboard provides a UI for managing Mattermost workspaces',
-        isRequired: false,
-        isChecked: false,
-        deploymentRequestState: 'idle',
-    }
 ];
 
 export default function InstallOperatorsPage() {
@@ -125,7 +107,7 @@ export default function InstallOperatorsPage() {
             <div className="leftPanel">
                 <h1 className="title">Available Operators & Utilities</h1>
                 <div className="description">
-                    <p>We're ready to install the Mattermost Operator (required). Once you've installed the operator, you can also choose to deploy extra utilities like Nginx's operator (for ingress support), the Mattermost provisioning server, and Mattermost's Mariner dashboard</p>
+                    <p>We're ready to install the Mattermost Operator (required). Once you've installed the operator, you can also choose to deploy extra utilities like Nginx's operator (for ingress support), Or CloudNative Postgres (for database creation). If you plan to use RDS, you can skip CNPG.</p>
                 </div>
             </div>
             <div className="rightPanel">
@@ -155,6 +137,7 @@ export default function InstallOperatorsPage() {
                                             isRequired={utility.isRequired}
                                             isChecked={utility.isChecked}
                                             deploymentRequestState={utility.deploymentRequestState}
+                                            isLoading={isReleasesLoading || isReleasesFetching}
                                         />
                                     )
                                 })
@@ -165,7 +148,7 @@ export default function InstallOperatorsPage() {
                             {!isReleasesLoading && isReleasesSuccess && !isReleasesFetching && <>
                                 <Button onClick={() => setIsDeploying(true)} disabled={deploymentFinished || numSelectedUtilities === 0} size="lg" color="primary">Deploy {numSelectedUtilities > 0 && <>{numSelectedUtilities} {numSelectedUtilities > 1 ? 'Utilities' : 'Utility'} </>}</Button>
                                 {deploymentFinished && <div className="deployment-finished">Utilities installed successfully!</div>}
-                                {requiredUtilitiesDeployed && <Button onClick={() => navigate(`/create_mattermost_workspace?clusterName=${cluster?.Name}&type=aws`)} size="lg" color="primary">Create Mattermost Workspace</Button>}
+                                {requiredUtilitiesDeployed && <Button onClick={() => navigate(`/${cloudProvider}/create_mattermost_workspace?clusterName=${cluster?.Name}&type=aws`)} size="lg" color="primary">Create Workspace</Button>}
                             </>}
                         </div>
                     </div>

@@ -12,6 +12,13 @@ export const bootstrapperApi = createApi({
         getState: builder.query<State, void>({
             query: () => '/state/hydrate',
         }),
+        setRegion: builder.mutation<void, { region: string, cloudProvider: string }>({
+            query: ({ region, cloudProvider }) => ({
+                url: `/${cloudProvider}/region`,
+                method: 'PUT',
+                body: { region },
+            }),
+        }),
         setAndCheckCloudCredentials: builder.mutation({
             query: ({ credentials, cloudProvider }) => ({
                 url: `${cloudProvider}/set_credentials`,
@@ -21,7 +28,7 @@ export const bootstrapperApi = createApi({
         }),
         // TODO: pass through the region once the backend supports it
         getPossibleClusters: builder.query<string[], { cloudProvider: string, region: string }>({
-            query: ({ cloudProvider, region }) => `/${cloudProvider}/clusters`,
+            query: ({ cloudProvider, region }) => `/${cloudProvider}/clusters?region=${region}`,
         }),
         getCluster: builder.query<Cluster, { clusterName: string, cloudProvider: string }>({
             query: ({ clusterName, cloudProvider }: { clusterName: string, cloudProvider: string }) => `/${cloudProvider}/cluster/${clusterName}`,
@@ -80,4 +87,5 @@ export const {
     useGetNodegroupsQuery,
     useGetKubeConfigQuery,
     useGetStateQuery,
+    useSetRegionMutation,
 } = bootstrapperApi;

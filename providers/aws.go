@@ -71,21 +71,31 @@ func (a *AWSProvider) GetAWSCredentials() model.Credentials {
 	return *a.Credentials
 }
 
-func (a *AWSProvider) NewEKSClient() *EKSClient {
+func (a *AWSProvider) NewEKSClient(region ...string) *EKSClient {
 	var eksClient *eks.EKS
 	once := &sync.Once{}
 	lock := &sync.Mutex{}
 
 	if a.EKSClient != nil {
-		once = a.EKSClient.once
-		lock = a.EKSClient.lock
+		// If no region was passed, or, if a region was passed and it matches the region of the existing EKS client
+		// retain the lock/once values from the existing EKS client
+		// Otherwise, we'll need to re-initialize the EKSClient with a new session for the new region.
+		if len(region) == 0 || (len(region) > 0 && *a.EKSClient.Client.Config.Region == region[0] || region[0] == "") {
+			once = a.EKSClient.once
+			lock = a.EKSClient.lock
+		}
 	}
 
 	once.Do(func() {
 		awsCredentials := a.GetAWSCredentials()
+		defaultRegion := "us-east-1" // Default region
+
+		if len(region) > 0 {
+			defaultRegion = region[0]
+		}
 		sess, err := session.NewSession(&aws.Config{
 			Credentials: credentials.NewStaticCredentials(awsCredentials.AccessKeyID, awsCredentials.SecretAccessKey, ""),
-			Region:      aws.String("us-east-1"), // Specify the appropriate AWS region
+			Region:      aws.String(defaultRegion), // Specify the appropriate AWS region
 		})
 		if err != nil {
 			panic(fmt.Errorf("failed to create session: %v", err))
@@ -107,6 +117,11 @@ func (a *AWSProvider) SetCredentials(c context.Context, credentials *model.Crede
 	a.credentialsLock.Unlock()
 	a.NewEKSClient()
 
+	return nil
+}
+
+func (a *AWSProvider) SetRegion(c context.Context, region string) error {
+	a.NewEKSClient(region)
 	return nil
 }
 
@@ -172,8 +187,8 @@ func (a *AWSProvider) ListRoles(c context.Context) ([]*model.SupportedRolesRespo
 	return eksSupportedRolesToSupportedRoleResponse(eksSupportedRoles), nil
 }
 
-func (a *AWSProvider) ListClusters(c context.Context) ([]*string, error) {
-	eksClient := a.NewEKSClient().Client
+func (a *AWSProvider) ListClusters(c context.Context, region string) ([]*string, error) {
+	eksClient := a.NewEKSClient(region).Client
 	result, err := eksClient.ListClusters(&eks.ListClustersInput{})
 	if err != nil {
 		return nil, err

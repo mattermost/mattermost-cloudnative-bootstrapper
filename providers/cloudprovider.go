@@ -13,9 +13,10 @@ import (
 // error handling and response generation in the API handlers, and to make it easier to handle errors in the UI
 type CloudProvider interface {
 	SetCredentials(c context.Context, credentials *model.Credentials) error
+	SetRegion(c context.Context, region string) error
 	ValidateCredentials(creds *model.Credentials) (bool, error)
 	ListRoles(c context.Context) ([]*model.SupportedRolesResponse, error)
-	ListClusters(c context.Context) ([]*string, error)
+	ListClusters(c context.Context, region string) ([]*string, error)
 	CreateCluster(c context.Context, create *model.CreateClusterRequest) (*model.Cluster, error)
 	GetCluster(c context.Context, name string) (*model.Cluster, error)
 	GetNodegroups(c context.Context, clusterName string) ([]*model.ClusterNodegroup, error)

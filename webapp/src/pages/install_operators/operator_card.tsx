@@ -7,7 +7,7 @@ import Checkbox from '@mui/joy/Checkbox';
 import Box from '@mui/joy/Box';
 
 import './operator_card.scss';
-import { Chip } from '@mui/joy';
+import { Chip, CircularProgress } from '@mui/joy';
 
 export type OperatorCardProps = {
     displayName: string;
@@ -18,9 +18,10 @@ export type OperatorCardProps = {
     isRequired: boolean;
     isChecked: boolean;
     deploymentRequestState: 'idle' | 'loading' | 'failed' | 'succeeded';
+    isLoading: boolean;
 }
 
-const OperatorCard = ({ displayName, operatorLogoUrl, operatorDescription, onClickCheckBox, isRequired, key, isChecked, deploymentRequestState }: OperatorCardProps) => {
+const OperatorCard = ({ displayName, operatorLogoUrl, operatorDescription, onClickCheckBox, isRequired, key, isChecked, deploymentRequestState, isLoading }: OperatorCardProps) => {
 
     const handleCheckboxChange = () => {
         if (isRequired || isDeployed) {
@@ -30,6 +31,23 @@ const OperatorCard = ({ displayName, operatorLogoUrl, operatorDescription, onCli
     };
 
     const isDeployed = isChecked && deploymentRequestState === 'succeeded';
+
+
+    const getChips = () => {
+        let chips = [];
+        if (isRequired) {
+            chips.push(<Chip variant="solid" color="primary" key="required">REQUIRED</Chip>);
+        }
+        if (isDeployed) {
+            chips.push(<Chip variant="solid" color="success" key="deployed">DEPLOYED</Chip>);
+        }
+
+        if (isLoading) {
+            return [(<CircularProgress size="sm" />)];
+        }
+
+        return chips;
+    }
 
     return (
         <Card
@@ -47,19 +65,19 @@ const OperatorCard = ({ displayName, operatorLogoUrl, operatorDescription, onCli
                 <Box sx={{ display: 'flex', alignItems: 'center', p: 1 }}>
                     <img src={operatorLogoUrl} alt={displayName} style={{ height: 40, marginRight: '12px' }} />
                     <Box>
-                        <Typography fontWeight="md">{displayName} {isRequired ? <Chip variant="solid" color="primary" >REQUIRED</Chip> : null} {isDeployed ? <Chip variant="solid" color="success">DEPLOYED</Chip> : null}</Typography>
+                        <Typography fontWeight="md">{displayName} {getChips().map((chip) => chip)}</Typography>
                         <Typography>{operatorDescription}</Typography>
                     </Box>
                 </Box>
             </CardOverflow>
             <CardContent sx={{ textAlign: 'center', py: '8px' }}>
-                <Checkbox
+                {isLoading ? null : <Checkbox
                     checked={isChecked}
                     onChange={handleCheckboxChange}
                     variant="soft"
                     color="primary"
                     disabled={isDeployed}
-                />
+                />}
             </CardContent>
         </Card>
     );

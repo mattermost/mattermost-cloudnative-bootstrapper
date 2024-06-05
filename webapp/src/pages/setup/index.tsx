@@ -21,12 +21,8 @@ export default function SetupPage() {
     const credentials = useSelector((state: RootState) => state.bootstrapper.cloudCredentials)
     const [setCredentials, result] = useSetAndCheckCloudCredentialsMutation();
     const lastPageLocalStorage = localStorage.getItem('lastVisitedPage');
-
-
-
     const [lastVisitedPage, setShowLastVisitedPage] = useState(lastPageLocalStorage);
     const showLastVisitedPage = lastVisitedPage && lastVisitedPage !== '/' ? true : false;
-
 
     const handleSubmit = async () => {
         setCredentials({ credentials, cloudProvider });
@@ -59,8 +55,8 @@ export default function SetupPage() {
                                     <label>Select Cloud Provider</label>
                                     <Select onChange={(event, newValue) => dispatch(setCloudProvider(newValue as string))} size="sm" placeholder="Cloud Provider">
                                         <Option value="aws">AWS</Option>
-                                        <Option value="gcp">GCP</Option>
-                                        <Option value="azure">Azure</Option>
+                                        {/* <Option value="gcp">GCP</Option> */}
+                                        {/* <Option value="azure">Azure</Option> */}
                                         <Option value="custom">Custom</Option>
                                     </Select>
                                     <SelectKubernetesOption cloudProvider={cloudProvider} onChange={(value) => dispatch(setKubernetesOption(value))} />

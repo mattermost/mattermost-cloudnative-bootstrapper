@@ -10,13 +10,14 @@ import { RootState } from '../../store';
 import './aws_page.scss';
 import { useMatch, useNavigate } from 'react-router-dom';
 import ClusterSelectDropdown from './cluster_select_dropdown';
-import { useGetClusterQuery, useGetPossibleClustersQuery } from '../../client/bootstrapperApi';
+import { useGetClusterQuery, useGetPossibleClustersQuery, useSetRegionMutation } from '../../client/bootstrapperApi';
 import RTKConnectedLoadingSpinner from '../../components/common/rtk_connected_loading_spinner';
 
 export default function ExistingAWSPage() {
     const dispatch = useDispatch();
     const navigate = useNavigate();
     const cloudProvider = useMatch('/:cloudProvider/existing')?.params.cloudProvider!;
+    const [updateRegion,] = useSetRegionMutation();
 
     const clusterName = useSelector((state: RootState) => state.aws.clusterName);
     const region = useSelector((state: RootState) => state.aws.region);
@@ -28,6 +29,12 @@ export default function ExistingAWSPage() {
     const {isLoading: clusterLoading, isError: clusterError, isSuccess: clusterSuccess} = useGetClusterQuery({cloudProvider, clusterName}, {
         skip: clusterName === '',
     });
+
+
+    const onClickContinue = () => {
+        updateRegion({region, cloudProvider});
+        navigate(`/${cloudProvider}/cluster/summary?clusterName=${clusterName}`);
+    }
 
     return (
         <div className="AWSPage">
@@ -51,10 +58,10 @@ export default function ExistingAWSPage() {
                                 ))}
                             </Select>
                             <ClusterSelectDropdown onChange={(newValue) => {dispatch(setEksClusterName(newValue) as any)}} clusters={possibleClusters || []}/>
-                            <RTKConnectedLoadingSpinner isError={isError || clusterError} isSuccess={isSuccess && clusterSuccess} isLoading={isLoading || clusterLoading} />
+                            <RTKConnectedLoadingSpinner isError={isError || clusterError || (isSuccess && !possibleClusters.length)} isErrorText={(isSuccess && !possibleClusters.length) ? 'No clusters found. Try another region?': undefined} isSuccess={isSuccess && clusterSuccess} isLoading={isLoading || clusterLoading} />
                             <div className="button-row">
-                                <Button  size="md" color="primary" variant="plain" onClick={() => {navigate(`/aws/new`)}}>Create New Instead</Button>
-                                {clusterName && <Button size="lg" color="primary" onClick={() => {navigate(`/${cloudProvider}/cluster/summary?clusterName=${clusterName}`)}}>Next Step</Button>}
+                                {/* TODO: Uncomment when we fully support creating new <Button  size="md" color="primary" variant="plain" onClick={() => {navigate(`/aws/new`)}}>Create New Instead</Button> */}
+                                {clusterName && <Button size="lg" color="primary" onClick={onClickContinue}>Next Step</Button>}
                             </div>
                         </div>
                     </div>
