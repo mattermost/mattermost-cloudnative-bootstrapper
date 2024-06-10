@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useDispatch } from 'react-redux';
 import { useSelector } from 'react-redux';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useMatch, useNavigate, useSearchParams } from 'react-router-dom';
 import { RootState } from '../../store';
 import { useDeleteInstallationMutation, useGetClustersQuery, useGetMattermostInstallationsForClusterQuery, usePatchInstallationMutation } from '../../client/dashboardApi';
 import ClusterSelectDropdown from '../aws/cluster_select_dropdown';
@@ -17,6 +17,7 @@ export default function InstallationDashboard() {
     const dispatch = useDispatch();
     const navigate = useNavigate();
     const [searchParams,] = useSearchParams();
+    const cloudProvider = useMatch('/:cloudProvider/dashboard')?.params.cloudProvider!;
     const selectedClusterName = useSelector((state: RootState) => state.dashboard.selectedClusterName);
     const installationToEdit = useSelector((state: RootState) => state.dashboard.installationToEdit);
     const { data: installations, isLoading, error: installationsError, refetch: refetchInstallations } = useGetMattermostInstallationsForClusterQuery({ cloudProvider: 'aws', clusterName: selectedClusterName! }, {
@@ -57,7 +58,6 @@ export default function InstallationDashboard() {
         }) as any);
     }
 
-
     const handleEditModalOnChange = (installation: PatchMattermostWorkspaceRequest) => {
         dispatch(setInstallationToEdit(installation) as any);
     }
@@ -75,7 +75,7 @@ export default function InstallationDashboard() {
     const installationsSection = (installs: Mattermost[]) => {
         return (
             <div className="installation-cards">{installs.map((install) => <InstallationCard installation={install} onClick={() => { }} onClickEdit={handleEditInstallation} onClickDelete={(installationName) => { deleteInstallation({ clusterName: selectedClusterName!, cloudProvider: 'aws', installationName }) }} />)}
-                <CreateInstallationCard onClick={() => navigate(`/create_mattermost_workspace?clusterName=${selectedClusterName}`)} />
+                <CreateInstallationCard onClick={() => navigate(`/${cloudProvider}/create_mattermost_workspace?clusterName=${selectedClusterName}`)} />
             </div>
         )
     }

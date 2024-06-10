@@ -50,20 +50,6 @@ export default function InstallOperatorsCarousel({ onSuccess, onError }: Props) 
             icon: <img src={CloudNativePGLogo} alt="CloudNative PG" style={{ height: '29px', marginRight: '12px' }} />,
             mutator: cloudNativePGMutator,
         },
-        'provisioner': {
-            title: 'Mattermost Provisioning Server',
-            description: 'The Mattermost Provisioning Server is used to manage Mattermost workspaces. Before we can deploy, we\'ll need more information.',
-            component: <></>,
-            icon: <img src={ProvisionerLogo} alt="Mattermost Provisioning Server" style={{ height: '29px', marginRight: '12px' }} />,
-            mutator: null,
-        },
-        'mariner': {
-            title: 'Mattermost Mariner Dashboard',
-            description: 'The Mattermost Mariner Dashboard provides a UI for managing Mattermost workspaces. Before we can deploy, we\'ll need more information.',
-            component: <></>,
-            icon: <img src={MarinerLogo} alt="Mattermost Mariner Dashboard" style={{ height: '29px', marginRight: '12px' }} />,
-            mutator: null,
-        },
     };
 
     const utilityInProgress = utilities[carouselIndex];

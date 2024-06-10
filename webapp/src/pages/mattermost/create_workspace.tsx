@@ -61,7 +61,7 @@ export default function CreateWorkspacePage() {
         return (
             <>
                 <h3>Workspace created successfully!</h3>
-                <Button size="lg" color="primary" onClick={() => navigate(`/dashboard?clusterName=${cluster?.Name!}`)}>View In Dashboard</Button>
+                <Button size="lg" color="primary" onClick={() => navigate(`/${cloudProvider}/dashboard?clusterName=${cluster?.Name!}`)}>View In Dashboard</Button>
             </>
         )
     }

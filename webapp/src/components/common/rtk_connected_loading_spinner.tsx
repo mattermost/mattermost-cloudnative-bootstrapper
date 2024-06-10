@@ -9,7 +9,9 @@ type Props = {
     isLoading: boolean;
     isFetching?: boolean;
     isSuccess: boolean;
+    isSuccessText?: string;
     isError: boolean;
+    isErrorText?: string;
 }
 
 export default function RTKConnectedLoadingSpinner(props: Props) {
@@ -20,10 +22,12 @@ export default function RTKConnectedLoadingSpinner(props: Props) {
         content = <CircularProgress />;
         className='loading';
     } else if (props.isSuccess) {
-        content = <div className="info"><CheckIcon fontSize='small' /> Connected successfully!</div>;
+        const success = props.isSuccessText || 'Connected successfully!';
+        content = <div className="info"><CheckIcon fontSize='small' /> {success}</div>;
         className='succeeded';
     } else if (props.isError) {
-        content = <div className="info"><ErrorOutline /> An error has occurred</div>;
+        const error = props.isErrorText || 'An error has occurred';
+        content = <div className="info"><ErrorOutline /> {error}</div>;
         className='failed';
     }
 

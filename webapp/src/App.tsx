@@ -6,14 +6,11 @@ import {
   THEME_ID as MATERIAL_THEME_ID,
 } from '@mui/material/styles';
 import CssBaseline from '@mui/joy/CssBaseline';
-import { Route, Routes, useLocation, useNavigate } from 'react-router-dom';
+import { Route, Routes, useLocation } from 'react-router-dom';
 import useScript from './useScript';
 
 import SetupPage from './pages/setup';
 import BootstrapperHeader from './components/BootstrapperHeader';
-import AWSPage from './pages/aws';
-import CreatingClusterLoadingScreen from './pages/aws/creating_cluster';
-import ProvisionClusterPage from './pages/aws/provision_cluster';
 import ClusterSummaryPage from './pages/cluster/cluster_summary';
 import InstallOperatorsPage from './pages/install_operators/install_operators';
 import ExistingAWSPage from './pages/aws/choose_existing';
@@ -59,16 +56,19 @@ export default function JoyOrderDashboardTemplate() {
       <JoyCssVarsProvider disableTransitionOnChange>
         <CssBaseline />
         <Routes>
-          <Route path="/aws/new" element={
-            <>
-              <BootstrapperHeader currentStep={'create_eks_cluster'} />
-              <AWSPage />
-            </>
-          } />
           <Route path="/:cloudProvider/existing" element={
             <>
               <BootstrapperHeader currentStep={'create_eks_cluster'} />
               <ExistingAWSPage />
+            </>
+          } />
+          {/* 
+            TODO: Uncomment when we intend to fully support
+          
+          <Route path="/aws/new" element={
+            <>
+              <BootstrapperHeader currentStep={'create_eks_cluster'} />
+              <AWSPage />
             </>
           } />
           <Route path="/aws/creating_cluster" element={
@@ -82,7 +82,7 @@ export default function JoyOrderDashboardTemplate() {
               <BootstrapperHeader currentStep={'provision_cluster'} />
               <ProvisionClusterPage />
             </>
-          } />
+          } /> */}
           <Route path="/:cloudProvider/cluster/summary" element={
             <>
               <BootstrapperHeader currentStep={'cluster_summary'} />
@@ -101,7 +101,7 @@ export default function JoyOrderDashboardTemplate() {
               <CreateWorkspacePage />
             </>
           } />
-          <Route path="/dashboard" element={
+          <Route path="/:cloudProvider/dashboard" element={
             <InstallationDashboard />
           } />
           <Route path="/" element={

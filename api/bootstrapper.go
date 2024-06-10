@@ -31,6 +31,7 @@ func initBootstrapper(apiRouter *mux.Router, context *Context) {
 
 	bootstrapperRouter := apiRouter.PathPrefix("/{cloudProvider:[A-Za-z0-9_-]+}").Subrouter()
 	bootstrapperRouter.Handle("/set_credentials", addContext(handleSetCredentials)).Methods(http.MethodPost)
+	bootstrapperRouter.Handle("/region", addContext(handleSetRegion)).Methods(http.MethodPut)
 	bootstrapperRouter.Handle("/roles", addContext(handleListRoles)).Methods(http.MethodGet)
 	bootstrapperRouter.Handle("/clusters", addContext(handleListClusters)).Methods(http.MethodGet)
 	bootstrapperRouter.Handle("/cluster", addContext(handleCreateCluster)).Methods(http.MethodPost)
@@ -93,6 +94,29 @@ func handleSetCredentials(c *Context, w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(response)
 }
 
+func handleSetRegion(c *Context, w http.ResponseWriter, r *http.Request) {
+	var updateRegion model.UpdateRegionRequest
+	json.NewDecoder(r.Body).Decode(&updateRegion)
+
+	credentials := c.BootstrapperState.Credentials
+
+	credentials.Region = updateRegion.Region
+
+	err := c.CloudProvider.SetCredentials(c.Ctx, credentials)
+	if err != nil {
+		logger.FromContext(c.Ctx).WithError(err).Error("Failed to set region")
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	err = UpdateStateCredentials(c.BootstrapperState, credentials)
+	if err != nil {
+		logger.FromContext(c.Ctx).WithError(err).Error("Failed to update state credentials - settings will not be persisted")
+	}
+
+	w.WriteHeader(http.StatusCreated)
+}
+
 func handleListRoles(c *Context, w http.ResponseWriter, r *http.Request) {
 	roles, err := c.CloudProvider.ListRoles(c.Ctx)
 	if err != nil {
@@ -104,10 +128,9 @@ func handleListRoles(c *Context, w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(roles)
 }
 
-// TODO: Support looking in different regions based on query param
 func handleListClusters(c *Context, w http.ResponseWriter, r *http.Request) {
-	result, err := c.CloudProvider.ListClusters(c.Ctx)
-
+	region := r.URL.Query().Get("region")
+	result, err := c.CloudProvider.ListClusters(c.Ctx, region)
 	if err != nil {
 		logger.FromContext(c.Ctx).WithError(err).Error("Failed to list clusters")
 		w.WriteHeader(http.StatusInternalServerError)

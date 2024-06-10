@@ -6,9 +6,8 @@ import reportWebVitals from './reportWebVitals';
 import '@fontsource/inter';
 import { store } from './store'
 import { Provider } from 'react-redux';
-import { BrowserRouter, HashRouter } from 'react-router-dom'
+import { BrowserRouter } from 'react-router-dom'
 
-console.log("LOADING");
 const root = ReactDOM.createRoot(
   document.getElementById('root') as HTMLElement
 );
