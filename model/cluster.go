@@ -19,17 +19,18 @@ const (
 // TODO: Add conversion methods to go from aws/gcp/azure structs to this struct
 // TODO: Add fields to Cluster struct, ensure it's used for returns in ListClusters, GetCluster, CreateCluster, etc.
 type Cluster struct {
-	Arn                *string            `json:"Arn,omitempty"`
-	ClientRequestToken *string            `json:"ClientRequestToken,omitempty"`
-	CreatedAt          *time.Time         `json:"CreatedAt,omitempty"`
-	Endpoint           *string            `json:"Endpoint,omitempty"`
-	Id                 *string            `json:"Id,omitempty"`
-	Name               *string            `json:"Name,omitempty"`
-	PlatformVersion    *string            `json:"PlatformVersion,omitempty"`
-	RoleArn            *string            `json:"RoleArn,omitempty"`
-	Status             ClusterStatus      `json:"Status,omitempty"`
-	Tags               map[string]*string `json:"Tags,omitempty"`
-	Version            *string            `json:"Version,omitempty"`
+	Arn                *string             `json:"Arn,omitempty"`
+	ClientRequestToken *string             `json:"ClientRequestToken,omitempty"`
+	CreatedAt          *time.Time          `json:"CreatedAt,omitempty"`
+	Endpoint           *string             `json:"Endpoint,omitempty"`
+	Id                 *string             `json:"Id,omitempty"`
+	Name               *string             `json:"Name,omitempty"`
+	PlatformVersion    *string             `json:"PlatformVersion,omitempty"`
+	RoleArn            *string             `json:"RoleArn,omitempty"`
+	Status             ClusterStatus       `json:"Status,omitempty"`
+	Tags               map[string]*string  `json:"Tags,omitempty"`
+	Version            *string             `json:"Version,omitempty"`
+	ClusterNodegroups  []*ClusterNodegroup `json:"nodeGroups"`
 }
 
 // TODO: Add conversion methods to go from aws/gcp/azure structs to this struct
@@ -56,7 +57,8 @@ type Credentials struct {
 	AccessKeyID     string `json:"accessKeyID"`
 	SecretAccessKey string `json:"accessKeySecret"`
 	Region          string `json:"region"`
-	Kubecfg         string `json:"kubecfg"`
+	Kubecfg         string `json:"kubeconfig"`
+	KubecfgType     string `json:"kubeconfigType"`
 }
 
 type UpdateRegionRequest struct {

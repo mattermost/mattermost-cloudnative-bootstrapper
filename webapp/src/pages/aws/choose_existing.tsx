@@ -23,7 +23,7 @@ export default function ExistingAWSPage() {
     const region = useSelector((state: RootState) => state.aws.region);
 
     const {data: possibleClusters, isLoading, isError, isSuccess} = useGetPossibleClustersQuery({cloudProvider, region}, {
-        skip: cloudProvider === '' || !region,
+        skip: cloudProvider === '' || (cloudProvider !== 'custom' && !region),
     });
 
     const {isLoading: clusterLoading, isError: clusterError, isSuccess: clusterSuccess} = useGetClusterQuery({cloudProvider, clusterName}, {
@@ -32,7 +32,9 @@ export default function ExistingAWSPage() {
 
 
     const onClickContinue = () => {
-        updateRegion({region, cloudProvider});
+        if (cloudProvider !== 'custom' && !region) {
+            updateRegion({region, cloudProvider});
+        }
         navigate(`/${cloudProvider}/cluster/summary?clusterName=${clusterName}`);
     }
 
@@ -51,14 +53,18 @@ export default function ExistingAWSPage() {
                             <h3>Choose Existing Cluster</h3>
                         </div>
                         <div className="inputs">
-                            <label>AWS Region</label>
-                            <Select onChange={(event, newValue) => { dispatch(setRegion(newValue)) }} size="sm" placeholder="AWS Region">
-                                {Object.values(AWSRegions).map(region => (
-                                    <Option value={region}>{region}</Option>
-                                ))}
-                            </Select>
-                            <ClusterSelectDropdown onChange={(newValue) => {dispatch(setEksClusterName(newValue) as any)}} clusters={possibleClusters || []}/>
-                            <RTKConnectedLoadingSpinner isError={isError || clusterError || (isSuccess && !possibleClusters.length)} isErrorText={(isSuccess && !possibleClusters.length) ? 'No clusters found. Try another region?': undefined} isSuccess={isSuccess && clusterSuccess} isLoading={isLoading || clusterLoading} />
+                            {cloudProvider !== 'custom' &&
+                                <>
+                                    <label>AWS Region</label>
+                                    <Select onChange={(event, newValue) => { dispatch(setRegion(newValue)) }} size="sm" placeholder="AWS Region">
+                                        {Object.values(AWSRegions).map(region => (
+                                            <Option value={region}>{region}</Option>
+                                        ))}
+                                    </Select>
+                                </>
+                            }
+                            <ClusterSelectDropdown onChange={(newValue) => { dispatch(setEksClusterName(newValue) as any) }} clusters={possibleClusters || []} />
+                            <RTKConnectedLoadingSpinner isError={isError || clusterError || (isSuccess && !possibleClusters.length)} isErrorText={(isSuccess && !possibleClusters.length) ? 'No clusters found. Try another region?' : undefined} isSuccess={isSuccess && clusterSuccess} isLoading={isLoading || clusterLoading} />
                             <div className="button-row">
                                 {/* TODO: Uncomment when we fully support creating new <Button  size="md" color="primary" variant="plain" onClick={() => {navigate(`/aws/new`)}}>Create New Instead</Button> */}
                                 {clusterName && <Button size="lg" color="primary" onClick={onClickContinue}>Next Step</Button>}

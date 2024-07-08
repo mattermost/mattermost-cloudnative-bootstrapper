@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import './setup.scss';
 import { Button, Option, Select } from '@mui/joy';
 import SelectKubernetesOption from './select_kubernetes_option';
@@ -24,8 +24,26 @@ export default function SetupPage() {
     const [lastVisitedPage, setShowLastVisitedPage] = useState(lastPageLocalStorage);
     const showLastVisitedPage = lastVisitedPage && lastVisitedPage !== '/' ? true : false;
 
+    useEffect(() => {
+        if (cloudProvider === 'custom') {
+            dispatch(setKubernetesOption('existing'));
+        } else {
+            dispatch(setKubernetesOption(''));
+        }
+    }, [cloudProvider]);
+
     const handleSubmit = async () => {
+        console.log(credentials, cloudProvider);
         setCredentials({ credentials, cloudProvider });
+    }
+
+    const formComplete = () => {
+        const base = !!cloudProvider && !!kubernetesOption && !result.isSuccess;
+        if (cloudProvider !== 'custom') {
+            return base && !!credentials.accessKeyId && !!credentials.accessKeySecret;
+        } else {
+            return base && !!credentials.kubeconfig;
+        }
     }
 
     return (
@@ -61,7 +79,7 @@ export default function SetupPage() {
                                     </Select>
                                     <SelectKubernetesOption cloudProvider={cloudProvider} onChange={(value) => dispatch(setKubernetesOption(value))} />
                                     <GetCredentials cloudProvider={cloudProvider} kubernetesOption={kubernetesOption} onCredentialsChange={(credentials) => dispatch(setCloudCredentials(credentials))} />
-                                    {cloudProvider && kubernetesOption && credentials.accessKeyId && credentials.accessKeySecret && !result.isSuccess && <Button onClick={handleSubmit} size="lg" color="primary">Submit</Button>}
+                                    {formComplete() && <Button onClick={handleSubmit} size="lg" color="primary">Submit</Button>}
                                     <RTKConnectedLoadingSpinner isLoading={result.isLoading} isSuccess={result.isSuccess} isError={result.isError} />
                                     {result.isSuccess && <Button size="lg" color="primary" onClick={() => { navigate(`/${cloudProvider}/${kubernetesOption}`) }}>Next Step</Button>}
                                 </>

@@ -43,6 +43,8 @@ func (h contextHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	switch context.CloudProviderName {
 	case "aws":
 		provider = providers.GetAWSProvider(context.BootstrapperState.Credentials)
+	case "custom":
+		provider = providers.GetCustomProvider(context.BootstrapperState.Credentials)
 	// case "gcp":
 	//     provider = &GCPCloudProvider{}
 	// ... other cases

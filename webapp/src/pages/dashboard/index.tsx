@@ -20,14 +20,14 @@ export default function InstallationDashboard() {
     const cloudProvider = useMatch('/:cloudProvider/dashboard')?.params.cloudProvider!;
     const selectedClusterName = useSelector((state: RootState) => state.dashboard.selectedClusterName);
     const installationToEdit = useSelector((state: RootState) => state.dashboard.installationToEdit);
-    const { data: installations, isLoading, error: installationsError, refetch: refetchInstallations } = useGetMattermostInstallationsForClusterQuery({ cloudProvider: 'aws', clusterName: selectedClusterName! }, {
+    const { data: installations, isLoading, error: installationsError, refetch: refetchInstallations } = useGetMattermostInstallationsForClusterQuery({ cloudProvider, clusterName: selectedClusterName! }, {
         skip: !selectedClusterName, // Only fetch if cluster name is defined
         pollingInterval: 10000,
     });
     const [deleteInstallation, deleteInstallationData] = useDeleteInstallationMutation();
     const [patchInstallation, patchInstallationData] = usePatchInstallationMutation();
 
-    const { data: clusters, isLoading: clustersLoading, isFetching, error: clustersError, refetch: refetchClusters } = useGetClustersQuery('aws');
+    const { data: clusters, isLoading: clustersLoading, isFetching, error: clustersError, refetch: refetchClusters } = useGetClustersQuery(cloudProvider);
 
     useEffect(() => {
         if (typeof selectedClusterName === 'undefined') {
@@ -68,13 +68,13 @@ export default function InstallationDashboard() {
 
     const handleSubmitEditModal = (installation: PatchMattermostWorkspaceRequest) => {
         console.log("Submitting edit modal", installation);
-        patchInstallation({ clusterName: selectedClusterName!, cloudProvider: 'aws', installationName: installation.name, patch: installation })
+        patchInstallation({ clusterName: selectedClusterName!, cloudProvider, installationName: installation.name, patch: installation })
         handleOnCloseEditModal();
     }
 
     const installationsSection = (installs: Mattermost[]) => {
         return (
-            <div className="installation-cards">{installs.map((install) => <InstallationCard installation={install} onClick={() => { }} onClickEdit={handleEditInstallation} onClickDelete={(installationName) => { deleteInstallation({ clusterName: selectedClusterName!, cloudProvider: 'aws', installationName }) }} />)}
+            <div className="installation-cards">{installs.map((install) => <InstallationCard installation={install} onClick={() => { }} onClickEdit={handleEditInstallation} onClickDelete={(installationName) => { deleteInstallation({ clusterName: selectedClusterName!, cloudProvider, installationName }) }} />)}
                 <CreateInstallationCard onClick={() => navigate(`/${cloudProvider}/create_mattermost_workspace?clusterName=${selectedClusterName}`)} />
             </div>
         )
@@ -94,7 +94,7 @@ export default function InstallationDashboard() {
                 selectedClusterName && !isLoading && !isFetching && !deleteInstallationData.isLoading && installations && !installationsError && installations.length > 0 && installationsSection(installations)
             }
             {
-                selectedClusterName && !isLoading && installations && !installationsError && installations.length === 0 && <div className="installations-section-empty">No installations found. <Button onClick={() => navigate(`/create_mattermost_workspace?clusterName=${selectedClusterName}`)} variant="plain" className="create-new-inline">Create one now</Button></div>
+                selectedClusterName && !isLoading && installations && !installationsError && installations.length === 0 && <div className="installations-section-empty">No installations found. <Button onClick={() => navigate(`/${cloudProvider}/create_mattermost_workspace?clusterName=${selectedClusterName}`)} variant="plain" className="create-new-inline">Create one now</Button></div>
             }
             {
                 selectedClusterName && !isLoading && !isFetching && installationsError && <div className="installations-section-error">Error fetching installations</div>

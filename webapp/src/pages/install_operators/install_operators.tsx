@@ -148,7 +148,7 @@ export default function InstallOperatorsPage() {
                             {!isReleasesLoading && isReleasesSuccess && !isReleasesFetching && <>
                                 <Button onClick={() => setIsDeploying(true)} disabled={deploymentFinished || numSelectedUtilities === 0} size="lg" color="primary">Deploy {numSelectedUtilities > 0 && <>{numSelectedUtilities} {numSelectedUtilities > 1 ? 'Utilities' : 'Utility'} </>}</Button>
                                 {deploymentFinished && <div className="deployment-finished">Utilities installed successfully!</div>}
-                                {requiredUtilitiesDeployed && <Button onClick={() => navigate(`/${cloudProvider}/create_mattermost_workspace?clusterName=${cluster?.Name}&type=aws`)} size="lg" color="primary">Create Workspace</Button>}
+                                {requiredUtilitiesDeployed && <Button onClick={() => navigate(`/${cloudProvider}/create_mattermost_workspace?clusterName=${clusterName}`)} size="lg" color="primary">Create Workspace</Button>}
                             </>}
                         </div>
                     </div>

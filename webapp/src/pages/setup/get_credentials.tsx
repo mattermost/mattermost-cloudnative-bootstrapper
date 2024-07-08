@@ -1,18 +1,19 @@
 import React, { useState } from 'react';
-import { Input, Textarea } from '@mui/joy';
+import { Input, Option, Select, Textarea } from '@mui/joy';
 import { CSSTransition } from 'react-transition-group';
 
 type Props = {
     cloudProvider: string;
     kubernetesOption: string;
-    onCredentialsChange: (credentials: { accessKeyId: string, accessKeySecret: string, kubecfg: string }) => void;
+    onCredentialsChange: (credentials: { accessKeyId: string, accessKeySecret: string, kubeconfig: string }) => void;
 };
 
 function GetCredentials({ cloudProvider, kubernetesOption, onCredentialsChange }: Props) {
     const [credentials, setCredentials] = useState({
         accessKeyId: '',
         accessKeySecret: '',
-        kubecfg: '',
+        kubeconfig: '',
+        kubeconfigType: '',
     });
 
     const handleInputChange = (event: any) => {
@@ -28,32 +29,41 @@ function GetCredentials({ cloudProvider, kubernetesOption, onCredentialsChange }
         });
     };
 
-    return (
-        <CSSTransition in={!!cloudProvider && !!kubernetesOption} timeout={500} classNames="fade" unmountOnExit>
-        <div className="credentials">
-            {(cloudProvider !== 'custom' && kubernetesOption === 'new') && (
-                <div className="credentials-row">
-                    <div className="credentials-column">
-                        <label>Access Key ID</label>
-                        <Input name="accessKeyId" value={credentials.accessKeyId} onChange={handleInputChange} placeholder="Access Key ID" />
-                    </div>
+    const handleDropdownChange = (name: string, newValue: string) => {
+        setCredentials({
+            ...credentials,
+            [name]: newValue,
+        });
 
-                    <div className="credentials-column">
-                        <label>Access Key Secret</label>
-                        <Input name="accessKeySecret" value={credentials.accessKeySecret} onChange={handleInputChange} placeholder="Access Key Secret" type="password" />
-                    </div>
-                </div>
-            )}
+        onCredentialsChange({
+            ...credentials,
+            [name]: newValue,
+        });
+    }
 
-            {cloudProvider === 'custom' && (
+
+    const kubeConfigEntry = () => {
+        if (credentials.kubeconfigType === 'yaml') {
+            return (
                 <>
-                    <label>Kubecfg string</label>
-                    <Textarea minRows={2} name="kubecfg" value={credentials.kubecfg} onChange={handleInputChange} placeholder="kubecfg string" />
+                    <label>Kubecfg string (YAML)</label>
+                    <Textarea minRows={2} maxRows={20} name="kubeconfig" value={credentials.kubeconfig} onChange={handleInputChange} placeholder="kubecfg string" />
                 </>
-            )}
-
-            {cloudProvider !== 'custom' && kubernetesOption === 'existing' && (
+            )
+        } else if (credentials.kubeconfigType === 'file') {
+            return (
                 <>
+                    <label>Kubecfg file path</label>
+                    <Input name="kubeconfig" placeholder={'~/.kube/config'} value={credentials.kubeconfig} onChange={handleInputChange}/>
+                </>
+            )
+        }
+    }
+
+    return (
+        <CSSTransition in={!!cloudProvider && (!!kubernetesOption || cloudProvider === 'custom')} timeout={500} classNames="fade" unmountOnExit>
+            <div className="credentials">
+                {(cloudProvider !== 'custom' && kubernetesOption === 'new') && (
                     <div className="credentials-row">
                         <div className="credentials-column">
                             <label>Access Key ID</label>
@@ -65,9 +75,38 @@ function GetCredentials({ cloudProvider, kubernetesOption, onCredentialsChange }
                             <Input name="accessKeySecret" value={credentials.accessKeySecret} onChange={handleInputChange} placeholder="Access Key Secret" type="password" />
                         </div>
                     </div>
-                </>
-            )}
-        </div>
+                )}
+
+                {cloudProvider === 'custom' && (
+                    <>
+                        <label>Authenticate with...</label>
+                        <Select size="sm" placeholder="Kubecfg option" onChange={(event, newValue) => { handleDropdownChange('kubeconfigType', newValue as string) }}>
+                            <Option value="yaml">YAML</Option>
+                            <Option value="file">File Path</Option>
+                        </Select>
+                        <div className="kube-entry">
+                        {kubeConfigEntry()}
+
+                        </div>
+                    </>
+                )}
+
+                {cloudProvider !== 'custom' && kubernetesOption === 'existing' && (
+                    <>
+                        <div className="credentials-row">
+                            <div className="credentials-column">
+                                <label>Access Key ID</label>
+                                <Input name="accessKeyId" value={credentials.accessKeyId} onChange={handleInputChange} placeholder="Access Key ID" />
+                            </div>
+
+                            <div className="credentials-column">
+                                <label>Access Key Secret</label>
+                                <Input name="accessKeySecret" value={credentials.accessKeySecret} onChange={handleInputChange} placeholder="Access Key Secret" type="password" />
+                            </div>
+                        </div>
+                    </>
+                )}
+            </div>
         </CSSTransition >
     );
 }
