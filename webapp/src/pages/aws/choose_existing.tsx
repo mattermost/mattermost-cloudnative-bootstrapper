@@ -38,12 +38,23 @@ export default function ExistingAWSPage() {
         navigate(`/${cloudProvider}/cluster/summary?clusterName=${clusterName}`);
     }
 
+    const getTitle = () => {
+        switch (cloudProvider) {
+            case 'aws':
+                return 'Mattermost Operator via EKS';
+            case 'gcp':
+                return 'Mattermost Operator via GKE';
+            default:
+                return 'Mattermost Operator via Kubernetes ';
+        }
+    }
+
     return (
         <div className="AWSPage">
             <div className="leftPanel">
-                <h1 className="title">Mattermost Operator via EKS</h1>
+                <h1 className="title">{getTitle()}</h1>
                 <div className="description">
-                    <p>Before we can deploy the Mattermost Operator we'll need to connect to an existing EKS Cluster.</p>
+                    <p>Before we can deploy the Mattermost Operator we'll need to connect to an existing Cluster.</p>
                 </div>
             </div>
             <div className="rightPanel">

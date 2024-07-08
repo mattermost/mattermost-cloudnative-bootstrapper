@@ -42,7 +42,7 @@ export default function SetupPage() {
         if (cloudProvider !== 'custom') {
             return base && !!credentials.accessKeyId && !!credentials.accessKeySecret;
         } else {
-            return base && !!credentials.kubeconfig;
+            return base && !!credentials.kubeconfig && !!credentials.kubeconfigType;
         }
     }
 
