@@ -81,8 +81,8 @@ export default function FilestoreConnection({onChange, cloudProvider}: Filestore
             }}>
                 <Option value={FilestoreType.InClusterLocal}>In-Cluster (Local)</Option>
                 <Option value={FilestoreType.ExistingS3}>Use Existing (S3 Compatible)</Option>
-                {cloudProvider === 'aws' && <Option value={FilestoreType.AWSS3}>Create For Me (S3)</Option>}
                 <Option value={FilestoreType.InClusterExternal}>In-Cluster (External PVC)</Option>
+                {cloudProvider === 'aws' && <Option value={FilestoreType.AWSS3}>Create For Me (S3)</Option>}
             </Select>
             {getFilestoreConnectionInputs()}
         </div>
