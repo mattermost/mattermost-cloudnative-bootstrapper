@@ -53,7 +53,7 @@ export default function DBConnection({ releases, onChange, cloudProvider }: DBCo
                 )
             case 'CreateForMeRDS':
                 return (
-                    <div className="coming-soon">Create For Me (RDS) support coming soon...</div>
+                    <div className="coming-soon">RDS Creation support coming soon...</div>
                 )
         }
     }
