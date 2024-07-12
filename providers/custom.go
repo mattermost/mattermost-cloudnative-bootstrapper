@@ -10,7 +10,6 @@ import (
 	"sync"
 
 	"github.com/mattermost/mattermost-cloudnative-bootstrapper/model"
-	mmclientv1alpha1 "github.com/mattermost/mattermost-operator/pkg/client/clientset/versioned"
 	mmclientv1beta1 "github.com/mattermost/mattermost-operator/pkg/client/v1beta1/clientset/versioned"
 	helmclient "github.com/mittwald/go-helm-client"
 	v1 "k8s.io/api/core/v1"
@@ -187,8 +186,11 @@ func (p *CustomKubeProvider) GetKubeConfig(c context.Context, clusterName string
 }
 
 func (p *CustomKubeProvider) KubeClient(c context.Context, clusterName string) (*model.KubeClient, error) {
+<<<<<<< HEAD
 	// if p.kubeClient == nil {
 	// 1. Get the rest.Config
+=======
+>>>>>>> master
 	config, err := p.GetKubeRestConfig(c, clusterName)
 	if err != nil {
 		return nil, err
@@ -199,11 +201,14 @@ func (p *CustomKubeProvider) KubeClient(c context.Context, clusterName string) (
 		return nil, err
 	}
 
+<<<<<<< HEAD
 	mattermostV1AlphaClientset, err := mmclientv1alpha1.NewForConfig(config)
 	if err != nil {
 		return nil, err
 	}
 
+=======
+>>>>>>> master
 	mattermostV1BetaClientset, err := mmclientv1beta1.NewForConfig(config)
 	if err != nil {
 		return nil, err
@@ -215,6 +220,7 @@ func (p *CustomKubeProvider) KubeClient(c context.Context, clusterName string) (
 	}
 
 	return &model.KubeClient{
+<<<<<<< HEAD
 		Config:                     config,
 		Clientset:                  clientset,
 		ApixClientset:              apixclient.NewForConfigOrDie(config),
@@ -225,6 +231,14 @@ func (p *CustomKubeProvider) KubeClient(c context.Context, clusterName string) (
 	// }
 
 	// return p.kubeClient, nil
+=======
+		Config:                    config,
+		Clientset:                 clientset,
+		ApixClientset:             apixclient.NewForConfigOrDie(config),
+		MattermostClientsetV1Beta: mattermostV1BetaClientset,
+		DynamicClient:             dynamicClient,
+	}, nil
+>>>>>>> master
 }
 
 func (p *CustomKubeProvider) GetKubeRestConfig(c context.Context, clusterName string) (*rest.Config, error) {
