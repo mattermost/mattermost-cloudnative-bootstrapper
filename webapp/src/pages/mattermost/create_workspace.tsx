@@ -33,26 +33,34 @@ export default function CreateWorkspacePage() {
     const informationFetched = isGetClusterSuccess && isGetReleasesSuccess;
 
     const handleCreateWorkspace = () => {
+        console.log(workspaceInfo);
+        console.log(filestoreConnection);
         createWorkspace({ clusterName, cloudProvider, workspaceInfo: { ...filestoreConnection, ...dbConnection, ...workspaceInfo } })
     };
 
+    const filestoreComplete = () => {
+        if (filestoreConnection.filestoreOption === 'ExistingS3') {
+            return !!filestoreConnection.s3FilestoreConfig?.url && !!filestoreConnection.s3FilestoreConfig?.bucketName && !!filestoreConnection.s3FilestoreConfig?.accessKeyId && !!filestoreConnection.s3FilestoreConfig?.accessKeySecret;
+        } else if (filestoreConnection.filestoreOption === 'InClusterLocal') {
+            return filestoreConnection.localFilestoreConfig?.storageSize ? true : false;
+        } else if (filestoreConnection.filestoreOption === 'InClusterExternal') {
+            return !!filestoreConnection.localExternalFilestoreConfig?.volumeClaimName;
+        }
+        return false;
+    }
+
     const formComplete = () => {
         let dbConnectionComplete = false;
-        let filestoreConnectionComplete = false;
         let workspaceInfoComplete = false;
+        const filestoreConnectionComplete = filestoreComplete();
 
         if (dbConnection.createDBForMe || (dbConnection.dbConnectionString && dbConnection.dbReplicasConnectionString)) {
             dbConnectionComplete = true;
         }
 
-        if (filestoreConnection.createS3ForMe || (filestoreConnection.url && filestoreConnection.bucketName && filestoreConnection.accessKeyId && filestoreConnection.accessKeySecret)) {
-            filestoreConnectionComplete = true;
-        }
-
         if (workspaceInfo.installationName && workspaceInfo.domainName) {
             workspaceInfoComplete = true;
         }
-
         return dbConnectionComplete && filestoreConnectionComplete && workspaceInfoComplete;
 
     }
@@ -130,7 +138,7 @@ export default function CreateWorkspacePage() {
                                 <div>
                                     <WorkspaceInfo onChange={(change) => setWorkspaceInfo(change)} />
                                     <DBConnection releases={releases || []} onChange={(change) => setDBConnection(change)} />
-                                    <FilestoreConnection onChange={(change) => setFilestoreConnection(change)} />
+                                    <FilestoreConnection cloudProvider={cloudProvider} onChange={(change) => setFilestoreConnection(change)} />
                                 </div>
                             }
                         </div>

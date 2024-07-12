@@ -1,0 +1,30 @@
+.filestore-connection {
+    .coming-soon {
+        font-size: 1.0rem;
+        font-weight: 500;
+        margin-top: 1rem;
+        margin-left: 0.1rem;
+        color: #6495ED;
+    }
+
+    .filestore-type-disclaimer {
+        font-size: 0.8rem;
+        font-weight: 500;
+        margin-top: 0.5rem;
+        margin-left: 0.1rem;
+        color: red;
+    }
+
+    .filestore-type-incluster-local-inputs {
+        display: flex;
+        align-items: right;
+        line-height:36px;
+
+        .select-root {
+            width: 100px;
+        }
+        :first-child {
+            margin-right: 0.5rem;
+        }
+    }
+}

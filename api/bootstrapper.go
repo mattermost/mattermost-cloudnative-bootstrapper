@@ -19,6 +19,7 @@ import (
 	"helm.sh/helm/v3/pkg/release"
 	"helm.sh/helm/v3/pkg/repo"
 	v1 "k8s.io/api/core/v1"
+	apiErrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/tools/clientcmd"
@@ -754,16 +755,25 @@ func handleCreateMattermostInstallation(c *Context, w http.ResponseWriter, r *ht
 
 	namespace := &v1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      namespaceName,
-			Namespace: namespaceName,
+			Name: namespaceName,
 		},
 	}
 
-	_, err = kubeClient.Clientset.CoreV1().Namespaces().Create(context.TODO(), namespace, metav1.CreateOptions{})
+	_, err = kubeClient.Clientset.CoreV1().Namespaces().Get(context.TODO(), namespaceName, metav1.GetOptions{})
 	if err != nil {
-		logger.FromContext(c.Ctx).WithError(err).Error("Failed to create namespace")
-		w.WriteHeader(http.StatusInternalServerError)
-		return
+		if apiErrors.IsNotFound(err) { // If not found, create it
+			_, err = kubeClient.Clientset.CoreV1().Namespaces().Create(context.TODO(), namespace, metav1.CreateOptions{})
+			if err != nil {
+				logger.FromContext(c.Ctx).WithError(err).Error("Failed to create namespace")
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			}
+			logger.FromContext(c.Ctx).Info("Namespace created successfully")
+		} else { // Some other error occurred
+			logger.FromContext(c.Ctx).WithError(err).Error("Error while checking namespace existence")
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
 	}
 
 	writer := create.DBConnectionString
@@ -867,26 +877,18 @@ func handleCreateMattermostInstallation(c *Context, w http.ResponseWriter, r *ht
 		return
 	}
 
-	// TODO: Add support for the create.CreateS3Bucket flag to create the bucket for the user
-	filestoreSecret := &v1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "mattermost-s3",
-			Namespace: namespaceName,
-		},
-		Type: v1.SecretTypeOpaque,
-		StringData: map[string]string{
-			"accesskey": create.S3AccessKey,
-			"secretkey": create.S3SecretKey,
-		},
+	filestoreSecret := create.GetMMOperatorFilestoreSecret(namespaceName)
+	if filestoreSecret != nil {
+		// Create the filestore secret
+		_, err = kubeClient.Clientset.CoreV1().Secrets(namespaceName).Create(context.TODO(), filestoreSecret, metav1.CreateOptions{})
+		if err != nil {
+			logger.FromContext(c.Ctx).Errorf("Error creating filestore secret:", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
 	}
 
-	// Create the filestore secret
-	_, err = kubeClient.Clientset.CoreV1().Secrets(namespaceName).Create(context.TODO(), filestoreSecret, metav1.CreateOptions{})
-	if err != nil {
-		logger.FromContext(c.Ctx).Errorf("Error creating filestore secret:", err)
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
+	filestore := create.GetMMOperatorFilestore(namespaceName, filestoreSecret)
 
 	mattermostCRD := &mmv1beta1.Mattermost{
 		ObjectMeta: metav1.ObjectMeta{
@@ -909,17 +911,16 @@ func handleCreateMattermostInstallation(c *Context, w http.ResponseWriter, r *ht
 					Secret: "database",
 				},
 			},
-			FileStore: mmv1beta1.FileStore{
-				External: &mmv1beta1.ExternalFileStore{
-					URL:    "s3.amazonaws.com",
-					Secret: "mattermost-s3",
-					Bucket: namespaceName + "-bucket",
-				},
-			},
+			FileStore:     filestore,
 			LicenseSecret: "mattermost-license",
 			MattermostEnv: []v1.EnvVar{
 				{Name: "MM_FILESETTINGS_AMAZONS3SSE", Value: "true"},
 				{Name: "MM_FILESETTINGS_AMAZONS3SSL", Value: "true"},
+			},
+			PodTemplate: &mmv1beta1.PodTemplate{
+				SecurityContext: &v1.PodSecurityContext{
+					FSGroup: aws.Int64(2000),
+				},
 			},
 		},
 	}
@@ -995,6 +996,7 @@ func handleDeployMattermostOperator(c *Context, w http.ResponseWriter, r *http.R
 		ChartName:       "mattermost/mattermost-operator",
 		Namespace:       "mattermost-operator",
 		UpgradeCRDs:     true,
+		Version:         "v1.22.0",
 		Wait:            true,
 		Timeout:         300 * time.Second,
 		CreateNamespace: true,

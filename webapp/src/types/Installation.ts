@@ -1,18 +1,30 @@
-import { ExternalDatabaseConfig, SingleTenantDatabaseConfig } from './database';
-
 
 export interface CreateMattermostWorkspaceRequest {
-    accessKeyId: string;
-    accessKeySecret: string;
-    bucketName: string
     createDBForMe: boolean;
-    createS3ForMe: boolean;
+    filestoreOption: string;
+    localFilestoreConfig?: LocalFileStore;
+    localExternalFilestoreConfig?: LocalExternalFileStore;
+    s3FilestoreConfig?: S3FileStore;
     dbConnectionString: string;
     dbReplicasConnectionString: string;
     domainName: string;
     enterpriseLicense?: string;
     installationName: string;
+}
+
+export interface LocalFileStore {
+    storageSize: string;
+}
+
+export interface LocalExternalFileStore {
+    volumeClaimName: string;
+}
+
+export interface S3FileStore {
     url: string;
+    accessKeyId: string;
+    accessKeySecret: string;
+    bucketName: string
 }
 
 export interface PatchMattermostWorkspaceRequest {
@@ -85,6 +97,14 @@ export interface Ingress {
 
 export interface Database {
     external: ExternalConfig; 
+}
+
+export enum FilestoreType {
+    InClusterExternal = 'InClusterExternal',
+    InClusterLocal = 'InClusterLocal',
+    ExistingS3 = 'ExistingS3',
+    AWSS3 = 'AWSS3',
+    Minio = 'Minio',
 }
 
 export interface FileStore {
