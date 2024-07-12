@@ -65,6 +65,10 @@ type UpdateRegionRequest struct {
 	Region string `json:"region"`
 }
 
+type UpdateRegionRequest struct {
+	Region string `json:"region"`
+}
+
 // TODO: Change AWSCredentialsResponse to CredentialsResponse
 type CredentialsResponse struct {
 	Success bool   `json:"success"`
