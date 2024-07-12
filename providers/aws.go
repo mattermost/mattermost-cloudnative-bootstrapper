@@ -463,12 +463,11 @@ func (a *AWSProvider) KubeClient(c context.Context, clusterName string) (*model.
 	}
 
 	return &model.KubeClient{
-		Config:                     config,
-		Clientset:                  clientset,
-		ApixClientset:              apixclient.NewForConfigOrDie(config),
-		MattermostClientsetV1Alpha: mattermostV1AlphaClientset,
-		MattermostClientsetV1Beta:  mattermostV1BetaClientset,
-		DynamicClient:              dynamicClient,
+		Config:                    config,
+		Clientset:                 clientset,
+		ApixClientset:             apixclient.NewForConfigOrDie(config),
+		MattermostClientsetV1Beta: mattermostV1BetaClientset,
+		DynamicClient:             dynamicClient,
 	}, nil
 }
 
