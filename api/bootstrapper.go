@@ -776,10 +776,10 @@ func handleCreateMattermostInstallation(c *Context, w http.ResponseWriter, r *ht
 		}
 	}
 
-	writer := create.DBConnectionString
-	reader := create.DBReplicasConnectionString
+	var writer string
+	var reader string
 
-	if create.CreateDatabase {
+	if create.DBConnectionOption == model.DatabaseOptionCreateForMe {
 		dbCluster := &cnpgv1.Cluster{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      namespaceName + "-cnpg-cluster",
@@ -834,6 +834,9 @@ func handleCreateMattermostInstallation(c *Context, w http.ResponseWriter, r *ht
 		// Replacements
 		writer = strings.Replace(initial, "postgresql:", "postgres:", 1) // Replace once
 		reader = strings.Replace(writer, fmt.Sprintf("%s-rw:", secretName), fmt.Sprintf("%s-ro:", secretName), 1)
+	} else if create.DBConnectionOption == model.DatabaseOptionExisting {
+		writer = create.ExistingDBConnection.ConnectionString
+		reader = create.ExistingDBConnection.ConnectionString
 	}
 
 	databaseSecret := &v1.Secret{

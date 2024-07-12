@@ -17,19 +17,28 @@ const (
 	FilestoreOptionInClusterExternal = "InClusterExternal"
 )
 
+const (
+	DatabaseOptionCreateForMe = "CreateForMeCNPG"
+	DatabaseOptionExisting    = "Existing"
+)
+
 type CreateMattermostWorkspaceRequest struct {
-	License                    string                  `json:"enterpriseLicense"` // For the license file contents
-	InstallationName           string                  `json:"installationName"`
-	Size                       string                  `json:"size"` // Size for the Mattermost instance
-	FullDomainName             string                  `json:"domainName"`
-	Version                    string                  `json:"version"`
-	CreateDatabase             bool                    `json:"createDBForMe"`
-	DBConnectionString         string                  `json:"dbConnectionString"`
-	DBReplicasConnectionString string                  `json:"dbReplicasConnectionString"`
-	FilestoreOption            string                  `json:"filestoreOption"`
-	S3Filestore                *S3Filestore            `json:"s3FilestoreConfig"`
-	LocalFileStore             *LocalFileStore         `json:"localFilestoreConfig"`
-	LocalExternalFileStore     *LocalExternalFileStore `json:"localExternalFilestoreConfig"`
+	License                string                  `json:"enterpriseLicense"` // For the license file contents
+	InstallationName       string                  `json:"installationName"`
+	Size                   string                  `json:"size"` // Size for the Mattermost instance
+	FullDomainName         string                  `json:"domainName"`
+	Version                string                  `json:"version"`
+	DBConnectionOption     string                  `json:"dbConnectionOption"`
+	ExistingDBConnection   *ExistingDBConnection   `json:"existingDatabaseConfig"`
+	FilestoreOption        string                  `json:"filestoreOption"`
+	S3Filestore            *S3Filestore            `json:"s3FilestoreConfig"`
+	LocalFileStore         *LocalFileStore         `json:"localFilestoreConfig"`
+	LocalExternalFileStore *LocalExternalFileStore `json:"localExternalFilestoreConfig"`
+}
+
+type ExistingDBConnection struct {
+	ConnectionString        string `json:"dbConnectionString"`
+	ReplicaConnectionString string `json:"dbReplicasConnectionString"`
 }
 
 type LocalFileStore struct {
@@ -57,6 +66,18 @@ func (le *LocalExternalFileStore) IsValid() bool {
 
 func (l *LocalFileStore) IsValid() bool {
 	if l.StorageSize == "" {
+		return false
+	}
+
+	return true
+}
+
+func (e *ExistingDBConnection) IsValid() bool {
+	if e.ConnectionString == "" {
+		return false
+	}
+
+	if e.ReplicaConnectionString == "" {
 		return false
 	}
 
@@ -172,23 +193,7 @@ func (c *CreateMattermostWorkspaceRequest) IsValid() bool {
 		return false
 	}
 
-	// if c.Size == "" {
-	// 	return false
-	// }
-
 	if c.FullDomainName == "" {
-		return false
-	}
-
-	// if c.Version == "" {
-	// 	return false
-	// }
-
-	if !c.CreateDatabase && c.DBConnectionString == "" {
-		return false
-	}
-
-	if !c.CreateDatabase && c.DBReplicasConnectionString == "" {
 		return false
 	}
 
@@ -205,6 +210,14 @@ func (c *CreateMattermostWorkspaceRequest) IsValid() bool {
 	}
 
 	if c.FilestoreOption == FilestoreOptionInClusterExternal && !c.LocalExternalFileStore.IsValid() {
+		return false
+	}
+
+	if c.DBConnectionOption != DatabaseOptionCreateForMe && c.DBConnectionOption != DatabaseOptionExisting {
+		return false
+	}
+
+	if c.DBConnectionOption == DatabaseOptionExisting && !c.ExistingDBConnection.IsValid() {
 		return false
 	}
 
