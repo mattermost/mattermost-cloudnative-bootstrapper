@@ -52,14 +52,11 @@ export default function InstallOperatorsCarousel({ onSuccess, onError }: Props) 
         },
     };
 
-    const utilityInProgress = utilities[carouselIndex];
-
-    const card = cards[utilityInProgress.key];
 
     const numSelectedUtilities = utilities.filter(
         (utility) => utility.isChecked && utility.deploymentRequestState !== 'succeeded',
     ).length;
-
+    
     useEffect(() => {
         if (carouselIndex + 1 > numSelectedUtilities) {
             onSuccess();
@@ -69,6 +66,16 @@ export default function InstallOperatorsCarousel({ onSuccess, onError }: Props) 
         } else {
         }
     }, [carouselIndex])
+
+    const utilityInProgress = utilities[carouselIndex];
+
+    if (!utilityInProgress) {
+        onSuccess();
+        return null;
+    }
+
+    const card = cards[utilityInProgress.key];
+
 
     if (!card.mutator) {
         return null;

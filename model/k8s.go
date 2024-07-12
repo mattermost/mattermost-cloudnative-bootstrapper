@@ -1,8 +1,12 @@
 package model
 
 import (
-	mmclientv1alpha1 "github.com/mattermost/mattermost-operator/pkg/client/clientset/versioned"
+	"context"
+	"fmt"
+
+	"github.com/mattermost/mattermost-cloudnative-bootstrapper/internal/logger"
 	mmclientv1beta1 "github.com/mattermost/mattermost-operator/pkg/client/v1beta1/clientset/versioned"
+	helmclient "github.com/mittwald/go-helm-client"
 	apixclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -13,12 +17,11 @@ import (
 
 // KubeClient interfaces with a Kubernetes cluster in the same way kubectl would.
 type KubeClient struct {
-	Config                     *rest.Config
-	Clientset                  kubernetes.Interface
-	ApixClientset              apixclient.Interface
-	MattermostClientsetV1Alpha mmclientv1alpha1.Interface
-	MattermostClientsetV1Beta  mmclientv1beta1.Interface
-	DynamicClient              *dynamic.DynamicClient
+	Config                    *rest.Config
+	Clientset                 kubernetes.Interface
+	ApixClientset             apixclient.Interface
+	MattermostClientsetV1Beta mmclientv1beta1.Interface
+	DynamicClient             *dynamic.DynamicClient
 }
 
 func ConvertToUnstructured(obj interface{}) (*unstructured.Unstructured, error) {
@@ -30,4 +33,27 @@ func ConvertToUnstructured(obj interface{}) (*unstructured.Unstructured, error) 
 
 	unstructuredObj := &unstructured.Unstructured{Object: unstructuredMap}
 	return unstructuredObj, nil
+}
+
+func (k *KubeClient) GetHelmClient(c context.Context, namespace string) (helmclient.Client, error) {
+	opt := &helmclient.RestConfClientOptions{
+		Options: &helmclient.Options{
+			Namespace:        namespace,
+			RepositoryCache:  "/tmp/.helmcache",
+			RepositoryConfig: "/tmp/.helmrepo",
+			Debug:            true,
+			Linting:          true, // Change this to false if you don't want linting.
+			DebugLog: func(format string, v ...interface{}) {
+				logger.FromContext(c).Debug(fmt.Sprintf(format, v...))
+			},
+		},
+		RestConfig: k.Config,
+	}
+
+	helmClient, err := helmclient.NewClientFromRestConf(opt)
+	if err != nil {
+		return nil, err
+	}
+
+	return helmClient, nil
 }

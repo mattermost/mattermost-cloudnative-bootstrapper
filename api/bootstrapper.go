@@ -75,7 +75,7 @@ func handleSetCredentials(c *Context, w http.ResponseWriter, r *http.Request) {
 
 	response := model.CredentialsResponse{}
 
-	success, err := c.CloudProvider.ValidateCredentials(&credentials)
+	success, err := c.CloudProvider.ValidateCredentials(c.Ctx, &credentials)
 	response.Success = success
 	if err != nil {
 		logger.FromContext(c.Ctx).WithError(err).Error("Failed to validate credentials")
@@ -97,6 +97,11 @@ func handleSetCredentials(c *Context, w http.ResponseWriter, r *http.Request) {
 func handleSetRegion(c *Context, w http.ResponseWriter, r *http.Request) {
 	var updateRegion model.UpdateRegionRequest
 	json.NewDecoder(r.Body).Decode(&updateRegion)
+
+	if updateRegion.Region == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
 
 	credentials := c.BootstrapperState.Credentials
 
@@ -481,39 +486,14 @@ func handleDeployPGOperator(c *Context, w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	// TODO: We need to be able to add pre/post hooks for helm charts to allow for provider specific configurations
-	chartRepo := repo.Entry{
-		Name: "aws-ebs-csi-driver",
-		URL:  "https://kubernetes-sigs.github.io/aws-ebs-csi-driver/",
-	}
-
-	err = helmClient.AddOrUpdateChartRepo(chartRepo)
+	err = c.CloudProvider.HelmFileStorePre(c.Ctx, clusterName, "kube-system")
 	if err != nil {
-		logger.FromContext(c.Ctx).WithError(err).Error("Failed to add or update chart repo")
+		logger.FromContext(c.Ctx).WithError(err).Error("Failed to execute file system preinstall steps for cnpg operator")
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
-	chartSpec := helmclient.ChartSpec{
-		ReleaseName:     "aws-ebs-csi-driver",
-		ChartName:       "aws-ebs-csi-driver/aws-ebs-csi-driver",
-		Namespace:       "kube-system",
-		UpgradeCRDs:     true,
-		Wait:            true,
-		Timeout:         300 * time.Second,
-		CreateNamespace: true,
-		CleanupOnFail:   true,
-	}
-
-	// Install a chart release.
-	// Note that helmclient.Options.Namespace should ideally match the namespace in chartSpec.Namespace.
-	if _, err := helmClient.InstallOrUpgradeChart(context.Background(), &chartSpec, nil); err != nil {
-		logger.FromContext(c.Ctx).WithError(err).Error("Failed to install aws-ebs-csi-driver")
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-
-	chartRepo = repo.Entry{
+	chartRepo := repo.Entry{
 		Name: "cnpg",
 		URL:  "https://cloudnative-pg.github.io/charts",
 	}
@@ -532,7 +512,7 @@ func handleDeployPGOperator(c *Context, w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	chartSpec = helmclient.ChartSpec{
+	chartSpec := helmclient.ChartSpec{
 		ReleaseName:     "cnpg-system",
 		ChartName:       "cnpg/cloudnative-pg",
 		Namespace:       "cnpg-system",

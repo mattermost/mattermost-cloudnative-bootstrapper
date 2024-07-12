@@ -12,6 +12,7 @@ export type CloudCredentials = {
     accessKeySecret: string;
     region: string;
     kubeconfig: string;
+    kubeconfigType: string;
 }
 
 export type Release = {

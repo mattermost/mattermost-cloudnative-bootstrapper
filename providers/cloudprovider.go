@@ -14,7 +14,7 @@ import (
 type CloudProvider interface {
 	SetCredentials(c context.Context, credentials *model.Credentials) error
 	SetRegion(c context.Context, region string) error
-	ValidateCredentials(creds *model.Credentials) (bool, error)
+	ValidateCredentials(c context.Context, creds *model.Credentials) (bool, error)
 	ListRoles(c context.Context) ([]*model.SupportedRolesResponse, error)
 	ListClusters(c context.Context, region string) ([]*string, error)
 	CreateCluster(c context.Context, create *model.CreateClusterRequest) (*model.Cluster, error)
@@ -25,4 +25,5 @@ type CloudProvider interface {
 	GetKubeConfig(c context.Context, clusterName string) (clientcmd.ClientConfig, error)
 	KubeClient(c context.Context, clusterName string) (*model.KubeClient, error)
 	HelmClient(c context.Context, clusterName string, namespace string) (helmclient.Client, error)
+	HelmFileStorePre(c context.Context, clusterName string, namespace string) error
 }

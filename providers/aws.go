@@ -8,6 +8,7 @@ import (
 	"log"
 	"os"
 	"sync"
+	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
@@ -21,6 +22,7 @@ import (
 	mmclientv1alpha1 "github.com/mattermost/mattermost-operator/pkg/client/clientset/versioned"
 	mmclientv1beta1 "github.com/mattermost/mattermost-operator/pkg/client/v1beta1/clientset/versioned"
 	helmclient "github.com/mittwald/go-helm-client"
+	"helm.sh/helm/v3/pkg/repo"
 	apixclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
@@ -132,7 +134,7 @@ func (a *AWSProvider) SetRegion(c context.Context, region string) error {
 	return nil
 }
 
-func (a *AWSProvider) ValidateCredentials(creds *model.Credentials) (bool, error) {
+func (a *AWSProvider) ValidateCredentials(c context.Context, creds *model.Credentials) (bool, error) {
 	// Create a new session with the provided credentials
 	sess, err := session.NewSession(&aws.Config{
 		Credentials: credentials.NewStaticCredentials(creds.AccessKeyID, creds.SecretAccessKey, ""),
@@ -430,10 +432,6 @@ func (a *AWSProvider) GetKubeConfig(c context.Context, clusterName string) (clie
 
 	clientConfig := clientcmd.NewDefaultClientConfig(*config, &clientcmd.ConfigOverrides{})
 
-	if err != nil {
-		return nil, err
-	}
-
 	return clientConfig, nil
 }
 
@@ -465,12 +463,11 @@ func (a *AWSProvider) KubeClient(c context.Context, clusterName string) (*model.
 	}
 
 	return &model.KubeClient{
-		Config:                     config,
-		Clientset:                  clientset,
-		ApixClientset:              apixclient.NewForConfigOrDie(config),
-		MattermostClientsetV1Alpha: mattermostV1AlphaClientset,
-		MattermostClientsetV1Beta:  mattermostV1BetaClientset,
-		DynamicClient:              dynamicClient,
+		Config:                    config,
+		Clientset:                 clientset,
+		ApixClientset:             apixclient.NewForConfigOrDie(config),
+		MattermostClientsetV1Beta: mattermostV1BetaClientset,
+		DynamicClient:             dynamicClient,
 	}, nil
 }
 
@@ -480,26 +477,42 @@ func (a *AWSProvider) HelmClient(c context.Context, clusterName string, namespac
 		return nil, err
 	}
 
-	opt := &helmclient.RestConfClientOptions{
-		Options: &helmclient.Options{
-			Namespace:        namespace,
-			RepositoryCache:  "/tmp/.helmcache",
-			RepositoryConfig: "/tmp/.helmrepo",
-			Debug:            true,
-			Linting:          true, // Change this to false if you don't want linting.
-			DebugLog: func(format string, v ...interface{}) {
-				logger.FromContext(c).Debug(fmt.Sprintf(format, v...))
-			},
-		},
-		RestConfig: k8sClient.Config,
-	}
+	return k8sClient.GetHelmClient(c, namespace)
+}
 
-	helmClient, err := helmclient.NewClientFromRestConf(opt)
+func (a *AWSProvider) HelmFileStorePre(c context.Context, clusterName string, namespace string) error {
+	helmClient, err := a.HelmClient(c, clusterName, namespace)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	return helmClient, nil
+	chartRepo := repo.Entry{
+		Name: "aws-ebs-csi-driver",
+		URL:  "https://kubernetes-sigs.github.io/aws-ebs-csi-driver/",
+	}
+
+	err = helmClient.AddOrUpdateChartRepo(chartRepo)
+	if err != nil {
+		return errors.New("failed to add or update chart repo for aws-ebs-csi-driver")
+	}
+
+	chartSpec := helmclient.ChartSpec{
+		ReleaseName:     "aws-ebs-csi-driver",
+		ChartName:       "aws-ebs-csi-driver/aws-ebs-csi-driver",
+		Namespace:       "kube-system",
+		UpgradeCRDs:     true,
+		Wait:            true,
+		Timeout:         300 * time.Second,
+		CreateNamespace: true,
+		CleanupOnFail:   true,
+	}
+
+	// Install a chart release.
+	if _, err := helmClient.InstallOrUpgradeChart(context.Background(), &chartSpec, nil); err != nil {
+		return errors.New("Failed to install aws-ebs-csi-driver")
+	}
+
+	return nil
 }
 
 func eksSupportedRolesToSupportedRoleResponse(roles []*iam.Role) []*model.SupportedRolesResponse {
