@@ -19,7 +19,6 @@ import (
 	"github.com/aws/aws-sdk-go/service/sts"
 	"github.com/mattermost/mattermost-cloudnative-bootstrapper/internal/logger"
 	"github.com/mattermost/mattermost-cloudnative-bootstrapper/model"
-	mmclientv1alpha1 "github.com/mattermost/mattermost-operator/pkg/client/clientset/versioned"
 	mmclientv1beta1 "github.com/mattermost/mattermost-operator/pkg/client/v1beta1/clientset/versioned"
 	helmclient "github.com/mittwald/go-helm-client"
 	"helm.sh/helm/v3/pkg/repo"
@@ -447,11 +446,6 @@ func (a *AWSProvider) KubeClient(c context.Context, clusterName string) (*model.
 		return nil, err
 	}
 
-	mattermostV1AlphaClientset, err := mmclientv1alpha1.NewForConfig(config)
-	if err != nil {
-		return nil, err
-	}
-
 	mattermostV1BetaClientset, err := mmclientv1beta1.NewForConfig(config)
 	if err != nil {
 		return nil, err
@@ -463,12 +457,11 @@ func (a *AWSProvider) KubeClient(c context.Context, clusterName string) (*model.
 	}
 
 	return &model.KubeClient{
-		Config:                     config,
-		Clientset:                  clientset,
-		ApixClientset:              apixclient.NewForConfigOrDie(config),
-		MattermostClientsetV1Alpha: mattermostV1AlphaClientset,
-		MattermostClientsetV1Beta:  mattermostV1BetaClientset,
-		DynamicClient:              dynamicClient,
+		Config:                    config,
+		Clientset:                 clientset,
+		ApixClientset:             apixclient.NewForConfigOrDie(config),
+		MattermostClientsetV1Beta: mattermostV1BetaClientset,
+		DynamicClient:             dynamicClient,
 	}, nil
 }
 

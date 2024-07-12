@@ -33,6 +33,8 @@ export default function CreateWorkspacePage() {
     const informationFetched = isGetClusterSuccess && isGetReleasesSuccess;
 
     const handleCreateWorkspace = () => {
+        console.log(workspaceInfo);
+        console.log(filestoreConnection);
         createWorkspace({ clusterName, cloudProvider, workspaceInfo: { ...filestoreConnection, ...dbConnection, ...workspaceInfo } })
     };
 
