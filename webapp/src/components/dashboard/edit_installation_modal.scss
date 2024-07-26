@@ -13,5 +13,12 @@
             margin-top: 20px;
             float: right;
         }
+
+        .filestore-connection {
+            margin-top: 20px;
+            >*:not(:last-child) {
+                margin-bottom: 12px;
+            }
+        }
     }
 }

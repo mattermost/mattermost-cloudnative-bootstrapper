@@ -6,12 +6,12 @@ import { RootState } from '../../store';
 import { useDeleteInstallationMutation, useGetClustersQuery, useGetMattermostInstallationsForClusterQuery, usePatchInstallationMutation } from '../../client/dashboardApi';
 import ClusterSelectDropdown from '../aws/cluster_select_dropdown';
 import { setInstallationToEdit, setSelectedClusterName } from '../../store/installation/dashboardSlice';
-import './dashboard.scss';
 import InstallationCard from '../../components/dashboard/installation_card';
 import CreateInstallationCard from '../../components/dashboard/create_installation_card';
 import { Mattermost, PatchMattermostWorkspaceRequest } from '../../types/Installation';
 import { Button, CircularProgress } from '@mui/joy';
 import EditInstallationModal from '../../components/dashboard/edit_installation_modal';
+import './dashboard.scss';
 
 export default function InstallationDashboard() {
     const dispatch = useDispatch();
@@ -48,18 +48,11 @@ export default function InstallationDashboard() {
     const handleEditInstallation = (installationName: string) => {
         const installation = installations?.filter((install) => install.metadata.name === installationName)[0];
 
-        dispatch(setInstallationToEdit({
-            image: installation?.status.image,
-            version: installation?.status.version,
-            replicas: installation?.status.replicas,
-            endpoint: installation?.status.endpoint,
-            name: installation?.metadata.name,
-            license: '',
-        }) as any);
+        dispatch(setInstallationToEdit(installation));
     }
 
     const handleEditModalOnChange = (installation: PatchMattermostWorkspaceRequest) => {
-        dispatch(setInstallationToEdit(installation) as any);
+        // dispatch(setInstallationToEdit(installation) as any);
     }
 
     const handleOnCloseEditModal = () => {
@@ -99,7 +92,7 @@ export default function InstallationDashboard() {
             {
                 selectedClusterName && !isLoading && !isFetching && installationsError && <div className="installations-section-error">Error fetching installations</div>
             }
-            <EditInstallationModal show={typeof installationToEdit !== 'undefined'} installation={installationToEdit} onClose={handleOnCloseEditModal} onChange={handleEditModalOnChange} onSubmit={handleSubmitEditModal} />
+            {typeof installationToEdit !== 'undefined' && <EditInstallationModal show={typeof installationToEdit !== 'undefined'} installation={installationToEdit} onClose={handleOnCloseEditModal} onChange={handleEditModalOnChange} onSubmit={handleSubmitEditModal} cloudProvider={cloudProvider}/>}
         </div>
     );
 }
