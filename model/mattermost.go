@@ -212,7 +212,7 @@ type PatchMattermostWorkspaceRequest struct {
 	Name           string                           `json:"name"`
 	Image          string                           `json:"image"`
 	Replicas       int                              `json:"replicas"`
-	License        string                           `json:"license"`
+	License        *string                          `json:"license"`
 	Endpoint       string                           `json:"endpoint"`
 	FilestorePatch *PatchMattermostFilestoreRequest `json:"fileStorePatch"`
 }
@@ -237,7 +237,7 @@ func NewMattermostWorkspacePatchRequestFromReader(body io.Reader) (*PatchMatterm
 // IsValid checks if the PatchMattermostWorkspaceRequest is valid.
 func (req *PatchMattermostWorkspaceRequest) IsValid() bool {
 	// Check if the version is a valid semantic version
-	if !isValidSemanticVersion(req.Version) {
+	if !isValidSemanticVersion(req.Version) && !isValidReleaseBranchTag(req.Version) {
 		return false
 	}
 
@@ -248,6 +248,13 @@ func (req *PatchMattermostWorkspaceRequest) IsValid() bool {
 
 func (req *PatchMattermostWorkspaceRequest) HasFilestoreChanges() bool {
 	return req.FilestorePatch != nil && (req.FilestorePatch.FilestoreOption != "" && (req.FilestorePatch.S3Filestore != nil || req.FilestorePatch.LocalFileStore != nil || req.FilestorePatch.LocalExternalFileStore != nil))
+}
+
+func isValidReleaseBranchTag(tag string) bool {
+	// Regular expression pattern for release branch tag (e.g., release-5.0)
+	pattern := `^release-\d+\.\d+$`
+	match, err := regexp.MatchString(pattern, tag)
+	return err == nil && match
 }
 
 // isValidSemanticVersion checks if the provided string is a valid semantic version.
@@ -302,4 +309,17 @@ func NewCreateMattermostWorkspaceRequestFromReader(reader io.Reader) (*CreateMat
 		return nil, err
 	}
 	return &createMattermostWorkspaceRequest, nil
+}
+
+func NewMattermostLicenseSecret(namespaceName string, license string) *v1.Secret {
+	return &v1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      SecretNameMattermostLicense,
+			Namespace: namespaceName,
+		},
+		Type: v1.SecretTypeOpaque,
+		StringData: map[string]string{
+			"license": license,
+		},
+	}
 }

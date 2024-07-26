@@ -800,7 +800,33 @@ func handlePatchMattermostInstallation(c *Context, w http.ResponseWriter, r *htt
 		} else if filestorePatch.FilestoreOption == model.FilestoreOptionInClusterExternal {
 			MMFilestore.ExternalVolume.VolumeClaimName = filestorePatch.LocalExternalFileStore.VolumeClaimName
 		}
+	}
 
+	if patchRequest.License != nil {
+		existingLicenseSecret, err := kubeClient.Clientset.CoreV1().Secrets(installationName).Get(c.Ctx, model.SecretNameMattermostLicense, metav1.GetOptions{})
+		if err != nil && !apiErrors.IsNotFound(err) {
+			logger.FromContext(c.Ctx).WithError(err).Error("Failed to get license secret")
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		if existingLicenseSecret == nil {
+			licenseSecret := model.NewMattermostLicenseSecret(installationName, *patchRequest.License)
+			_, err = kubeClient.Clientset.CoreV1().Secrets(installationName).Create(context.TODO(), licenseSecret, metav1.CreateOptions{})
+			if err != nil {
+				logger.FromContext(c.Ctx).WithError(err).Error("Failed to create license secret")
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			}
+		} else {
+			licenseSecret := model.NewMattermostLicenseSecret(installationName, *patchRequest.License)
+			_, err = kubeClient.Clientset.CoreV1().Secrets(installationName).Update(context.TODO(), licenseSecret, metav1.UpdateOptions{})
+			if err != nil {
+				logger.FromContext(c.Ctx).WithError(err).Error("Failed to update license secret")
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			}
+		}
 	}
 
 	installation.Spec.Version = patchRequest.Version
@@ -995,16 +1021,7 @@ func handleCreateMattermostInstallation(c *Context, w http.ResponseWriter, r *ht
 	}
 
 	// License Secret
-	licenseSecret := &v1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      model.SecretNameMattermostLicense,
-			Namespace: namespaceName, // Create the namespace if needed
-		},
-		Type: v1.SecretTypeOpaque,
-		StringData: map[string]string{
-			"license": create.License, // To be filled from request
-		},
-	}
+	licenseSecret := model.NewMattermostLicenseSecret(namespaceName, create.License)
 
 	// Create the secret
 	_, err = kubeClient.Clientset.CoreV1().Secrets(namespaceName).Create(context.TODO(), licenseSecret, metav1.CreateOptions{})

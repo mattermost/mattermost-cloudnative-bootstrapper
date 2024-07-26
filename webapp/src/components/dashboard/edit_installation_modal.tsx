@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { Mattermost, PatchMattermostWorkspaceRequest, LocalFileStore, FileStore, S3FileStore } from '../../types/Installation';
-import { Button, DialogContent, DialogTitle, Input, Modal, ModalClose, ModalDialog } from '@mui/joy';
+import { Button, DialogContent, DialogTitle, Input, Modal, ModalClose, ModalDialog, Textarea } from '@mui/joy';
 import './edit_installation_modal.scss';
 import FilestoreConnection, { FilestoreConnectionDetails } from '../../pages/mattermost/filestore_connection';
 import { useGetMattermostInstallationSecretsQuery } from '../../client/dashboardApi';
@@ -26,7 +26,6 @@ export default function EditInstallationModal({ installation, onSubmit, show, on
         replicas: installation?.status.replicas,
         endpoint: installation?.status.endpoint,
         name: installation?.metadata.name,
-        license: '',
         fileStore: installation?.spec.fileStore,
         fileStorePatch: {},
     } as PatchMattermostWorkspaceRequest);
@@ -57,9 +56,19 @@ export default function EditInstallationModal({ installation, onSubmit, show, on
         }
     }
 
+    const buildExistingLicenseObject = () => {
+        if (installationSecrets?.licenseSecret && typeof installationPatch.license === 'undefined') {
+            return installationSecrets.licenseSecret.data.license;
+        } else {
+            return installationPatch.license;
+        }
+    }
+
     const handleFilestoreConnectionChange = (change: FilestoreConnectionDetails) => {
         setInstallationPatch({...installationPatch, fileStorePatch: change});
     }
+
+    console.log("installationPatch", installationPatch)
 
     return (
         <Modal className="edit-installation-modal" open={show} onClose={onClose}>
@@ -77,6 +86,8 @@ export default function EditInstallationModal({ installation, onSubmit, show, on
                     <Input size="sm" type="text" placeholder="Replicas" value={installationPatch?.replicas} onChange={(e) => handleChange(e, 'replicas')}/>
                     <label>Endpoint</label>
                     <Input size="sm" type="text" placeholder="Endpoint" value={installationPatch?.endpoint} onChange={(e) => handleChange(e, 'endpoint')}/>
+                    <label>License</label>
+                    {isSuccess && <Textarea minRows={2} maxRows={10} placeholder="License" value={buildExistingLicenseObject()} onChange={(e) => handleChange(e as unknown as React.ChangeEvent<HTMLInputElement>, 'license')} />}
                     {isSuccess && <FilestoreConnection isEdit={true} cloudProvider={cloudProvider} existingFilestore={buildExistingFilestoreObject(installationPatch?.fileStore!)} onChange={(change) => { handleFilestoreConnectionChange(change)}} />}
                     <Button className="submit-button" onClick={() => onSubmit(installationPatch!)}>Save</Button>
                 </div>
