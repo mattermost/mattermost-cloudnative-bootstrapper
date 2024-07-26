@@ -668,14 +668,14 @@ func handleGetMattermostInstallationSecrets(c *Context, w http.ResponseWriter, r
 	}
 
 	filestoreSecret, err := kubeClient.Clientset.CoreV1().Secrets(namespaceName).Get(c.Ctx, model.SecretNameFilestore, metav1.GetOptions{})
-	if err != nil {
+	if err != nil && !apiErrors.IsNotFound(err) {
 		logger.FromContext(c.Ctx).WithError(err).Error("Failed to get filestore secret")
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
 	licenseSecret, err := kubeClient.Clientset.CoreV1().Secrets(namespaceName).Get(c.Ctx, model.SecretNameMattermostLicense, metav1.GetOptions{})
-	if err != nil {
+	if err != nil && !apiErrors.IsNotFound(err) {
 		logger.FromContext(c.Ctx).WithError(err).Error("Failed to get license secret")
 		w.WriteHeader(http.StatusInternalServerError)
 		return
@@ -724,10 +724,10 @@ func handlePatchMattermostInstallation(c *Context, w http.ResponseWriter, r *htt
 
 	logger.FromContext(c.Ctx).Infof("Patch request: %+v", patchRequest.FilestorePatch)
 
-	// if !patchRequest.IsValid() {
-	// 	w.WriteHeader(http.StatusBadRequest)
-	// 	return
-	// }
+	if !patchRequest.IsValid() {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
 
 	kubeClient, err := c.CloudProvider.KubeClient(c.Ctx, clusterName)
 	if err != nil {
