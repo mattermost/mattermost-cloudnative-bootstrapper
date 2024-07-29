@@ -54,7 +54,7 @@ export default function CreateWorkspacePage() {
         let workspaceInfoComplete = false;
         const filestoreConnectionComplete = filestoreComplete();
 
-        if (dbConnection.createDBForMe || (dbConnection.dbConnectionString && dbConnection.dbReplicasConnectionString)) {
+        if (dbConnection.dbConnectionOption == 'Existing' && !!dbConnection.existingDatabaseConfig?.dbConnectionString && !!dbConnection.existingDatabaseConfig?.dbReplicasConnectionString) {
             dbConnectionComplete = true;
         }
 
@@ -137,7 +137,7 @@ export default function CreateWorkspacePage() {
                             {informationFetched &&
                                 <div>
                                     <WorkspaceInfo onChange={(change) => setWorkspaceInfo(change)} />
-                                    <DBConnection releases={releases || []} onChange={(change) => setDBConnection(change)} />
+                                    <DBConnection cloudProvider={cloudProvider} releases={releases || []} onChange={(change) => setDBConnection(change)} />
                                     <FilestoreConnection cloudProvider={cloudProvider} onChange={(change) => setFilestoreConnection(change)} />
                                 </div>
                             }

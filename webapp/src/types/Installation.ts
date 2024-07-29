@@ -1,15 +1,19 @@
 
 export interface CreateMattermostWorkspaceRequest {
-    createDBForMe: boolean;
+    dbConnectionOption: string;
     filestoreOption: string;
     localFilestoreConfig?: LocalFileStore;
     localExternalFilestoreConfig?: LocalExternalFileStore;
     s3FilestoreConfig?: S3FileStore;
-    dbConnectionString: string;
-    dbReplicasConnectionString: string;
+    ExistingDBConnection?: ExistingDBConnection;
     domainName: string;
     enterpriseLicense?: string;
     installationName: string;
+}
+
+export interface ExistingDBConnection {
+    dbConnectionString: string;
+    dbReplicasConnectionString: string;
 }
 
 export interface LocalFileStore {
