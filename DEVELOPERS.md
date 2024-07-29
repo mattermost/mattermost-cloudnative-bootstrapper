@@ -74,7 +74,7 @@ This allows you to specify a custom path for the state file, ensuring that your 
 ## General Guidelines
 
 - Please ensure your code follows the project's coding conventions and style guidelines.
-- Write clear and concise commit messages that describe your changes.
+- Write clear and concise commit messages that describes your changes.
 - Test your changes thoroughly before submitting a pull request.
 - Make sure to open an issue for discussion before starting work on a large feature or change.
 
