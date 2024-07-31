@@ -57,10 +57,10 @@ export default function EditInstallationModal({ installation, onSubmit, show, on
     }
 
     const buildExistingLicenseObject = () => {
-        if (installationSecrets?.licenseSecret && typeof installationPatch.license === 'undefined') {
-            return installationSecrets.licenseSecret.data.license;
+        if (typeof installationSecrets?.licenseSecret !== 'undefined' && typeof installationPatch.license === 'undefined') {
+            return installationSecrets.licenseSecret?.data?.license;
         } else {
-            return installationPatch.license;
+            return installationPatch.license || '';
         }
     }
 

@@ -1,7 +1,9 @@
 package model
 
 import (
+	"crypto/sha256"
 	"encoding/json"
+	"fmt"
 	"io"
 	"regexp"
 
@@ -26,6 +28,10 @@ const (
 	SecretNameFilestore         = "filestore"
 	SecretNameDatabase          = "database"
 	SecretNameMattermostLicense = "mattermost-license"
+)
+
+const (
+	MMENVLicense = "MM_LICENSE"
 )
 
 type CreateMattermostWorkspaceRequest struct {
@@ -311,10 +317,29 @@ func NewCreateMattermostWorkspaceRequestFromReader(reader io.Reader) (*CreateMat
 	return &createMattermostWorkspaceRequest, nil
 }
 
+func GetLicenseSecretName(installation *mmv1beta1.Mattermost) string {
+	for _, envVar := range installation.Spec.MattermostEnv {
+		if envVar.Name == MMENVLicense {
+			return envVar.ValueFrom.SecretKeyRef.LocalObjectReference.Name
+		}
+	}
+
+	return ""
+}
+
+// generateCILicenseName generates a unique license secret name by using a short
+// sha256 hash.
+func generateLicenseSecretName(license string) string {
+	return fmt.Sprintf("%s-%s",
+		SecretNameMattermostLicense,
+		fmt.Sprintf("%x", sha256.Sum256([]byte(license)))[0:6],
+	)
+}
+
 func NewMattermostLicenseSecret(namespaceName string, license string) *v1.Secret {
 	return &v1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      SecretNameMattermostLicense,
+			Name:      generateLicenseSecretName(license),
 			Namespace: namespaceName,
 		},
 		Type: v1.SecretTypeOpaque,
