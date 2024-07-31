@@ -1,19 +1,19 @@
 
-# Contributing to Mattermost CloudNative Bootstrapper
+# Contribute to Mattermost CloudNative Bootstrapper
 
 Thank you for your interest in contributing to the Mattermost CloudNative Bootstrapper! This document outlines how to set up your development environment and run the server and web application.
 
 ## Table of Contents
 
-- [Contributing to Mattermost CloudNative Bootstrapper](#contributing-to-mattermost-cloudnative-bootstrapper)
+- [Contribute to Mattermost CloudNative Bootstrapper](#contribute-to-mattermost-cloudnative-bootstrapper)
   - [Table of Contents](#table-of-contents)
-  - [Running the Server](#running-the-server)
-  - [Running the Webapp](#running-the-webapp)
+  - [Run the Server](#run-the-server)
+  - [Run the Webapp](#run-the-webapp)
   - [State Files](#state-files)
     - [Custom State File Location](#custom-state-file-location)
   - [General Guidelines](#general-guidelines)
 
-## Running the Server
+## Run the Server
 
 To run the backend server, follow these steps:
 
@@ -31,7 +31,7 @@ To run the backend server, follow these steps:
 
 The server will start and listen for requests.
 
-## Running the Webapp
+## Run the Webapp
 
 To run the frontend web application, follow these steps:
 

@@ -28,7 +28,7 @@ All from one simple React application that packages all necessary dependencies w
   - [Key Use Cases](#key-use-cases)
   - [Resources](#resources)
   - [Get Involved](#get-involved)
-  - [Contributing](#contributing)
+  - [Contribute](#contribute)
   - [Get the latest news](#get-the-latest-news)
 
 ## Install Mattermost CloudNative Bootstrapper
@@ -67,7 +67,7 @@ This project is licensed under the MIT License. See the [LICENSE file](LICENSE.t
 - [Join Discussions](https://community.mattermost.com/signup_user_complete/?id=f1924a8db44ff3bb41c96424cdc20676)
 - [Get Help](https://docs.mattermost.com/guides/get-help.html)
 
-## Contributing
+## Contribute
 
 Please see [DEVELOPERS.md](./DEVELOPERS.md) for guidelines on how to contribute. Join the [Mattermost Contributors server](https://community.mattermost.com/signup_user_complete/?id=codoy5s743rq5mk18i7u5ksz7e) to engage in discussions about development and contributions.
 
