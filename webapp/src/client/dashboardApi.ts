@@ -1,6 +1,6 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 import { baseUrl } from './client';
-import { CreateMattermostWorkspaceRequest, Mattermost, PatchMattermostWorkspaceRequest } from '../types/Installation';
+import { CreateMattermostWorkspaceRequest, Mattermost, MattermostInstallationSecret, MattermostInstallationSecrets, PatchMattermostWorkspaceRequest } from '../types/Installation';
 import { Cluster } from '../types/Cluster';
 
 export const dashboardApi = createApi({
@@ -38,6 +38,9 @@ export const dashboardApi = createApi({
             }),
             invalidatesTags: ['Installation']
         }),
+        getMattermostInstallationSecrets: builder.query<MattermostInstallationSecrets, { clusterName: string, cloudProvider: string, installationName: string }>({
+            query: ({ clusterName, cloudProvider, installationName }) => `/${cloudProvider}/cluster/${clusterName}/installation/${installationName}/secrets`,
+        }),
         createMattermostWorkspace: builder.mutation<Mattermost, {cloudProvider: string, clusterName: string, workspaceInfo: CreateMattermostWorkspaceRequest}>({
             query: ({ cloudProvider, clusterName, workspaceInfo }) => ({
                 url: `/${cloudProvider}/cluster/${clusterName}/installation`,
@@ -48,4 +51,4 @@ export const dashboardApi = createApi({
     }),
 });
 
-export const { useGetMattermostInstallationsForClusterQuery, useGetClustersQuery, useDeleteInstallationMutation, usePatchInstallationMutation, useCreateMattermostWorkspaceMutation } = dashboardApi;
+export const { useGetMattermostInstallationsForClusterQuery, useGetClustersQuery, useDeleteInstallationMutation, usePatchInstallationMutation, useCreateMattermostWorkspaceMutation, useGetMattermostInstallationSecretsQuery } = dashboardApi;

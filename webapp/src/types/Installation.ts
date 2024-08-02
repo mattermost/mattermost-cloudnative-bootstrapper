@@ -28,7 +28,7 @@ export interface S3FileStore {
     url: string;
     accessKeyId: string;
     accessKeySecret: string;
-    bucketName: string
+    bucket: string
 }
 
 export interface PatchMattermostWorkspaceRequest {
@@ -38,6 +38,15 @@ export interface PatchMattermostWorkspaceRequest {
     replicas: number;
     license: string;
     endpoint: string;
+    fileStore: FileStore;
+    fileStorePatch?: PatchMattermostWorkspaceFilestore;
+}
+
+export interface PatchMattermostWorkspaceFilestore {
+    filestoreOption: string;
+    localFilestoreConfig?: LocalFileStore;
+    localExternalFilestoreConfig?: LocalExternalFileStore;
+    s3FilestoreConfig?: S3FileStore;
 }
 
 export interface Mattermost {
@@ -46,6 +55,16 @@ export interface Mattermost {
     metadata: Metadata;
     spec: Spec;
     status: Status;
+}
+
+export interface MattermostInstallationSecrets {
+    databaseSecret: MattermostInstallationSecret;
+    filestoreSecret: MattermostInstallationSecret;
+    licenseSecret: MattermostInstallationSecret;
+}
+
+export interface MattermostInstallationSecret {
+    data: Record<string, string>
 }
 
 export interface Metadata {
@@ -112,7 +131,9 @@ export enum FilestoreType {
 }
 
 export interface FileStore {
-    external: ExternalConfig; 
+    external?: S3FileStore;
+    local?: LocalFileStore;
+    externalVolume?: LocalExternalFileStore;
 }
 
 export interface ExternalConfig {
