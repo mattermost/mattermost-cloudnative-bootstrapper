@@ -221,6 +221,7 @@ type PatchMattermostWorkspaceRequest struct {
 	License        *string                          `json:"license"`
 	Endpoint       string                           `json:"endpoint"`
 	FilestorePatch *PatchMattermostFilestoreRequest `json:"fileStorePatch"`
+	DatabasePatch  *PatchMattermostDatabaseRequest  `json:"databasePatch"`
 }
 
 type PatchMattermostFilestoreRequest struct {
@@ -228,6 +229,10 @@ type PatchMattermostFilestoreRequest struct {
 	S3Filestore            *S3Filestore            `json:"s3FilestoreConfig"`
 	LocalFileStore         *LocalFileStore         `json:"localFilestoreConfig"`
 	LocalExternalFileStore *LocalExternalFileStore `json:"localExternalFilestoreConfig"`
+}
+
+type PatchMattermostDatabaseRequest struct {
+	ExistingDBConnection
 }
 
 // NewMattermostWorkspacePatchRequestFromReader creates a new PatchMattermostWorkspaceRequest from the provided io.Reader.

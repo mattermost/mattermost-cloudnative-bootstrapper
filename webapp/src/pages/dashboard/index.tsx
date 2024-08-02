@@ -12,6 +12,7 @@ import { Mattermost, PatchMattermostWorkspaceRequest } from '../../types/Install
 import { Button, CircularProgress } from '@mui/joy';
 import EditInstallationModal from '../../components/dashboard/edit_installation_modal';
 import './dashboard.scss';
+import { useGetInstalledHelmReleasesQuery } from '../../client/bootstrapperApi';
 
 export default function InstallationDashboard() {
     const dispatch = useDispatch();
@@ -28,6 +29,8 @@ export default function InstallationDashboard() {
     const [patchInstallation, patchInstallationData] = usePatchInstallationMutation();
 
     const { data: clusters, isLoading: clustersLoading, isFetching, error: clustersError, refetch: refetchClusters } = useGetClustersQuery(cloudProvider);
+    const {data: releases, isSuccess: isGetReleasesSuccess} = useGetInstalledHelmReleasesQuery({clusterName: selectedClusterName!, cloudProvider}, { skip: cloudProvider === '' || !selectedClusterName });
+
 
     useEffect(() => {
         if (typeof selectedClusterName === 'undefined') {
@@ -40,7 +43,6 @@ export default function InstallationDashboard() {
 
     useEffect(() => {
         if (selectedClusterName) {
-            console.log("refetching");
             refetchInstallations();
         }
     }, [selectedClusterName])
@@ -60,7 +62,6 @@ export default function InstallationDashboard() {
     }
 
     const handleSubmitEditModal = (installation: PatchMattermostWorkspaceRequest) => {
-        console.log("Submitting edit modal", installation);
         patchInstallation({ clusterName: selectedClusterName!, cloudProvider, installationName: installation.name, patch: installation })
         handleOnCloseEditModal();
     }

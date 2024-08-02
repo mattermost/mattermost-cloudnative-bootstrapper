@@ -1,4 +1,7 @@
 .database-connection {
+    .sensitive-input {
+        margin-top: 5px;
+    }
     .coming-soon {
         font-size: 1.0rem;
         font-weight: 500;
@@ -6,4 +9,13 @@
         margin-left: 0.1rem;
         color: #6495ED;
     }
+
+    .database-edit-disclaimer {
+        font-size: 0.8rem;
+        font-weight: 500;
+        margin-top: 0.5rem;
+        margin-left: 0.1rem;
+        color: red;
+    }
+
 }

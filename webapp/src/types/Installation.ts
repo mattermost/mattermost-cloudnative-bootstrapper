@@ -40,6 +40,7 @@ export interface PatchMattermostWorkspaceRequest {
     endpoint: string;
     fileStore: FileStore;
     fileStorePatch?: PatchMattermostWorkspaceFilestore;
+    databasePatch?: ExistingDBConnection;
 }
 
 export interface PatchMattermostWorkspaceFilestore {
@@ -120,6 +121,12 @@ export interface Ingress {
 
 export interface Database {
     external: ExternalConfig; 
+}
+
+export enum DatabaseType {
+    Existing = 'Existing',
+    CreateCNPG = 'CreateForMeCNPG',
+    CreateRDS = 'CreateForMeRDS',
 }
 
 export enum FilestoreType {
