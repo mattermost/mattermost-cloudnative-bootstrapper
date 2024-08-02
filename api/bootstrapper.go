@@ -733,8 +733,6 @@ func handlePatchMattermostInstallation(c *Context, w http.ResponseWriter, r *htt
 		return
 	}
 
-	logger.FromContext(c.Ctx).Infof("Patch request: %+v", patchRequest.FilestorePatch)
-
 	if !patchRequest.IsValid() {
 		w.WriteHeader(http.StatusBadRequest)
 		return
@@ -771,7 +769,6 @@ func handlePatchMattermostInstallation(c *Context, w http.ResponseWriter, r *htt
 			}
 
 			filestore := model.KubeS3FilestoreSecretToS3Filestore(existingFilestoreSecret, &installation.Spec.FileStore)
-			logger.FromContext(c.Ctx).Infof("Existing filestore: %+v", filestore)
 
 			// Update the existing filestore with the new values
 			if filestorePatch.S3Filestore.BucketName != "" {
