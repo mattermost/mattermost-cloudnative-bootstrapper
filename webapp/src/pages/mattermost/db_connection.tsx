@@ -55,8 +55,6 @@ export default function DBConnection({ releases, onChange, cloudProvider, isEdit
                         {!isEdit && <div>Connect to an externally managed database through a connection string</div>}
                         <SensitiveInput label={"DB Connection String"} value={existingDatabaseConfig?.dbConnectionString!} onChange={(value) => handleExistingDBChange('dbConnectionString', value)} />
                         <SensitiveInput label={"DB Replicas Connection String"} value={existingDatabaseConfig?.dbReplicasConnectionString!} onChange={(value) => handleExistingDBChange('dbReplicasConnectionString', value)} />
-                        {/* <Input placeholder={"DB Connection String"} type="password" value={existingDatabaseConfig?.dbConnectionString} onChange={(e) => handleExistingDBChange('dbConnectionString', e.target.value)} /> */}
-                        {/* <Input placeholder={"DB Replicas Connection String"} type="password" value={existingDatabaseConfig?.dbReplicasConnectionString} onChange={(e) => handleExistingDBChange('dbReplicasConnectionString', e.target.value)} /> */}
                     </>
                 )
             case DatabaseType.CreateCNPG:
