@@ -7,9 +7,11 @@ import (
 	"github.com/mattermost/mattermost-cloudnative-bootstrapper/internal/logger"
 	mmclientv1beta1 "github.com/mattermost/mattermost-operator/pkg/client/v1beta1/clientset/versioned"
 	helmclient "github.com/mittwald/go-helm-client"
+	v1 "k8s.io/api/core/v1"
 	apixclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
+
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -56,4 +58,21 @@ func (k *KubeClient) GetHelmClient(c context.Context, namespace string) (helmcli
 	}
 
 	return helmClient, nil
+}
+
+type Pod struct {
+	Name string `json:"name"`
+}
+
+func KubePodsToPods(kubePods []v1.Pod) []Pod {
+	var pods []Pod
+	for _, kubePod := range kubePods {
+		pod := Pod{
+			Name: kubePod.Name,
+		}
+
+		pods = append(pods, pod)
+	}
+
+	return pods
 }

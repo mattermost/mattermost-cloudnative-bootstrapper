@@ -1,11 +1,13 @@
 package api
 
 import (
+	"bufio"
 	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"strings"
+	"sync"
 	"time"
 
 	mmv1beta1 "github.com/mattermost/mattermost-operator/apis/mattermost/v1beta1"
@@ -13,6 +15,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	cnpgv1 "github.com/cloudnative-pg/cloudnative-pg/api/v1"
 	"github.com/gorilla/mux"
+	"github.com/gorilla/websocket"
 	"github.com/mattermost/mattermost-cloudnative-bootstrapper/internal/logger"
 	"github.com/mattermost/mattermost-cloudnative-bootstrapper/model"
 	helmclient "github.com/mittwald/go-helm-client"
@@ -28,6 +31,13 @@ import (
 func initBootstrapper(apiRouter *mux.Router, context *Context) {
 	addContext := func(handler contextHandlerFunc) *contextHandler {
 		return newContextHandler(context, handler)
+	}
+
+	// Adapts a HandlerFunc tinto a contextHandler for use with existing middleware
+	wsAdapter := func(contextHandler contextHandlerFunc, middleware *contextHandler) http.HandlerFunc {
+		return func(w http.ResponseWriter, r *http.Request) {
+			middleware.ServeHTTP(w, r)
+		}
 	}
 
 	bootstrapperRouter := apiRouter.PathPrefix("/{cloudProvider:[A-Za-z0-9_-]+}").Subrouter()
@@ -59,6 +69,8 @@ func initBootstrapper(apiRouter *mux.Router, context *Context) {
 	clusterNameRouter.Handle("/cnpg/cluster", addContext(handleCreateCNPGCluster)).Methods(http.MethodPost)
 
 	installationNameRouter := clusterNameRouter.PathPrefix("/installation/{installationName:[A-Za-z0-9_-]+}").Subrouter()
+	installationNameRouter.HandleFunc("/ws_logs", wsAdapter(handleInstallationLogsWebsocket, addContext(handleInstallationLogsWebsocket)))
+	installationNameRouter.Handle("/pods", addContext(handleGetPodsForNamespace)).Methods(http.MethodGet)
 	installationNameRouter.Handle("", addContext(handleDeleteMattermostInstallation)).Methods(http.MethodDelete)
 	installationNameRouter.Handle("", addContext(handlePatchMattermostInstallation)).Methods(http.MethodPatch)
 }
@@ -1039,4 +1051,136 @@ func handleGetMattermostInstallations(c *Context, w http.ResponseWriter, r *http
 	}
 
 	json.NewEncoder(w).Encode(installations.Items)
+}
+
+var upgrader = websocket.Upgrader{
+	CheckOrigin: func(r *http.Request) bool {
+		// TODO: this just allows everything. This application isn't intended to run on a server,
+		// so it should be fine, but will need to double check that this is safe.
+		return true
+	},
+}
+
+func handleInstallationLogsWebsocket(c *Context, w http.ResponseWriter, r *http.Request) {
+	logger.FromContext(c.Ctx).Info("Attempting to upgrade HTTP request to websocket connection")
+	conn, err := upgrader.Upgrade(w, r, nil)
+	if err != nil {
+		logger.FromContext(c.Ctx).WithError(err).Error("Failed to upgrade websocket connection")
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	logger.FromContext(c.Ctx).Info("Upgraded HTTP request to websocket connection")
+
+	defer conn.Close()
+
+	query := r.URL.Query()
+
+	vars := mux.Vars(r)
+	installationName := vars["installationName"]
+	if installationName == "" {
+		logger.FromContext(c.Ctx).Error("No installation name provided")
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	clusterName := vars["name"]
+	if clusterName == "" {
+		logger.FromContext(c.Ctx).Error("No cluster name provided")
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	pods := query["pods"]
+	if len(pods) == 0 {
+		logger.FromContext(c.Ctx).Error("No pods provided")
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	kubeClient, err := c.CloudProvider.KubeClient(c.Ctx, clusterName)
+
+	if err != nil {
+		logger.FromContext(c.Ctx).WithError(err).Error("Failed to create clientset")
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	logWriterChan := make(chan string)
+
+	// Single go routine to handle log writes into the websocket, prevents concurrent writes to websocket, which would cause a panic
+	go func() {
+		for logLine := range logWriterChan {
+			if err := conn.WriteMessage(websocket.TextMessage, []byte(logLine)); err != nil {
+				logger.FromContext(c.Ctx).WithError(err).Error("Error writing to WebSocket")
+				return // Exit goroutine on write error
+			}
+		}
+	}()
+
+	var wg sync.WaitGroup
+	wg.Add(len(pods))
+
+	for _, pod := range pods {
+		go func(podName string) {
+			defer wg.Done()
+
+			req := kubeClient.Clientset.CoreV1().Pods(installationName).GetLogs(podName, &v1.PodLogOptions{Follow: true, SinceSeconds: aws.Int64(600)})
+			podLogs, err := req.Stream(c.Ctx)
+			if err != nil {
+				logger.FromContext(c.Ctx).WithError(err).Error("Error in opening pod log stream")
+				return
+			}
+
+			defer podLogs.Close()
+
+			scanner := bufio.NewScanner(podLogs)
+			for scanner.Scan() {
+				logLine := scanner.Text()
+				logWriterChan <- logLine
+			}
+
+			// Check for errors during log reading.
+			if err := scanner.Err(); err != nil {
+				logger.FromContext(c.Ctx).WithError(err).Errorf("Error scanning logs from pod %s", podName)
+			}
+		}(pod)
+	}
+
+	wg.Wait()
+
+	logger.FromContext(c.Ctx).Info("closing websocket connection")
+}
+
+func handleGetPodsForNamespace(c *Context, w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	clusterName := vars["name"]
+	if clusterName == "" || clusterName == "undefined" {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	namespace := vars["installationName"]
+	if namespace == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	kubeClient, err := c.CloudProvider.KubeClient(c.Ctx, clusterName)
+	if err != nil {
+		logger.FromContext(c.Ctx).WithError(err).Error("Failed to create clientset")
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	kubePods, err := kubeClient.Clientset.CoreV1().Pods(namespace).List(context.Background(), metav1.ListOptions{})
+	if err != nil {
+		logger.FromContext(c.Ctx).WithError(err).Error("Failed to list pods")
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	pods := model.KubePodsToPods(kubePods.Items)
+
+	json.NewEncoder(w).Encode(pods)
 }
