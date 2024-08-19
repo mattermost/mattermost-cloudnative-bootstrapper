@@ -87,8 +87,6 @@ export default function EditInstallationModal({ installation, onSubmit, show, on
         setInstallationPatch({...installationPatch, databasePatch: change});
     }
 
-    console.log(installationPatch);
-
     return (
         <Modal className="edit-installation-modal" open={show} onClose={onClose}>
             <ModalDialog size="lg" style={{width: '400px'}}>

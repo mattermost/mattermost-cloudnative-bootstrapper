@@ -733,6 +733,8 @@ func handlePatchMattermostInstallation(c *Context, w http.ResponseWriter, r *htt
 		return
 	}
 
+	logger.FromContext(c.Ctx).Infof("Patch request: %+v", patchRequest.FilestorePatch)
+
 	if !patchRequest.IsValid() {
 		w.WriteHeader(http.StatusBadRequest)
 		return
