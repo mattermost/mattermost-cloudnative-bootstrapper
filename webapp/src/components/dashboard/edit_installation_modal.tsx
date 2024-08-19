@@ -56,16 +56,16 @@ export default function EditInstallationModal({ installation, onSubmit, show, on
         }
     }
 
+    const handleFilestoreConnectionChange = (change: FilestoreConnectionDetails) => {
+        setInstallationPatch({...installationPatch, fileStorePatch: change});
+    }
+
     const buildExistingLicenseObject = () => {
         if (typeof installationSecrets?.licenseSecret !== 'undefined' && typeof installationPatch.license === 'undefined') {
             return installationSecrets.licenseSecret?.data?.license;
         } else {
             return installationPatch.license || '';
         }
-    }
-
-    const handleFilestoreConnectionChange = (change: FilestoreConnectionDetails) => {
-        setInstallationPatch({...installationPatch, fileStorePatch: change});
     }
 
     console.log("installationPatch", installationPatch)
