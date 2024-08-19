@@ -1,9 +1,9 @@
 import { createSlice } from "@reduxjs/toolkit";
-import { Mattermost, PatchMattermostWorkspaceRequest } from "../../types/Installation";
+import { Mattermost } from "../../types/Installation";
 
 export interface DashboardState {
     selectedClusterName?: string;
-    installationToEdit?: PatchMattermostWorkspaceRequest;
+    installationToEdit?: Mattermost;
 }
 
 const initialState: DashboardState = {

@@ -73,6 +73,7 @@ func initBootstrapper(apiRouter *mux.Router, context *Context) {
 	installationNameRouter.Handle("/pods", addContext(handleGetPodsForNamespace)).Methods(http.MethodGet)
 	installationNameRouter.Handle("", addContext(handleDeleteMattermostInstallation)).Methods(http.MethodDelete)
 	installationNameRouter.Handle("", addContext(handlePatchMattermostInstallation)).Methods(http.MethodPatch)
+	installationNameRouter.Handle("/secrets", addContext(handleGetMattermostInstallationSecrets)).Methods(http.MethodGet)
 }
 
 func handleSetCredentials(c *Context, w http.ResponseWriter, r *http.Request) {
@@ -642,6 +643,83 @@ func handleCreateCNPGCluster(c *Context, w http.ResponseWriter, r *http.Request)
 	w.WriteHeader(http.StatusCreated)
 }
 
+func handleGetMattermostInstallationSecrets(c *Context, w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	clusterName := vars["name"]
+	if clusterName == "" || clusterName == "undefined" {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	c.Ctx = logger.WithClusterName(c.Ctx, clusterName)
+
+	installationName := vars["installationName"]
+	if installationName == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	c.Ctx = logger.WithField(c.Ctx, "installation", installationName)
+
+	kubeClient, err := c.CloudProvider.KubeClient(c.Ctx, clusterName)
+	if err != nil {
+		logger.FromContext(c.Ctx).WithError(err).Error("Failed to create clientset")
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	installation, err := kubeClient.MattermostClientsetV1Beta.MattermostV1beta1().Mattermosts(installationName).Get(context.TODO(), installationName, metav1.GetOptions{})
+	if err != nil {
+		logger.FromContext(c.Ctx).WithError(err).Error("Failed to get installation")
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	namespaceName := installationName
+
+	c.Ctx = logger.WithNamespace(c.Ctx, namespaceName)
+
+	databaseSecret, err := kubeClient.Clientset.CoreV1().Secrets(namespaceName).Get(c.Ctx, model.SecretNameDatabase, metav1.GetOptions{})
+	if err != nil {
+		logger.FromContext(c.Ctx).WithError(err).Error("Failed to get database secret")
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	filestoreSecret, err := kubeClient.Clientset.CoreV1().Secrets(namespaceName).Get(c.Ctx, model.SecretNameFilestore, metav1.GetOptions{})
+	if err != nil && !apiErrors.IsNotFound(err) {
+		logger.FromContext(c.Ctx).WithError(err).Error("Failed to get filestore secret")
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	var licenseSecret *v1.Secret
+	licenseSecretName := model.GetLicenseSecretName(installation)
+	if licenseSecretName != "" {
+		licenseSecret, err = kubeClient.Clientset.CoreV1().Secrets(namespaceName).Get(c.Ctx, licenseSecretName, metav1.GetOptions{})
+		if err != nil && !apiErrors.IsNotFound(err) {
+			logger.FromContext(c.Ctx).WithError(err).Error("Failed to get license secret")
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+	}
+
+	installationSecrets := model.InstallationSecrets{
+		DatabaseSecret:  databaseSecret,
+		FilestoreSecret: filestoreSecret,
+		LicenseSecret:   licenseSecret,
+	}
+
+	installationSecretsResponse, err := installationSecrets.ToInstallationSecretsResponse()
+	if err != nil {
+		logger.FromContext(c.Ctx).WithError(err).Error("Failed to convert installation secrets to response")
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	json.NewEncoder(w).Encode(installationSecretsResponse)
+}
+
 func handlePatchMattermostInstallation(c *Context, w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	clusterName := vars["name"]
@@ -650,11 +728,15 @@ func handlePatchMattermostInstallation(c *Context, w http.ResponseWriter, r *htt
 		return
 	}
 
+	c.Ctx = logger.WithClusterName(c.Ctx, clusterName)
+
 	installationName := vars["installationName"]
 	if installationName == "" {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
+
+	c.Ctx = logger.WithField(c.Ctx, "installation", installationName)
 
 	patchRequest, err := model.NewMattermostWorkspacePatchRequestFromReader(r.Body)
 	if err != nil {
@@ -662,6 +744,8 @@ func handlePatchMattermostInstallation(c *Context, w http.ResponseWriter, r *htt
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
+
+	logger.FromContext(c.Ctx).Infof("Patch request: %+v", patchRequest.FilestorePatch)
 
 	if !patchRequest.IsValid() {
 		w.WriteHeader(http.StatusBadRequest)
@@ -682,8 +766,106 @@ func handlePatchMattermostInstallation(c *Context, w http.ResponseWriter, r *htt
 		return
 	}
 
+	MMFilestore := installation.Spec.FileStore
+	if patchRequest.HasFilestoreChanges() {
+		logger.FromContext(c.Ctx).Info("Filestore changes detected")
+		// Fetch the installation's existing filestore secrets
+		// Merge the new updated ones into the old one
+		// Push the updated secret to k8s
+		// Update the installation CRD with anything necessary (ie, if the bucket url or name changes)
+		filestorePatch := patchRequest.FilestorePatch
+		if filestorePatch.FilestoreOption == model.FilestoreOptionExistingS3 {
+			existingFilestoreSecret, err := kubeClient.Clientset.CoreV1().Secrets(installationName).Get(c.Ctx, model.SecretNameFilestore, metav1.GetOptions{})
+			if err != nil {
+				logger.FromContext(c.Ctx).WithError(err).Error("Failed to get filestore secret")
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			}
+
+			filestore := model.KubeS3FilestoreSecretToS3Filestore(existingFilestoreSecret, &installation.Spec.FileStore)
+
+			// Update the existing filestore with the new values
+			if filestorePatch.S3Filestore.BucketName != "" {
+				filestore.BucketName = filestorePatch.S3Filestore.BucketName
+			}
+
+			if filestorePatch.S3Filestore.BucketURL != "" {
+				filestore.BucketURL = filestorePatch.S3Filestore.BucketURL
+			}
+
+			if filestorePatch.S3Filestore.AccessKey != "" {
+				filestore.AccessKey = filestorePatch.S3Filestore.AccessKey
+			}
+
+			if filestorePatch.S3Filestore.SecretKey != "" {
+				filestore.SecretKey = filestorePatch.S3Filestore.SecretKey
+			}
+
+			existingFilestoreSecret.StringData = map[string]string{
+				"accesskey": filestore.AccessKey,
+				"secretkey": filestore.SecretKey,
+			}
+
+			_, err = kubeClient.Clientset.CoreV1().Secrets(installationName).Update(context.TODO(), existingFilestoreSecret, metav1.UpdateOptions{})
+			if err != nil {
+				logger.FromContext(c.Ctx).WithError(err).Error("Failed to update filestore secret")
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			}
+
+			MMFilestore.External.Bucket = filestore.BucketName
+			MMFilestore.External.URL = filestore.BucketURL
+			MMFilestore.External.Secret = model.SecretNameFilestore
+		} else if filestorePatch.FilestoreOption == model.FilestoreOptionInClusterLocal {
+			MMFilestore.Local.StorageSize = filestorePatch.LocalFileStore.StorageSize
+			MMFilestore.Local.Enabled = true
+		} else if filestorePatch.FilestoreOption == model.FilestoreOptionInClusterExternal {
+			MMFilestore.ExternalVolume.VolumeClaimName = filestorePatch.LocalExternalFileStore.VolumeClaimName
+		}
+	}
+
+	if patchRequest.License != nil {
+
+		existingLicenseSecretName := model.GetLicenseSecretName(installation)
+
+		// A secret for this already exists, so delete it
+		if existingLicenseSecretName != "" {
+			err := kubeClient.Clientset.CoreV1().Secrets(installationName).Delete(c.Ctx, existingLicenseSecretName, metav1.DeleteOptions{})
+			if err != nil {
+				logger.FromContext(c.Ctx).WithError(err).Error("Failed to delete existing license secret")
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			}
+		}
+
+		licenseSecret := model.NewMattermostLicenseSecret(installationName, *patchRequest.License)
+		_, err = kubeClient.Clientset.CoreV1().Secrets(installationName).Create(context.TODO(), licenseSecret, metav1.CreateOptions{})
+		if err != nil {
+			logger.FromContext(c.Ctx).WithError(err).Error("Failed to update license secret")
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		setEnv := false
+		for i, envVar := range installation.Spec.MattermostEnv {
+			if envVar.Name == model.MMENVLicense {
+				setEnv = true
+				installation.Spec.MattermostEnv[i] = v1.EnvVar{Name: model.MMENVLicense, ValueFrom: &v1.EnvVarSource{
+					SecretKeyRef: &v1.SecretKeySelector{Key: "license", LocalObjectReference: v1.LocalObjectReference{Name: licenseSecret.ObjectMeta.Name}, Optional: aws.Bool(true)}, // Add comma to separate items
+				}}
+			}
+		}
+
+		if !setEnv {
+			installation.Spec.MattermostEnv = append(installation.Spec.MattermostEnv, v1.EnvVar{Name: model.MMENVLicense, ValueFrom: &v1.EnvVarSource{
+				SecretKeyRef: &v1.SecretKeySelector{Key: "license", LocalObjectReference: v1.LocalObjectReference{Name: licenseSecret.ObjectMeta.Name}, Optional: aws.Bool(true)}, // Add comma to separate items
+			}})
+		}
+	}
+
 	installation.Spec.Version = patchRequest.Version
 	installation.Spec.Image = patchRequest.Image
+	installation.Spec.FileStore = MMFilestore
 
 	installation, err = kubeClient.MattermostClientsetV1Beta.MattermostV1beta1().Mattermosts(installationName).Update(context.TODO(), installation, metav1.UpdateOptions{})
 	if err != nil {
@@ -853,7 +1035,7 @@ func handleCreateMattermostInstallation(c *Context, w http.ResponseWriter, r *ht
 
 	databaseSecret := &v1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "database",
+			Name:      model.SecretNameDatabase,
 			Namespace: namespaceName,
 		},
 		Type: v1.SecretTypeOpaque,
@@ -873,16 +1055,7 @@ func handleCreateMattermostInstallation(c *Context, w http.ResponseWriter, r *ht
 	}
 
 	// License Secret
-	licenseSecret := &v1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "mattermost-license",
-			Namespace: namespaceName, // Create the namespace if needed
-		},
-		Type: v1.SecretTypeOpaque,
-		StringData: map[string]string{
-			"license": create.License, // To be filled from request
-		},
-	}
+	licenseSecret := model.NewMattermostLicenseSecret(namespaceName, create.License)
 
 	// Create the secret
 	_, err = kubeClient.Clientset.CoreV1().Secrets(namespaceName).Create(context.TODO(), licenseSecret, metav1.CreateOptions{})
@@ -895,7 +1068,7 @@ func handleCreateMattermostInstallation(c *Context, w http.ResponseWriter, r *ht
 	filestoreSecret := create.GetMMOperatorFilestoreSecret(namespaceName)
 	if filestoreSecret != nil {
 		// Create the filestore secret
-		_, err = kubeClient.Clientset.CoreV1().Secrets(namespaceName).Create(context.TODO(), filestoreSecret, metav1.CreateOptions{})
+		filestoreSecret, err = kubeClient.Clientset.CoreV1().Secrets(namespaceName).Create(context.TODO(), filestoreSecret, metav1.CreateOptions{})
 		if err != nil {
 			logger.FromContext(c.Ctx).Errorf("Error creating filestore secret:", err)
 			w.WriteHeader(http.StatusInternalServerError)
@@ -923,14 +1096,16 @@ func handleCreateMattermostInstallation(c *Context, w http.ResponseWriter, r *ht
 			},
 			Database: mmv1beta1.Database{
 				External: &mmv1beta1.ExternalDatabase{
-					Secret: "database",
+					Secret: model.SecretNameDatabase,
 				},
 			},
-			FileStore:     filestore,
-			LicenseSecret: "mattermost-license",
+			FileStore: filestore,
 			MattermostEnv: []v1.EnvVar{
 				{Name: "MM_FILESETTINGS_AMAZONS3SSE", Value: "true"},
 				{Name: "MM_FILESETTINGS_AMAZONS3SSL", Value: "true"},
+				{Name: model.MMENVLicense, ValueFrom: &v1.EnvVarSource{
+					SecretKeyRef: &v1.SecretKeySelector{Key: "license", LocalObjectReference: v1.LocalObjectReference{Name: licenseSecret.ObjectMeta.Name}, Optional: aws.Bool(true)}, // Add comma to separate items
+				}},
 			},
 			PodTemplate: &mmv1beta1.PodTemplate{
 				SecurityContext: &v1.PodSecurityContext{
