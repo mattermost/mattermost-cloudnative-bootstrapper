@@ -88,6 +88,9 @@ func InitState(stateFilePath string) error {
 	}
 
 	blankState := BootstrapperState{}
+	// Set a telemetry ID to start
+	blankState.Telemetry.TelemetryID = model.NewTelemetryID()
+
 	data, err := json.Marshal(blankState)
 	if err != nil {
 		return err
