@@ -23,7 +23,7 @@ build_desktop_desktop: build_desktop_macos
 .PHONY: lint-server
 lint-server:
 	@echo Running lint
-	env GO111MODULE=off $(GO) get -u golang.org/x/lint/golint
+	$(GO) get -u golang.org/x/lint/golint
 	$(GOBIN)/golint -set_exit_status $(./...)
 	@echo lint success
 
