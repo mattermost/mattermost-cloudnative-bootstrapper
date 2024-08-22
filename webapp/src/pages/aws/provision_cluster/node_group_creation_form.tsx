@@ -2,10 +2,9 @@ import React from 'react';
 import { useSelector } from 'react-redux';
 import { CSSTransition } from 'react-transition-group';
 import { RootState } from '../../../store';
-import { Button, CircularProgress, Input, Option, Select, Slider } from '@mui/joy';
-import { sliderClasses } from '@mui/joy/Slider';
+import { Button, Input, Slider } from '@mui/joy';
 import { useDispatch } from 'react-redux';
-import { createNodeGroupValid, setCreateNodeGroup } from '../../../store/installation/awsSlice';
+import { setCreateNodeGroup } from '../../../store/installation/awsSlice';
 import DynamicRows, { Row } from '../../../components/common/subnet_entry';
 import './node_group_creation_form.scss';
 import ARNSelector from '../../../components/aws/arn_selector';
@@ -22,8 +21,6 @@ type Props = {
 export default function NodeGroupCreationForm(props: Props) {
     const createNodeGroup = useSelector((state: RootState) => state.aws.createNodeGroup);
     const dispatch = useDispatch();
-    const arnFetchStatus = useSelector((state: RootState) => state.aws.arnFetchStatus);
-    const possibleARNs = useSelector((state: RootState) => state.aws.possibleARNs);
 
     const handleCreateNodeGroupChange = (key: string, value: any) => {
         dispatch(setCreateNodeGroup({ ...createNodeGroup, [key]: value }));

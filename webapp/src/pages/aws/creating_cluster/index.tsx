@@ -24,6 +24,7 @@ export default function CreatingClusterLoadingScreen() {
             }
             dispatch(getEKSCluster(clusterName) as any);
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [])
 
     useEffect(() => {
@@ -49,7 +50,7 @@ export default function CreatingClusterLoadingScreen() {
             clearInterval(intervalId);
             clearInterval(countdownId);
         };
-    }, [dispatch, cluster?.Status]);
+    }, [dispatch, cluster?.Status, cluster?.Name]);
 
     // Helper function to format Date object or string to a readable format
     const formatDate = (date?: Date) => {
@@ -85,7 +86,7 @@ export default function CreatingClusterLoadingScreen() {
             <div className="leftPanel">
                 <h1 className="title">EKS Cluster Creation in Progress</h1>
                 <div className="description">
-                    <p>The Mattermost Operator Bootstrapper has kicked off the creation of your EKS cluster. This can take a while, so sit tight. Once the cluster becomes stable, we'll let you know.</p>
+                    <p>The Mattermost Operator Bootstrapper has kicked off the creation of your EKS cluster. This can take a while, so sit tight. Once the cluster becomes stable, we&apos;ll let you know.</p>
                 </div>
             </div>
             <div className="rightPanel">

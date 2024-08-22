@@ -30,7 +30,7 @@ export default function SetupPage() {
         } else {
             dispatch(setKubernetesOption(''));
         }
-    }, [cloudProvider]);
+    }, [cloudProvider, dispatch]);
 
     const handleSubmit = async () => {
         console.log(credentials, cloudProvider);

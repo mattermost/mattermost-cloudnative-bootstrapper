@@ -18,7 +18,7 @@ export default function RehydrateAndRedirect() {
 
             setHasHydrated(true); 
         }
-    }, [isLoading, state, navigate]);
+    }, [isLoading, state, navigate, dispatch, hasHydrated]);
 
     return null;
 }

@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { Mattermost, PatchMattermostWorkspaceRequest, LocalFileStore, FileStore, S3FileStore } from '../../types/Installation';
 import { Button, DialogContent, DialogTitle, Input, Modal, ModalClose, ModalDialog, Textarea } from '@mui/joy';
 import './edit_installation_modal.scss';

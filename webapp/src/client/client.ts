@@ -1,6 +1,6 @@
 import { CreateClusterRequest, CreateNodegroup } from "../types/Cluster";
 
-export const baseUrl = process.env.NODE_ENV == 'development' ? 'http://localhost:3000' : 'http://localhost:8070';
+export const baseUrl = process.env.NODE_ENV === 'development' ? 'http://localhost:3000' : 'http://localhost:8070';
 
 export async function getInstallationByID(id: string) {
     const response = await fetch(`${baseUrl}/api/v1/installation/${id}`);

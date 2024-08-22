@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Button, Chip, CircularProgress, Option, Select, Table } from '@mui/joy';
+import { Button, Chip, CircularProgress, Option, Select } from '@mui/joy';
 
 import { useDispatch } from 'react-redux';
 import { useSelector } from 'react-redux';
@@ -17,10 +17,9 @@ export default function ProvisionClusterPage() {
     const [searchParams,] = useSearchParams();
     const cluster = useSelector((state: RootState) => state.aws.eksCluster);
     const nodeGroups = useSelector((state: RootState) => state.aws.nodeGroups);
-    const [countdown, setCountdown] = useState(11);
+    const [, setCountdown] = useState(11);
     const createNodeGroup = useSelector((state: RootState) => state.aws.createNodeGroup);
     const createNodeGroupButtonEnabled = useSelector(createNodeGroupValid);
-    const createNodeGroupRequestState = useSelector((state: RootState) => state.aws.createNodeGroupRequestState);
 
     useEffect(() => {
         if (typeof cluster === 'undefined') {
@@ -33,13 +32,15 @@ export default function ProvisionClusterPage() {
         } else {
             dispatch(getEKSNodeGroups(cluster?.Name as string) as any);
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [])
+
 
     useEffect(() => {
         dispatch(setCreateNodeGroup({ ...createNodeGroup, clusterName: cluster?.Name as string }) as any);
         dispatch(getEKSNodeGroups(cluster?.Name as string) as any);
-        handleCreateNodeGroupChange('clusterName', cluster?.Name as string);
-    }, [cluster?.Name]);
+        dispatch(setCreateNodeGroup({ ...createNodeGroup, clusterName: cluster?.Name as string }));
+    }, [cluster?.Name, dispatch, createNodeGroup]);
 
     useEffect(() => {
         const status = cluster?.Status;
@@ -64,7 +65,7 @@ export default function ProvisionClusterPage() {
             clearInterval(intervalId);
             clearInterval(countdownId);
         };
-    }, [dispatch, cluster?.Status]);
+    }, [dispatch, cluster?.Status, cluster?.Name]);
 
     useEffect(() => {
         if (!nodeGroups || nodeGroups?.length === 0) {
@@ -84,7 +85,7 @@ export default function ProvisionClusterPage() {
         return () => {
             clearInterval(intervalId);
         }
-    }, [nodeGroups]);
+    }, [nodeGroups, cluster?.Name, dispatch]);
 
     const cardTitle = () => {
         if (cluster?.Status === 'ACTIVE') {
@@ -99,9 +100,6 @@ export default function ProvisionClusterPage() {
         return (<><CircularProgress size="sm" /><h3>{cluster?.Name} <Chip color="primary">{cluster?.Status}</Chip></h3></>);
     }
 
-    const handleCreateNodeGroupChange = (key: string, value: string) => {
-        dispatch(setCreateNodeGroup({ ...createNodeGroup, [key]: value }));
-    }
 
     const handlePresetChange = (preset: string) => {
         dispatch(setCreateNodeGroup(awsNodeGroupPresets[preset]));
@@ -118,7 +116,7 @@ export default function ProvisionClusterPage() {
             <div className="leftPanel">
                 <h1 className="title">Provision Your Cluster</h1>
                 <div className="description">
-                    <p>Your cluster's been created, but for now it's just an empty shell. We need to provision the cluster with some cloud resources before we can get to deploying the Mattermost Operator. We provide some basic defaults on the right based on the number of users you expect to be in your Mattermost workspace, but make any adjustments that'll better fit your organization.</p>
+                    <p>Your cluster&apos;s been created, but for now it&apos;s just an empty shell. We need to provision the cluster with some cloud resources before we can get to deploying the Mattermost Operator. We provide some basic defaults on the right based on the number of users you expect to be in your Mattermost workspace, but make any adjustments that&apos;ll better fit your organization.</p>
                 </div>
             </div>
             <div className="rightPanel">
@@ -144,7 +142,7 @@ export default function ProvisionClusterPage() {
                                 </div>}
                             {(!nodeGroups || !nodeGroups?.length) && <>
                                 <label>Node Groups</label>
-                                <p>Select a preset based on the number of users you'll have on Mattermost. If you're between user counts, it's best to size-up.</p>
+                                <p>Select a preset based on the number of users you&apos;ll have on Mattermost. If you&apos;re between user counts, it&apos;s best to size-up.</p>
                                 <Select onChange={(event, newValue) => handlePresetChange(newValue as string)} size="sm" placeholder="Node Group Preset">
                                     <Option value="10users">1-10 Users</Option>
                                     <Option value="100users">11-100 Users</Option>

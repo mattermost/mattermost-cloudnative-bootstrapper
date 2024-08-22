@@ -54,7 +54,7 @@ export default function ExistingAWSPage() {
             <div className="leftPanel">
                 <h1 className="title">{getTitle()}</h1>
                 <div className="description">
-                    <p>Before we can deploy the Mattermost Operator we'll need to connect to an existing Cluster.</p>
+                    <p>Before we can deploy the Mattermost Operator we&apos;ll need to connect to an existing Cluster.</p>
                 </div>
             </div>
             <div className="rightPanel">
@@ -69,7 +69,7 @@ export default function ExistingAWSPage() {
                                     <label>AWS Region</label>
                                     <Select onChange={(event, newValue) => { dispatch(setRegion(newValue)) }} size="sm" placeholder="AWS Region">
                                         {Object.values(AWSRegions).map(region => (
-                                            <Option value={region}>{region}</Option>
+                                            <Option key={region} value={region}>{region}</Option>
                                         ))}
                                     </Select>
                                 </>

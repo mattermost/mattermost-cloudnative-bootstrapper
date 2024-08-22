@@ -52,11 +52,11 @@ export default function CreateWorkspacePage() {
         let workspaceInfoComplete = false;
         const filestoreConnectionComplete = filestoreComplete();
 
-        if (dbConnection.dbConnectionOption == 'Existing' && !!dbConnection.existingDatabaseConfig?.dbConnectionString && !!dbConnection.existingDatabaseConfig?.dbReplicasConnectionString) {
+        if (dbConnection.dbConnectionOption === 'Existing' && !!dbConnection.existingDatabaseConfig?.dbConnectionString && !!dbConnection.existingDatabaseConfig?.dbReplicasConnectionString) {
             dbConnectionComplete = true;
         }
 
-        if (dbConnection.dbConnectionOption == 'CreateForMeCNPG') {
+        if (dbConnection.dbConnectionOption === 'CreateForMeCNPG') {
             dbConnectionComplete = true;
         }
 
@@ -125,7 +125,7 @@ export default function CreateWorkspacePage() {
             <div className="leftPanel">
                 <h1 className="title">Create Mattermost Workspace</h1>
                 <div className="description">
-                    <p>We're ready to create your first Mattermost Workspace! We'll need a few more details before we can proceed.</p>
+                    <p>We&apos;re ready to create your first Mattermost Workspace! We&apos;ll need a few more details before we can proceed.</p>
                 </div>
             </div>
             <div className="rightPanel">

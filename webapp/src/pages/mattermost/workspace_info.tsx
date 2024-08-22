@@ -14,13 +14,9 @@ export default function WorkspaceInfo({onChange}: WorkspaceInfoProps) {
     const [enterpriseLicense, setEnterpriseLicense] = React.useState('');
     const [mattermostVersion, setMattermostVersion] = React.useState('');
 
-    const handleOnChange = () => {
-        onChange({installationName, domainName, enterpriseLicense, version: mattermostVersion});
-    }
-
     useEffect(() => {
-        handleOnChange();
-    }, [installationName, domainName, enterpriseLicense, mattermostVersion]);
+        onChange({installationName, domainName, enterpriseLicense, version: mattermostVersion});
+    }, [installationName, domainName, enterpriseLicense, mattermostVersion, onChange]);
 
     return (
         <div className="workspace-info">

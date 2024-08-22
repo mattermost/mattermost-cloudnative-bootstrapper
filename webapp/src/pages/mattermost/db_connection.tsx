@@ -17,10 +17,6 @@ export default function DBConnection({ releases, onChange, cloudProvider }: DBCo
     const [existingDatabaseConfig, setExistingDatabaseConfig] = React.useState<ExistingDBConnection | undefined>(undefined);
     const [databaseOption, setDatabaseOption] = React.useState('');
 
-    const handleOnChange = () => {
-        onChange({ existingDatabaseConfig, dbConnectionOption: databaseOption });
-    }
-
     const resetForm = () => {
         setExistingDatabaseConfig(undefined);
     }
@@ -30,8 +26,8 @@ export default function DBConnection({ releases, onChange, cloudProvider }: DBCo
     }, [databaseOption])
 
     useEffect(() => {
-        handleOnChange();
-    }, [existingDatabaseConfig, databaseOption]);
+        onChange({ existingDatabaseConfig, dbConnectionOption: databaseOption });
+    }, [existingDatabaseConfig, databaseOption, onChange]);
 
     const handleExistingDBChange = (field: string, value: string) => {
         setExistingDatabaseConfig({ ...existingDatabaseConfig, [field]: value } as ExistingDBConnection);
@@ -49,7 +45,7 @@ export default function DBConnection({ releases, onChange, cloudProvider }: DBCo
                 )
             case 'CreateForMeCNPG':
                 return (
-                    <div>We'll create a database cluster within the same namespace as your installation backed by CloudNative Postgres</div>
+                    <div>We&apos;ll create a database cluster within the same namespace as your installation backed by CloudNative Postgres</div>
                 )
             case 'CreateForMeRDS':
                 return (

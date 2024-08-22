@@ -1,6 +1,6 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 import { baseUrl } from './client';
-import { CreateMattermostWorkspaceRequest, Mattermost, MattermostInstallationSecret, MattermostInstallationSecrets, PatchMattermostWorkspaceRequest } from '../types/Installation';
+import { CreateMattermostWorkspaceRequest, Mattermost, MattermostInstallationSecrets, PatchMattermostWorkspaceRequest } from '../types/Installation';
 import { Cluster } from '../types/Cluster';
 
 export const dashboardApi = createApi({

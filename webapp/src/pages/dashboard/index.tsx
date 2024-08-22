@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { useDispatch } from 'react-redux';
 import { useSelector } from 'react-redux';
 import { useMatch, useNavigate, useSearchParams } from 'react-router-dom';
@@ -27,7 +27,7 @@ export default function InstallationDashboard() {
     const [deleteInstallation, deleteInstallationData] = useDeleteInstallationMutation();
     const [patchInstallation, patchInstallationData] = usePatchInstallationMutation();
 
-    const { data: clusters, isLoading: clustersLoading, isFetching, error: clustersError, refetch: refetchClusters } = useGetClustersQuery(cloudProvider);
+    const { data: clusters, isFetching } = useGetClustersQuery(cloudProvider);
 
     useEffect(() => {
         if (typeof selectedClusterName === 'undefined') {
@@ -36,14 +36,14 @@ export default function InstallationDashboard() {
                 dispatch(setSelectedClusterName(clusterName) as any);
             }
         }
-    }, [])
+    }, [selectedClusterName, dispatch, searchParams])
 
     useEffect(() => {
         if (selectedClusterName) {
             console.log("refetching");
             refetchInstallations();
         }
-    }, [selectedClusterName])
+    }, [selectedClusterName, refetchInstallations])
 
     const handleEditInstallation = (installationName: string) => {
         const installation = installations?.filter((install) => install.metadata.name === installationName)[0];
@@ -67,7 +67,7 @@ export default function InstallationDashboard() {
 
     const installationsSection = (installs: Mattermost[]) => {
         return (
-            <div className="installation-cards">{installs.map((install) => <InstallationCard installation={install} onClick={() => { }} onClickEdit={handleEditInstallation} onClickDelete={(installationName) => { deleteInstallation({ clusterName: selectedClusterName!, cloudProvider, installationName }) }} />)}
+            <div className="installation-cards">{installs.map((install) => <InstallationCard key={install.metadata.name} installation={install} onClick={() => { }} onClickEdit={handleEditInstallation} onClickDelete={(installationName) => { deleteInstallation({ clusterName: selectedClusterName!, cloudProvider, installationName }) }} />)}
                 <CreateInstallationCard onClick={() => navigate(`/${cloudProvider}/create_mattermost_workspace?clusterName=${selectedClusterName}`)} />
             </div>
         )

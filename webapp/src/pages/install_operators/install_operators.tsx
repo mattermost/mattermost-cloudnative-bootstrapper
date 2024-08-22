@@ -5,12 +5,9 @@ import { useSelector } from 'react-redux';
 import { useMatch, useNavigate, useSearchParams } from 'react-router-dom';
 import MattermostLogo from '../../static/mattermost-operator-logo.jpg';
 import NginxLogo from '../../static/Nginx logo.svg';
-import MarinerLogo from '../../static/mariner-logo.png';
-import ProvisionerLogo from '../../static/provisioner-logo.png';
 import CloudNativePGLogo from '../../static/cloudnativepglogo.png';
 import './install_operators.scss';
 import { RootState } from '../../store';
-import { getEKSCluster, getEKSNodeGroups, getKubeConfig } from '../../store/installation/awsSlice';
 import OperatorCard from './operator_card';
 import { Button } from '@mui/joy';
 import { requiredUtilitiesAreDeployed, setUtilities, setUtilityDeploymentState } from '../../store/installation/bootstrapperSlice';
@@ -71,7 +68,7 @@ export default function InstallOperatorsPage() {
     // TODO: Wire this in - currently it's just looking at the namespace to see if something's deployed, but these actually contain the Helm deployment status
     const {data: releases, isLoading: isReleasesLoading, isFetching: isReleasesFetching, isSuccess: isReleasesSuccess, isError: isReleasesError, refetch: refetchReleases} = useGetInstalledHelmReleasesQuery({cloudProvider, clusterName}, {skip: cloudProvider === '' || !clusterName});
 
-    const {data: cluster} = useGetClusterQuery({cloudProvider, clusterName}, {
+    useGetClusterQuery({cloudProvider, clusterName}, {
         skip: cloudProvider === '' || !clusterName,
     });
 
@@ -79,7 +76,7 @@ export default function InstallOperatorsPage() {
         releases?.forEach((release) => {
             dispatch(setUtilityDeploymentState({ utility: release.Name, deploymentRequestState: 'succeeded', isChecked: true }))
         })
-    }, [releases?.length])
+    }, [releases?.length, dispatch, releases])
 
     const requiredUtilitiesDeployed = useSelector(requiredUtilitiesAreDeployed);
 
@@ -107,7 +104,7 @@ export default function InstallOperatorsPage() {
             <div className="leftPanel">
                 <h1 className="title">Available Operators & Utilities</h1>
                 <div className="description">
-                    <p>We're ready to install the Mattermost Operator (required). Once you've installed the operator, you can also choose to deploy extra utilities like Nginx's operator (for ingress support), Or CloudNative Postgres (for database creation). If you plan to use RDS, you can skip CNPG.</p>
+                    <p>We&apos;re ready to install the Mattermost Operator (required). Once you&apos;ve installed the operator, you can also choose to deploy extra utilities like Nginx&apos;s operator (for ingress support), Or CloudNative Postgres (for database creation). If you plan to use RDS, you can skip CNPG.</p>
                 </div>
             </div>
             <div className="rightPanel">
@@ -144,7 +141,7 @@ export default function InstallOperatorsPage() {
                             }
                         </div>
                         <div className="next-step-button">
-                            {isReleasesLoading || isReleasesFetching && <RTKConnectedLoadingSpinner isSuccess={isReleasesSuccess} isError={isReleasesError} isLoading={isReleasesLoading} isFetching={isReleasesFetching}/>}
+                            {(isReleasesLoading || isReleasesFetching) && <RTKConnectedLoadingSpinner isSuccess={isReleasesSuccess} isError={isReleasesError} isLoading={isReleasesLoading} isFetching={isReleasesFetching}/>}
                             {!isReleasesLoading && isReleasesSuccess && !isReleasesFetching && <>
                                 <Button onClick={() => setIsDeploying(true)} disabled={deploymentFinished || numSelectedUtilities === 0} size="lg" color="primary">Deploy {numSelectedUtilities > 0 && <>{numSelectedUtilities} {numSelectedUtilities > 1 ? 'Utilities' : 'Utility'} </>}</Button>
                                 {deploymentFinished && <div className="deployment-finished">Utilities installed successfully!</div>}

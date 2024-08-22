@@ -46,7 +46,11 @@
   "eslintConfig": {
     "extends": [
       "react-app",
-      "react-app/jest"
+      "react-app/jest",
+      "plugin:react/recommended"
+    ],
+    "ignorePatterns": [
+      "build/**/*"
     ]
   },
   "browserslist": {
@@ -64,6 +68,7 @@
   "devDependencies": {
     "@fontsource/inter": "^5.0.15",
     "@types/lodash": "^4.14.202",
-    "@types/react-redux": "^7.1.31"
+    "@types/react-redux": "^7.1.31",
+    "eslint-plugin-react": "^7.35.0"
   }
 }
