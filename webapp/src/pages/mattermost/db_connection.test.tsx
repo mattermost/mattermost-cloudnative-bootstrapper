@@ -1,6 +1,6 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import DBConnection from './db_connection'; // Adjust the path if needed
+import DBConnection from './db_connection'; 
 import { Release } from '../../types/bootstrapper';
 
 describe('DBConnection', () => {

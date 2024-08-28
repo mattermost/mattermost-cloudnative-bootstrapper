@@ -1,6 +1,6 @@
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
-import WorkspaceInfo, { WorkspaceInfoDetails } from './workspace_info'; // Adjust the path if needed
+import WorkspaceInfo, { WorkspaceInfoDetails } from './workspace_info'; 
 
 describe('WorkspaceInfo', () => {
     it('renders all input fields and textarea', () => {

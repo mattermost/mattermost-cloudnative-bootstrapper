@@ -100,10 +100,10 @@ export interface Spec {
     imagePullPolicy: string;
     database: Database;
     fileStore: FileStore;
-    elasticSearch: Record<string, any>; // Assuming flexibility here
+    elasticSearch: Record<string, any>;
     scheduling: Scheduling;
     probes: Probes;
-    podExtensions: Record<string, any>; // Assuming flexibility here
+    podExtensions: Record<string, any>;
 }
 
 export interface MattermostEnvItem {

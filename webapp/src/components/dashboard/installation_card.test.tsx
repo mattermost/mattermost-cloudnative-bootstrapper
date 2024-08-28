@@ -1,7 +1,7 @@
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
-import InstallationCard from './installation_card'; // Adjust the path if needed
-import { Mattermost, Metadata, Status } from '../../types/Installation'; // Adjust the path if needed
+import InstallationCard from './installation_card'; 
+import { Mattermost, Metadata, Status } from '../../types/Installation'; 
 
 describe('InstallationCard', () => {
     const mockInstallation: Mattermost = {

@@ -1,6 +1,6 @@
 import React from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
-import BootstrapperHeader from './BootstrapperHeader'; // Adjust the path if needed
+import BootstrapperHeader from './BootstrapperHeader'; 
 
 // Mock the logo import
 jest.mock('../static/logo.png', () => 'test-logo-path');

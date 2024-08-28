@@ -1,6 +1,6 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
-import RTKConnectedLoadingSpinner from './rtk_connected_loading_spinner'; // Adjust the path if needed
+import RTKConnectedLoadingSpinner from './rtk_connected_loading_spinner'; 
 
 describe('RTKConnectedLoadingSpinner', () => {
     it('renders a loading indicator when isLoading is true', () => {
@@ -16,7 +16,7 @@ describe('RTKConnectedLoadingSpinner', () => {
     it('renders a success message when isSuccess is true', () => {
         render(<RTKConnectedLoadingSpinner isLoading={false} isSuccess isError={false} />);
         expect(screen.getByText('Connected successfully!')).toBeInTheDocument();
-        expect(screen.getByTestId('CheckIcon')).toBeInTheDocument(); // Assuming you have a data-testid on the CheckIcon
+        expect(screen.getByTestId('CheckIcon')).toBeInTheDocument(); 
     });
 
     it('renders a custom success message when isSuccessText is provided', () => {
@@ -27,7 +27,7 @@ describe('RTKConnectedLoadingSpinner', () => {
     it('renders an error message when isError is true', () => {
         render(<RTKConnectedLoadingSpinner isLoading={false} isSuccess={false} isError />);
         expect(screen.getByText('An error has occurred')).toBeInTheDocument();
-        expect(screen.getByTestId('ErrorOutlineIcon')).toBeInTheDocument(); // Assuming you have a data-testid on the ErrorOutlineIcon
+        expect(screen.getByTestId('ErrorOutlineIcon')).toBeInTheDocument();
     });
 
     it('renders a custom error message when isErrorText is provided', () => {

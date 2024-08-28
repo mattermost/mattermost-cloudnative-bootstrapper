@@ -4,9 +4,9 @@ import { Provider } from 'react-redux';
 import configureStore, {MockStoreEnhanced} from 'redux-mock-store';
 import { useSearchParams } from 'react-router-dom';
 import { createMemoryRouter, RouterProvider } from 'react-router-dom';
-import EditInstallationModal from './edit_installation_modal'; // Adjust the path if needed
-import { useGetMattermostInstallationSecretsQuery } from '../../client/dashboardApi'; // Adjust the path if needed
-import FilestoreConnection from '../../pages/mattermost/filestore_connection'; // Adjust the path if needed
+import EditInstallationModal from './edit_installation_modal'; 
+import { useGetMattermostInstallationSecretsQuery } from '../../client/dashboardApi'; 
+import FilestoreConnection from '../../pages/mattermost/filestore_connection'; 
 
 jest.mock('../../client/dashboardApi');
 jest.mock('../../pages/mattermost/filestore_connection');

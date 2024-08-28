@@ -1,6 +1,6 @@
 import React from "react";
 import { render, screen, fireEvent } from "@testing-library/react";
-import OperatorCard, { OperatorCardProps } from "./operator_card"; // Adjust the path if needed
+import OperatorCard, { OperatorCardProps } from "./operator_card"; 
 
 describe("OperatorCard", () => {
     const defaultProps: OperatorCardProps = {
@@ -22,7 +22,7 @@ describe("OperatorCard", () => {
     it("renders the operator details correctly", () => {
         render(<OperatorCard {...defaultProps} />);
 
-        expect(screen.getByAltText("Test Operator")).toBeInTheDocument(); // Check the image
+        expect(screen.getByAltText("Test Operator")).toBeInTheDocument();
         expect(screen.getByText("Test Operator")).toBeInTheDocument();
         expect(screen.getByText("This is a test operator")).toBeInTheDocument();
     });

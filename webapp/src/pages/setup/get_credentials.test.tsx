@@ -1,6 +1,6 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import GetCredentials from './get_credentials'; // Adjust the path if needed
+import GetCredentials from './get_credentials'; 
 
 describe('GetCredentials', () => {
     const mockOnCredentialsChange = jest.fn();

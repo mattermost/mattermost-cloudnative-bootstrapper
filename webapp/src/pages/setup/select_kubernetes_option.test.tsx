@@ -1,6 +1,6 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import SelectKubernetesOption from './select_kubernetes_option'; // Adjust the path if needed
+import SelectKubernetesOption from './select_kubernetes_option'; 
 
 describe('SelectKubernetesOption', () => {
     const mockOnChange = jest.fn();
