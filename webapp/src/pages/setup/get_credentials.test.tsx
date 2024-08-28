@@ -98,15 +98,15 @@ describe('GetCredentials', () => {
 
         // Wait for the input to be rendered
         await waitFor(() => {
-            const kubeconfigInput = getByPlaceholderText('~/.kube/config');
-            fireEvent.change(kubeconfigInput, { target: { value: '/path/to/kubeconfig' } });
+            expect(getByPlaceholderText('~/.kube/config')).toBeInTheDocument();
+        });
+        fireEvent.change(getByPlaceholderText('~/.kube/config'), { target: { value: '/path/to/kubeconfig' } });
 
-            expect(mockOnCredentialsChange).toHaveBeenCalledWith({
-                accessKeyId: '',
-                accessKeySecret: '',
-                kubeconfig: '/path/to/kubeconfig',
-                kubeconfigType: 'file',
-            });
+        expect(mockOnCredentialsChange).toHaveBeenCalledWith({
+            accessKeyId: '',
+            accessKeySecret: '',
+            kubeconfig: '/path/to/kubeconfig',
+            kubeconfigType: 'file',
         });
     });
 });

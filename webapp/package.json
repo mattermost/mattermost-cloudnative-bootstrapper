@@ -50,6 +50,9 @@
       "react-app/jest",
       "plugin:react/recommended"
     ],
+    "rules": {
+      "testing-library/prefer-screen-queries": "off"
+    },
     "ignorePatterns": [
       "build/**/*"
     ]

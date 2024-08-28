@@ -9,7 +9,7 @@ type CreateInstallationCardProps = {
 
 export default function CreateInstallationCard({onClick}: CreateInstallationCardProps) {
     return (
-        <Card onClick={onClick} role="button" className="installation-card">
+        <Card data-testid={'create-installation-card-root'} onClick={onClick} role="button" className="installation-card">
             <div className="create-installation-card-icon">
                 <ControlPointIcon />
             </div>

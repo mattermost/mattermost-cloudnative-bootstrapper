@@ -9,13 +9,13 @@ describe('BootstrapperHeader', () => {
     it('renders the logo and links', async () => {
         render(<BootstrapperHeader currentStep="some-step" />);
         await waitFor(() => {
-            const logoImage = screen.getByTestId('mattermost-logo');
-            expect(logoImage).toBeInTheDocument();
-            expect(logoImage).toHaveAttribute('src', 'test-logo-path');
-
-            const contactUsLink = screen.getByText('Contact Us');
-            expect(contactUsLink).toBeInTheDocument();
-            expect(contactUsLink).toHaveAttribute('href', 'https://mattermost.com');
+            ;
+            expect(screen.getByTestId('mattermost-logo')).toBeInTheDocument();
         });
+
+        expect(screen.getByTestId('mattermost-logo')).toHaveAttribute('src', 'test-logo-path');
+        const contactUsLink = screen.getByText('Contact Us');
+        expect(contactUsLink).toBeInTheDocument();
+        expect(contactUsLink).toHaveAttribute('href', 'https://mattermost.com');
     });
 });

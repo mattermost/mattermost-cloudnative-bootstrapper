@@ -19,7 +19,7 @@ describe('CreateInstallationCard', () => {
     });
 
     it('has the correct CSS class', () => {
-        const { container } = render(<CreateInstallationCard onClick={jest.fn()} />);
-        expect(container.firstChild).toHaveClass('installation-card');
+        const { getByTestId } = render(<CreateInstallationCard onClick={jest.fn()} />);
+        expect(getByTestId('create-installation-card-root')).toHaveClass('installation-card');
     });
 });

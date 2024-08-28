@@ -1,6 +1,6 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import DBConnection from './db_connection'; 
+import DBConnection from './db_connection';
 import { Release } from '../../types/bootstrapper';
 
 describe('DBConnection', () => {
@@ -26,9 +26,9 @@ describe('DBConnection', () => {
         fireEvent.click(screen.getByTestId('db-connection-selector'));
         await waitFor(() => {
             expect(screen.getByText('Use Existing')).toBeInTheDocument();
-            expect(screen.getByText('Create For Me (CNPG)')).toBeInTheDocument(); // Should be present due to cnpg-system release
-            expect(screen.getByText('Create For Me (RDS)')).toBeInTheDocument(); // AWS specific
         });
+        expect(screen.getByText('Create For Me (CNPG)')).toBeInTheDocument(); // Should be present due to cnpg-system release
+        expect(screen.getByText('Create For Me (RDS)')).toBeInTheDocument(); // AWS specific
     });
 
 
@@ -56,9 +56,9 @@ describe('DBConnection', () => {
         selectFromDropdown('Use Existing');
         await waitFor(() => {
             expect(screen.getByText('Connect to an externally managed database through a connection string')).toBeInTheDocument();
-            expect(screen.getByPlaceholderText('DB Connection String')).toBeInTheDocument();
-            expect(screen.getByPlaceholderText('DB Replicas Connection String')).toBeInTheDocument();
         });
+        expect(screen.getByPlaceholderText('DB Connection String')).toBeInTheDocument();
+        expect(screen.getByPlaceholderText('DB Replicas Connection String')).toBeInTheDocument();
 
         // CreateForMeCNPG
         selectFromDropdown('Create For Me (CNPG)');
@@ -78,19 +78,18 @@ describe('DBConnection', () => {
 
         // Existing
         selectFromDropdown('Use Existing');
-        await waitFor(() => {
-            fireEvent.change(screen.getByPlaceholderText('DB Connection String'), { target: { value: 'test-connection-string' } });
-            fireEvent.change(screen.getByPlaceholderText('DB Replicas Connection String'), {
-                target: { value: 'test-replicas-connection-string' },
-            });
+        fireEvent.change(screen.getByPlaceholderText('DB Connection String'), { target: { value: 'test-connection-string' } });
 
-            expect(mockOnChange).toHaveBeenCalledWith({
-                existingDatabaseConfig: {
-                    dbConnectionString: 'test-connection-string',
-                    dbReplicasConnectionString: 'test-replicas-connection-string',
-                },
-                dbConnectionOption: 'Existing',
-            });
+        fireEvent.change(screen.getByPlaceholderText('DB Replicas Connection String'), {
+            target: { value: 'test-replicas-connection-string' },
+        });
+
+        expect(mockOnChange).toHaveBeenCalledWith({
+            existingDatabaseConfig: {
+                dbConnectionString: 'test-connection-string',
+                dbReplicasConnectionString: 'test-replicas-connection-string',
+            },
+            dbConnectionOption: 'Existing',
         });
 
         // CreateForMeCNPG
@@ -107,10 +106,8 @@ describe('DBConnection', () => {
 
         // Change to Existing and fill in some values
         selectFromDropdown('Use Existing');
-        await waitFor(() => {
-            fireEvent.change(screen.getByPlaceholderText('DB Connection String'), {
-                target: { value: 'test-connection-string' },
-            });
+        fireEvent.change(screen.getByPlaceholderText('DB Connection String'), {
+            target: { value: 'test-connection-string' },
         });
 
         // Change to CreateForMeCNPG
@@ -118,7 +115,7 @@ describe('DBConnection', () => {
         await waitFor(() => {
             // Assert that the Existing DB fields are cleared
             expect(screen.queryByPlaceholderText('DB Connection String')).not.toBeInTheDocument();
-            expect(screen.queryByPlaceholderText('DB Replicas Connection String')).not.toBeInTheDocument();
         });
+        expect(screen.queryByPlaceholderText('DB Replicas Connection String')).not.toBeInTheDocument();
     });
 });

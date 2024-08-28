@@ -22,7 +22,7 @@ describe('FilestoreConnection', () => {
 
     it('Doesn\'t render the Create For Me (S3) option for non-AWS providers', () => {
         render(<FilestoreConnection cloudProvider="gcp" onChange={mockOnChange} />);
-        expect(screen.queryByText('Create For Me (S3)')).not.toBeInTheDocument
+        expect(screen.queryByText('Create For Me (S3)')).not.toBeInTheDocument();
     });
 
     function selectFromDropdown(value: string) {
@@ -33,7 +33,7 @@ describe('FilestoreConnection', () => {
     }
 
     it('renders the correct input fields based on selected filestoreOption', async () => {
-        const {getByTestId, getByText, getByPlaceholderText} = render(<FilestoreConnection cloudProvider="aws" onChange={mockOnChange} />);
+        const {getByText, getByPlaceholderText} = render(<FilestoreConnection cloudProvider="aws" onChange={mockOnChange} />);
 
         // InClusterLocal (default)
         expect(getByText('The Mattermost Operator can configure its own local filestore via PVC-backed storage.')).toBeInTheDocument();
@@ -44,18 +44,18 @@ describe('FilestoreConnection', () => {
 
         await waitFor(() => {
             expect(getByText('Provide connection details for your existing S3 bucket.')).toBeInTheDocument();
-            expect(getByPlaceholderText('Filestore URL')).toBeInTheDocument();
-            expect(getByPlaceholderText('Bucket Name')).toBeInTheDocument();
-            expect(getByPlaceholderText('Access Key ID')).toBeInTheDocument();
-            expect(getByPlaceholderText('Access Key Secret')).toBeInTheDocument();
         });
+        expect(getByPlaceholderText('Filestore URL')).toBeInTheDocument();
+        expect(getByPlaceholderText('Bucket Name')).toBeInTheDocument();
+        expect(getByPlaceholderText('Access Key ID')).toBeInTheDocument();
+        expect(getByPlaceholderText('Access Key Secret')).toBeInTheDocument();
 
         // InClusterExternal
         selectFromDropdown('In-Cluster (External PVC)');
         await waitFor(() => {
             expect(screen.getByText('Provide information on an externally managed PVC backed storage.')).toBeInTheDocument();
-            expect(screen.getByPlaceholderText('Volume Name')).toBeInTheDocument();
         });
+        expect(screen.getByPlaceholderText('Volume Name')).toBeInTheDocument();
 
         // AWSS3
         selectFromDropdown('Create For Me (S3)');
@@ -79,35 +79,37 @@ describe('FilestoreConnection', () => {
         // ExistingS3
         selectFromDropdown('Use Existing (S3 Compatible)');
         await waitFor(() => {
-            fireEvent.change(screen.getByPlaceholderText('Filestore URL'), { target: { value: 'https://example.com' } });
-            fireEvent.change(screen.getByPlaceholderText('Bucket Name'), { target: { value: 'my-bucket' } });
-            fireEvent.change(screen.getByPlaceholderText('Access Key ID'), { target: { value: 'test-key-id' } });
-            fireEvent.change(screen.getByPlaceholderText('Access Key Secret'), { target: { value: 'test-secret' } });
+            expect(screen.getByPlaceholderText('Filestore URL')).toBeInTheDocument();
+        });
+        fireEvent.change(screen.getByPlaceholderText('Filestore URL'), { target: { value: 'https://example.com' } });
+        fireEvent.change(screen.getByPlaceholderText('Bucket Name'), { target: { value: 'my-bucket' } });
+        fireEvent.change(screen.getByPlaceholderText('Access Key ID'), { target: { value: 'test-key-id' } });
+        fireEvent.change(screen.getByPlaceholderText('Access Key Secret'), { target: { value: 'test-secret' } });
 
-            expect(mockOnChange).toHaveBeenCalledWith({
-                filestoreOption: FilestoreType.ExistingS3,
-                localFilestoreConfig: undefined,
-                s3FilestoreConfig: {
-                    url: 'https://example.com',
-                    bucket: 'my-bucket',
-                    accessKeyId: 'test-key-id',
-                    accessKeySecret: 'test-secret'
-                },
-                localExternalFilestoreConfig: undefined
-            });
+        expect(mockOnChange).toHaveBeenCalledWith({
+            filestoreOption: FilestoreType.ExistingS3,
+            localFilestoreConfig: undefined,
+            s3FilestoreConfig: {
+                url: 'https://example.com',
+                bucket: 'my-bucket',
+                accessKeyId: 'test-key-id',
+                accessKeySecret: 'test-secret'
+            },
+            localExternalFilestoreConfig: undefined
         });
 
         // InClusterExternal
         selectFromDropdown('In-Cluster (External PVC)');
         await waitFor(() => {
-            fireEvent.change(screen.getByPlaceholderText('Volume Name'), { target: { value: 'my-volume' } });
+            expect(screen.getByPlaceholderText('Volume Name')).toBeInTheDocument();
+        });
+        fireEvent.change(screen.getByPlaceholderText('Volume Name'), { target: { value: 'my-volume' } });
 
-            expect(mockOnChange).toHaveBeenCalledWith({
-                filestoreOption: FilestoreType.InClusterExternal,
-                localFilestoreConfig: undefined,
-                s3FilestoreConfig: undefined,
-                localExternalFilestoreConfig: { volumeClaimName: 'my-volume' }
-            });
+        expect(mockOnChange).toHaveBeenCalledWith({
+            filestoreOption: FilestoreType.InClusterExternal,
+            localFilestoreConfig: undefined,
+            s3FilestoreConfig: undefined,
+            localExternalFilestoreConfig: { volumeClaimName: 'my-volume' }
         });
     });
 

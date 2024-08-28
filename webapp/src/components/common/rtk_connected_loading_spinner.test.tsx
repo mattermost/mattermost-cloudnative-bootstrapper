@@ -35,14 +35,18 @@ describe('RTKConnectedLoadingSpinner', () => {
         expect(screen.getByText('Custom error')).toBeInTheDocument();
     });
 
-    it('applies the correct CSS class based on the state', () => {
-        const {container: container1} = render(<RTKConnectedLoadingSpinner isLoading isSuccess={false} isError={false} />);
-        expect(container1.firstChild).toHaveClass('ConnectedLoadingSpinner__loading');
-
-        const {container: container2} = render(<RTKConnectedLoadingSpinner isLoading={false} isSuccess isError={false} />);
-        expect(container2.firstChild).toHaveClass('ConnectedLoadingSpinner__succeeded');
-
-        const {container: container3} = render(<RTKConnectedLoadingSpinner isLoading={false} isSuccess={false} isError />);
-        expect(container3.firstChild).toHaveClass('ConnectedLoadingSpinner__failed');
+    it('applies the loading CSS class when isLoading is true', () => {
+        const {getByTestId} = render(<RTKConnectedLoadingSpinner isLoading isSuccess={false} isError={false} />);
+        expect(getByTestId('rtk-loading-spinner-root')).toHaveClass('ConnectedLoadingSpinner__loading');
+    });
+    
+    it('applies the success CSS class when isSuccess is true', () => {
+        const {getByTestId} = render(<RTKConnectedLoadingSpinner isLoading={false} isSuccess isError={false} />);
+        expect(getByTestId('rtk-loading-spinner-root')).toHaveClass('ConnectedLoadingSpinner__succeeded');
+    });
+    
+    it('applies the error CSS class when isError is true', () => {
+        const {getByTestId} = render(<RTKConnectedLoadingSpinner isLoading={false} isSuccess={false} isError />);
+        expect(getByTestId('rtk-loading-spinner-root')).toHaveClass('ConnectedLoadingSpinner__failed');
     });
 });

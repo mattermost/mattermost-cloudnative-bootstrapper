@@ -29,8 +29,8 @@ describe('SelectKubernetesOption', () => {
         await waitFor(() => {
             expect(screen.getByText('Use Existing')).toBeInTheDocument();
             // The commented-out option should not be present
-            expect(screen.queryByText('Create New')).not.toBeInTheDocument();
         });
+        expect(screen.queryByText('Create New')).not.toBeInTheDocument();
     });
 
     it('calls onChange when an option is selected', async () => {
@@ -39,9 +39,7 @@ describe('SelectKubernetesOption', () => {
         // Open the select dropdown
         fireEvent.mouseDown(screen.getByRole('combobox'));
 
-        await waitFor(() => {
-            fireEvent.click(screen.getByText('Use Existing'));
-        });
+        fireEvent.click(screen.getByText('Use Existing'));
 
         expect(mockOnChange).toHaveBeenCalledWith('existing');
     });
