@@ -1,5 +1,5 @@
-import { Card } from '@mui/joy';
 import React from 'react';
+import { Card } from '@mui/joy';
 import ControlPointIcon from '@mui/icons-material/ControlPoint';
 
 
@@ -9,7 +9,7 @@ type CreateInstallationCardProps = {
 
 export default function CreateInstallationCard({onClick}: CreateInstallationCardProps) {
     return (
-        <Card onClick={onClick} className="installation-card">
+        <Card onClick={onClick} role="button" className="installation-card">
             <div className="create-installation-card-icon">
                 <ControlPointIcon />
             </div>

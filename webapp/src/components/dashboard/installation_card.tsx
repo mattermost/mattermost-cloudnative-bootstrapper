@@ -15,14 +15,10 @@ type InstallationCardProps = {
 
 export default function InstallationCard({
     installation,
-    onClick,
     onClickEdit,
     onClickDelete,
 }: InstallationCardProps) {
     const isStable = installation.status.state === 'stable';
-
-
-
     const chipWithTooltipIfApplicable = (isStable: boolean) => {
         if (isStable) {
             return (
@@ -53,26 +49,22 @@ export default function InstallationCard({
 
     return (
         <Card className="installation-card">
-            <div style={{ display: 'flex', alignItems: 'center' }}> {/* Header Section */}
+            <div style={{ display: 'flex', alignItems: 'center' }}> 
                 <Typography level="h3" style={{ flexGrow: 1 }}>
                     {installation.metadata.name}
                 </Typography>
                 {!isStable && <CircularProgress size={"sm"} />}
                 {chipWithTooltipIfApplicable(isStable)}
             </div>
-
-            {/* Installation Details */}
             <div>
                 <Typography>Image: {installation.status.image}</Typography>
                 <Typography>Version: {installation.status.version}</Typography>
                 <Typography>Replicas: {installation.status.replicas}</Typography>
                 <Typography>Endpoint: <a href={`http://${installation.status.endpoint}`} target="_blank" rel="noreferrer">{installation.status.endpoint}</a></Typography>
             </div>
-
-            {/* Button Area */}
             <div className="button-container" style={{ display: 'flex', justifyContent: 'flex-end' }}>
                 <IconButton onClick={() => onClickEdit(installation.metadata.name)} ><EditIcon /></IconButton>
-                <IconButton style={{color: 'red'}}onClick={() => onClickDelete(installation.metadata.name)}><DeleteIcon /></IconButton>
+                <IconButton style={{color: 'red'}} onClick={() => onClickDelete(installation.metadata.name)}><DeleteIcon /></IconButton>
             </div>
         </Card>
     );

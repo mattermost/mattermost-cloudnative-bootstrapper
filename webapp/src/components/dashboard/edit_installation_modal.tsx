@@ -68,8 +68,6 @@ export default function EditInstallationModal({ installation, onSubmit, show, on
         }
     }
 
-    console.log("installationPatch", installationPatch)
-
     return (
         <Modal className="edit-installation-modal" open={show} onClose={onClose}>
             <ModalDialog size="lg" style={{width: '400px'}}>
@@ -77,17 +75,16 @@ export default function EditInstallationModal({ installation, onSubmit, show, on
                 <DialogTitle>Edit installation</DialogTitle>
                 <DialogContent>Update installation {installationPatch?.name}</DialogContent>
                 <div className="edit-inputs">
-                    {/* Input fields for editing the installation? */}
-                    <label>Image</label>
-                    <Input size="sm" type="text" placeholder="Image" value={installationPatch?.image} onChange={(e) => handleChange(e, 'image')} />
-                    <label>Version</label>
-                    <Input size="sm" type="text" placeholder="Version" value={installationPatch?.version} onChange={(e) => handleChange(e, 'version')}/>
-                    <label>Replicas</label>
-                    <Input size="sm" type="text" placeholder="Replicas" value={installationPatch?.replicas} onChange={(e) => handleChange(e, 'replicas')}/>
-                    <label>Endpoint</label>
-                    <Input size="sm" type="text" placeholder="Endpoint" value={installationPatch?.endpoint} onChange={(e) => handleChange(e, 'endpoint')}/>
-                    <label>License</label>
-                    {isSuccess && <Textarea minRows={2} maxRows={10} placeholder="License" value={buildExistingLicenseObject()} onChange={(e) => handleChange(e as unknown as React.ChangeEvent<HTMLInputElement>, 'license')} />}
+                    <label htmlFor={'image'}>Image</label>
+                    <Input id={'image'} size="sm" type="text" placeholder="Image" value={installationPatch?.image} onChange={(e) => handleChange(e, 'image')} />
+                    <label htmlFor={'version'}>Version</label>
+                    <Input id={'version'} size="sm" type="text" placeholder="Version" value={installationPatch?.version} onChange={(e) => handleChange(e, 'version')}/>
+                    <label htmlFor='replicas'>Replicas</label>
+                    <Input id='replicas' size="sm" type="text" placeholder="Replicas" value={installationPatch?.replicas} onChange={(e) => handleChange(e, 'replicas')}/>
+                    <label htmlFor='endpoint'>Endpoint</label>
+                    <Input id='endpoint' size="sm" type="text" placeholder="Endpoint" value={installationPatch?.endpoint} onChange={(e) => handleChange(e, 'endpoint')}/>
+                    <label htmlFor='license'>License</label>
+                    {isSuccess && <Textarea id='license' minRows={2} maxRows={10} placeholder="License" value={buildExistingLicenseObject()} onChange={(e) => handleChange(e as unknown as React.ChangeEvent<HTMLInputElement>, 'license')} />}
                     {isSuccess && <FilestoreConnection isEdit={true} cloudProvider={cloudProvider} existingFilestore={buildExistingFilestoreObject(installationPatch?.fileStore!)} onChange={(change) => { handleFilestoreConnectionChange(change)}} />}
                     <Button className="submit-button" onClick={() => onSubmit(installationPatch!)}>Save</Button>
                 </div>

@@ -57,7 +57,7 @@ export default function DBConnection({ releases, onChange, cloudProvider }: DBCo
     return (
         <div className="database-connection">
             <label>DB Connection</label>
-            <Select size="sm" placeholder="DB Connection" onChange={(e, newValue) => {
+            <Select data-testid={'db-connection-selector'} size="sm" placeholder="DB Connection Type" onChange={(e, newValue) => {
                 setDatabaseOption(newValue as string);
             }}>
                 <Option value={'Existing'}>Use Existing</Option>

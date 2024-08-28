@@ -23,7 +23,7 @@ const useEnhancedEffect =
 
 const materialTheme = materialExtendTheme();
 
-export default function JoyOrderDashboardTemplate() {
+export default function App() {
   const status = useScript(`https://unpkg.com/feather-icons`);
   const location = useLocation();
   const [initialLoad, setInitialLoad] = React.useState(true);

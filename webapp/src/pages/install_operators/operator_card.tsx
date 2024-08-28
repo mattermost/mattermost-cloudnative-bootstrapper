@@ -53,6 +53,7 @@ const OperatorCard = ({ displayName, operatorLogoUrl, operatorDescription, onCli
         <Card
             key={key}
             onClick={handleCheckboxChange}
+            role="button"
             variant="outlined"
             sx={{
                 minWidth: 250,

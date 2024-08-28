@@ -42,3 +42,26 @@ jobs:
         run: |
           echo "machine github.com login mattermost-build password ${{ secrets.MATTERMOST_BUILD_GH_TOKEN }}" > ~/.netrc
           make check-style
+  test-webapp:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: ci/checkout-repo
+        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c # v3.3.0
+        with:
+          fetch-depth: "0"
+      - name: ci/setup-node
+        uses: actions/setup-node@64ed1c7eab4cce3362f8c340dee64e5eaeef8f7c # v3.6.0
+        with:
+          node-version-file: ".nvmrc"
+          cache: "npm"
+          cache-dependency-path: |
+            webapp/package-lock.json
+            webapp/test/package-lock.json
+      - name: ci/install-npm-deps
+        run: |
+          cd webapp
+          npm install
+      - name: ci/run-unit-tests
+        run: |
+          cd webapp
+          npm test

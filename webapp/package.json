@@ -40,6 +40,7 @@
     "start": "react-scripts start",
     "build": "NODE_ENV=production PUBLIC_URL=./ react-scripts build",
     "test": "react-scripts test",
+    "test-ci": "react-scripts test --watchAll=false",
     "eject": "react-scripts eject",
     "lint": "eslint . --ext .js,.jsx,.ts,.tsx"
   },
@@ -69,6 +70,8 @@
     "@fontsource/inter": "^5.0.15",
     "@types/lodash": "^4.14.202",
     "@types/react-redux": "^7.1.31",
-    "eslint-plugin-react": "^7.35.0"
+    "@types/redux-mock-store": "^1.0.6",
+    "eslint-plugin-react": "^7.35.0",
+    "redux-mock-store": "^1.5.4"
   }
 }
