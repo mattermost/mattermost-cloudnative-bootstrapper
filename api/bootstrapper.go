@@ -851,9 +851,40 @@ func handlePatchMattermostInstallation(c *Context, w http.ResponseWriter, r *htt
 		}
 	}
 
+	database := installation.Spec.Database
+	if patchRequest.DatabasePatch != nil {
+		databaseSecret, err := kubeClient.Clientset.CoreV1().Secrets(installationName).Get(c.Ctx, model.SecretNameDatabase, metav1.GetOptions{})
+		if err != nil {
+			logger.FromContext(c.Ctx).WithError(err).Error("Failed to get database secret")
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		existingStringData := databaseSecret.Data
+
+		if patchRequest.DatabasePatch.ConnectionString != "" {
+			existingStringData["DB_CONNECTION_CHECK_URL"] = []byte(patchRequest.DatabasePatch.ConnectionString)
+			existingStringData["DB_CONNECTION_STRING"] = []byte(patchRequest.DatabasePatch.ConnectionString)
+		}
+
+		if patchRequest.DatabasePatch.ReplicaConnectionString != "" {
+			existingStringData["MM_SQLSETTINGS_DATASOURCEREPLICAS"] = []byte(patchRequest.DatabasePatch.ReplicaConnectionString)
+		}
+
+		updatedSecret, err := kubeClient.Clientset.CoreV1().Secrets(installationName).Update(c.Ctx, databaseSecret, metav1.UpdateOptions{})
+		if err != nil {
+			logger.FromContext(c.Ctx).WithError(err).Error("Failed to update database secret")
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		database.External.Secret = updatedSecret.ObjectMeta.Name
+	}
+
 	installation.Spec.Version = patchRequest.Version
 	installation.Spec.Image = patchRequest.Image
 	installation.Spec.FileStore = MMFilestore
+	installation.Spec.Database = database
 
 	installation, err = kubeClient.MattermostClientsetV1Beta.MattermostV1beta1().Mattermosts(installationName).Update(context.TODO(), installation, metav1.UpdateOptions{})
 	if err != nil {
