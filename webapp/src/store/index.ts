@@ -4,6 +4,7 @@ import awsSlice from './installation/awsSlice'
 import dashboardSlice from './installation/dashboardSlice'
 import { dashboardApi } from '../client/dashboardApi'
 import {bootstrapperApi} from '../client/bootstrapperApi'
+import { telemetryApi } from '../client/telemetryApi'
 
 export const store = configureStore({
     reducer: {
@@ -12,9 +13,10 @@ export const store = configureStore({
         aws: awsSlice,
         [dashboardApi.reducerPath]: dashboardApi.reducer,
         [bootstrapperApi.reducerPath]: bootstrapperApi.reducer,
+        [telemetryApi.reducerPath]: telemetryApi.reducer,
     },
     middleware: (getDefaultMiddleware) => 
-    getDefaultMiddleware().concat(dashboardApi.middleware).concat(bootstrapperApi.middleware),
+    getDefaultMiddleware().concat(dashboardApi.middleware).concat(bootstrapperApi.middleware).concat(telemetryApi.middleware),
 })
 
 // Infer the `RootState` and `AppDispatch` types from the store itself

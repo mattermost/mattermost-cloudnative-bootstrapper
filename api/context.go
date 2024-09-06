@@ -9,13 +9,15 @@ import (
 	"github.com/mattermost/mattermost-cloudnative-bootstrapper/internal/logger"
 	"github.com/mattermost/mattermost-cloudnative-bootstrapper/model"
 	"github.com/mattermost/mattermost-cloudnative-bootstrapper/providers"
+	"github.com/mattermost/mattermost-cloudnative-bootstrapper/telemetry"
 )
 
 type BootstrapperState struct {
-	Provider      string             `json:"provider"`
-	ClusterName   string             `json:"clusterName"`
-	Credentials   *model.Credentials `json:"credentials"`
-	StateFilePath string             `json:"stateFilePath"`
+	Provider      string               `json:"provider"`
+	ClusterName   string               `json:"clusterName"`
+	Credentials   *model.Credentials   `json:"credentials"`
+	StateFilePath string               `json:"stateFilePath"`
+	Telemetry     model.TelemetryState `json:"telemetry"`
 	// TODO: Support setting a KubeConfigPath via CLI flag or env var for authentication
 	// KubeConfigPath string `json:"kubeConfigPath"`
 }
@@ -28,9 +30,10 @@ type Context struct {
 	CloudProviderName string
 	CloudProvider     providers.CloudProvider
 	BootstrapperState BootstrapperState
+	TelemetryProvider *telemetry.TelemetryProvider
 }
 
-func NewContext(ctx context.Context, statePath string) (*Context, error) {
+func NewContext(ctx context.Context, statePath string, telemetryDisabled bool) (*Context, error) {
 	var state BootstrapperState
 	if exists, err := CheckStateExists(statePath); exists && err == nil {
 		// State file exists, read it
@@ -39,6 +42,14 @@ func NewContext(ctx context.Context, statePath string) (*Context, error) {
 			return nil, err
 		}
 		logger.FromContext(ctx).Info("Loaded state file from file")
+		// Old state files may not have a telemetry ID, so generate one
+		if state.Telemetry.TelemetryID == "" {
+			state.Telemetry.TelemetryID = model.NewTelemetryID()
+			err := SetState(statePath, state)
+			if err != nil {
+				return nil, err
+			}
+		}
 	} else if !exists && err == nil {
 		// State file doesn't exist, initialize it
 		err = InitState(statePath)
@@ -53,11 +64,28 @@ func NewContext(ctx context.Context, statePath string) (*Context, error) {
 
 	state.StateFilePath = statePath
 
+	// Disabling telemetry persists to state, so that users don't need to pass the flag every time
+	if telemetryDisabled && !state.Telemetry.TelemetryDisabled {
+		state.Telemetry.TelemetryDisabled = telemetryDisabled
+
+		err := SetState(statePath, state)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	// Initialize the telemetry provider
+	telemetryProvider, err := telemetry.NewTelemetryProvider(state.Telemetry.TelemetryID, state.Telemetry.TelemetryDisabled)
+	if err != nil {
+		return nil, err
+	}
+
 	return &Context{
 		Ctx:               ctx,
 		BootstrapperState: state,
 		// TODO: this is redundant, use the state.Provider instead everywhere
 		CloudProviderName: state.Provider,
+		TelemetryProvider: telemetryProvider,
 	}, nil
 }
 
@@ -69,6 +97,7 @@ func (c *Context) Clone() *Context {
 		CloudProviderName: c.CloudProviderName,
 		CloudProvider:     c.CloudProvider,
 		BootstrapperState: c.BootstrapperState,
+		TelemetryProvider: c.TelemetryProvider,
 	}
 }
 
