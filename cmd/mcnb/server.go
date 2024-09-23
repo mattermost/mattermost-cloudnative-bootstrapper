@@ -26,12 +26,13 @@ var serverCmd = &cobra.Command{
 		r := mux.NewRouter()
 
 		stateFilePath, _ := cmd.Flags().GetString("state-file-path")
+		telemetryDisabled, _ := cmd.Flags().GetBool("disable-telemetry")
 
 		ctx = logger.Init(ctx, logrus.DebugLevel)
 
 		logger.FromContext(ctx).Infof("Using state file path: %s", stateFilePath)
 
-		apiContext, err := api.NewContext(ctx, stateFilePath)
+		apiContext, err := api.NewContext(ctx, stateFilePath, telemetryDisabled)
 		if err != nil {
 			return err
 		}

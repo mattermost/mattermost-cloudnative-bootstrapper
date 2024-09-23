@@ -1,0 +1,32 @@
+.LogViewerModal {
+    #basic-modal-dialog-description {
+        overflow-x: hidden;
+        word-break: break-all;
+    }
+
+    .pod-selectors {
+        .pod-list {
+            margin-top: 10px;
+            margin-bottom: 10px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            padding: 12px;
+            // New styles for limiting rows and enabling scrolling
+            max-height: calc(5 * 35px + 10px); // Adjust 30px if your row height is different
+            overflow-y: scroll; 
+            border: 1px lightgray solid;
+            border-radius: 12px;
+            :hover {
+                cursor: pointer;
+            }
+        }
+    }
+
+    .no-pods-selected {
+        margin-top: 15px;
+        display: flex !important;
+        justify-content: center;
+        align-items: center;
+    }
+}

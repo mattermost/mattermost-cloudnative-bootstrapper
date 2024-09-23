@@ -50,7 +50,6 @@ func (h contextHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// ... other cases
 	default:
 		// err = fmt.Errorf("unsupported cloud provider: %s", context.CloudProviderName)
-		logger.FromContext(context.Ctx).WithError(err).Error("failed to parse cloud provider")
 	}
 
 	// if err != nil {

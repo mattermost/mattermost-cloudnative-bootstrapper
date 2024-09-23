@@ -22,6 +22,7 @@ var rootCmd = &cobra.Command{
 
 func init() {
 	serverCmd.PersistentFlags().String("state-file-path", api.DefaultStateFilePath(), "Path to the state file. Defaults to ~/.mcnb/state.json")
+	serverCmd.PersistentFlags().Bool("disable-telemetry", false, "Disable telemetry")
 	rootCmd.AddCommand(serverCmd)
 }
 
