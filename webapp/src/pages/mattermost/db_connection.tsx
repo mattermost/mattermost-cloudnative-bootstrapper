@@ -27,10 +27,6 @@ export default function DBConnection({ releases, onChange, cloudProvider, isEdit
     }
     );
 
-    const handleOnChange = () => {
-        onChange({ existingDatabaseConfig, dbConnectionOption: databaseOption });
-    }
-
     const resetForm = () => {
         setExistingDatabaseConfig(undefined);
     }
@@ -40,8 +36,8 @@ export default function DBConnection({ releases, onChange, cloudProvider, isEdit
     }, [databaseOption])
 
     useEffect(() => {
-        handleOnChange();
-    }, [existingDatabaseConfig, databaseOption]);
+        onChange({ existingDatabaseConfig, dbConnectionOption: databaseOption });
+    }, [existingDatabaseConfig, databaseOption, onChange]);
 
     const handleExistingDBChange = (field: string, value: string) => {
         setExistingDatabaseConfig({ ...existingDatabaseConfig, [field]: value } as ExistingDBConnection);
@@ -59,7 +55,7 @@ export default function DBConnection({ releases, onChange, cloudProvider, isEdit
                 )
             case DatabaseType.CreateCNPG:
                 return (
-                    <div>We'll create a database cluster within the same namespace as your installation backed by CloudNative Postgres</div>
+                    <div>We&apos;ll create a database cluster within the same namespace as your installation backed by CloudNative Postgres</div>
                 )
             case DatabaseType.CreateRDS:
                 return (

@@ -1,0 +1,44 @@
+name: ci
+on:
+  pull_request:
+  push:
+    branches:
+      - master
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  TERM: xterm
+  GO_VERSION: 1.22.0
+
+concurrency: 
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check-style:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: ci/checkout-repo
+        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c # v3.3.0
+        with:
+          fetch-depth: "0"
+      - name: ci/setup-go
+        uses: actions/setup-go@6edd4406fa81c3da01a34fa6f6343087c207a568 # v3.5.0
+        with:
+          cache: true
+          go-version: ${{ env.GO_VERSION }}
+      - name: ci/setup-node
+        uses: actions/setup-node@64ed1c7eab4cce3362f8c340dee64e5eaeef8f7c # v3.6.0
+        with:
+          node-version: "v18.15.0"
+          cache: "npm"
+          cache-dependency-path: |
+            webapp/package-lock.json
+            webapp/test/package-lock.json
+      - name: ci/check-style
+        run: |
+          echo "machine github.com login mattermost-build password ${{ secrets.MATTERMOST_BUILD_GH_TOKEN }}" > ~/.netrc
+          make check-style

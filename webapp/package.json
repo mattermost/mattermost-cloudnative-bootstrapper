@@ -42,12 +42,17 @@
     "start": "react-scripts start",
     "build": "NODE_ENV=production PUBLIC_URL=./ react-scripts build",
     "test": "react-scripts test",
-    "eject": "react-scripts eject"
+    "eject": "react-scripts eject",
+    "lint": "eslint . --ext .js,.jsx,.ts,.tsx"
   },
   "eslintConfig": {
     "extends": [
       "react-app",
-      "react-app/jest"
+      "react-app/jest",
+      "plugin:react/recommended"
+    ],
+    "ignorePatterns": [
+      "build/**/*"
     ]
   },
   "browserslist": {
@@ -66,6 +71,7 @@
     "@fontsource/inter": "^5.0.15",
     "@types/lodash": "^4.14.202",
     "@types/react-redux": "^7.1.31",
+    "eslint-plugin-react": "^7.35.0",
     "@types/react-window": "^1.8.8"
   }
 }

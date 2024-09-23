@@ -28,7 +28,7 @@ export default function FilestoreConnection({onChange, cloudProvider, existingFi
 
     useEffect(() => {
         onChange({filestoreOption, localFilestoreConfig, s3FilestoreConfig, localExternalFilestoreConfig});
-    }, [filestoreOption, localFilestoreConfig, s3FilestoreConfig, localExternalFilestoreConfig])
+    }, [filestoreOption, localFilestoreConfig, s3FilestoreConfig, localExternalFilestoreConfig, onChange])
 
     useEffect(() => {
         resetForm();

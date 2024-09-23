@@ -17,12 +17,12 @@ type Props = {
     onChange?: (rows: Row[]) => void;
 }
 
-export default function SubnetEntry(props: Props) {
+export default function SubnetEntry({onChange}: Props) {
     const [rows, setRows] = useState<Row[]>([{ id: 1, value: '' }]);
 
     useEffect(() => {
-        props.onChange?.(rows);
-    }, [rows])
+        onChange?.(rows);
+    }, [rows, onChange])
 
     const handleAddRow = () => {
         const newRow: Row = { id: rows.length + 1, value: '' };

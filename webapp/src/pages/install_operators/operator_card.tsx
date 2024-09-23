@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import Card from '@mui/joy/Card';
 import CardOverflow from '@mui/joy/CardOverflow';
 import CardContent from '@mui/joy/CardContent';
@@ -43,7 +43,7 @@ const OperatorCard = ({ displayName, operatorLogoUrl, operatorDescription, onCli
         }
 
         if (isLoading) {
-            return [(<CircularProgress size="sm" />)];
+            return [(<CircularProgress key="loading" size="sm" />)];
         }
 
         return chips;

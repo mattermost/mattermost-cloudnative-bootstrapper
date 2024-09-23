@@ -4,7 +4,7 @@ import { Button, CircularProgress, Input, Option, Select } from '@mui/joy';
 import { useDispatch } from 'react-redux';
 
 import { AWSRegions, SupportedKubernetesVersions } from '../../types/bootstrapper';
-import { awsFormComplete, createEKSCluster, fetchPossibleARN, getCreateEKSClusterRequest, setEksClusterName, setKubernetesVersion, setRegion, setSecurityGroupIds, setSelectedARN, setSubnetIds } from '../../store/installation/awsSlice';
+import { awsFormComplete, createEKSCluster, getCreateEKSClusterRequest, setEksClusterName, setKubernetesVersion, setRegion, setSecurityGroupIds, setSelectedARN, setSubnetIds } from '../../store/installation/awsSlice';
 import { useSelector } from 'react-redux';
 import { RootState } from '../../store';
 import DynamicRows, { Row } from '../../components/common/subnet_entry';
@@ -26,7 +26,7 @@ export default function AWSPage() {
             navigate(`/aws/creating_cluster?clusterName=${cluster.Name}`);
         }
     
-    }, [createEKSClusterRequestStatus, cluster?.Name])
+    }, [createEKSClusterRequestStatus, cluster?.Name, navigate])
 
     const handleSubnetChanges = (rows: Row[]) => {
         let securityGroupIds: string[] = [];
@@ -54,7 +54,7 @@ export default function AWSPage() {
             <div className="leftPanel">
                 <h1 className="title">Mattermost Operator via EKS</h1>
                 <div className="description">
-                    <p>Before we can deploy the Mattermost Operator we'll need to get an EKS cluster up and running. Complete the form to the right and we'll handle the rest.</p>
+                    <p>Before we can deploy the Mattermost Operator we&apos;ll need to get an EKS cluster up and running. Complete the form to the right and we&apos;ll handle the rest.</p>
                 </div>
             </div>
             <div className="rightPanel">
@@ -67,7 +67,7 @@ export default function AWSPage() {
                             <label>AWS Region</label>
                             <Select onChange={(event, newValue) => { dispatch(setRegion(newValue)) }} size="sm" placeholder="AWS Region">
                                 {Object.values(AWSRegions).map(region => (
-                                    <Option value={region}>{region}</Option>
+                                    <Option key={region} value={region}>{region}</Option>
                                 ))}
                             </Select>
                             <label>Cluster Name</label>
@@ -75,7 +75,7 @@ export default function AWSPage() {
                             <label>Kubernetes Version</label>
                             <Select onChange={(event, newValue) => { dispatch(setKubernetesVersion(newValue)) }} size="sm" placeholder="Kubernetes Version">
                                 {Object.values(SupportedKubernetesVersions).map(version => (
-                                    <Option value={version}>{version}</Option>
+                                    <Option key={version} value={version}>{version}</Option>
                                 ))}
                             </Select>
                             <ARNSelector onChange={(value) => dispatch(setSelectedARN(value))} />

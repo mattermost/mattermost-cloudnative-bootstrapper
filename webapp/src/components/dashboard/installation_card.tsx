@@ -65,7 +65,7 @@ export default function InstallationCard({
                 <Typography>Image: {installation.status.image}</Typography>
                 <Typography>Version: {installation.status.version}</Typography>
                 <Typography>Replicas: {installation.status.replicas}</Typography>
-                <Typography>Endpoint: <a href={`http://${installation.status.endpoint}`} target="_blank">{installation.status.endpoint}</a></Typography>
+                <Typography>Endpoint: <a href={`http://${installation.status.endpoint}`} target="_blank" rel="noreferrer">{installation.status.endpoint}</a></Typography>
             </div>
 
             <div className="button-container" style={{ display: 'flex', justifyContent: 'flex-end' }}>

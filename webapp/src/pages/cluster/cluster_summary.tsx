@@ -89,7 +89,7 @@ export default function ClusterSummaryPage() {
             <div className="leftPanel">
                 <h1 className="title">Your Kubernetes Cluster</h1>
                 <div className="description">
-                    <p>Your Kubernetes cluster is good to go! On the right you'll find a summary of your selected cluster. Click continue to move on to deploying the Mattermost Operator and its dependencies</p>
+                    <p>Your Kubernetes cluster is good to go! On the right you&apos;ll find a summary of your selected cluster. Click continue to move on to deploying the Mattermost Operator and its dependencies</p>
                 </div>
             </div>
             <div className="rightPanel">

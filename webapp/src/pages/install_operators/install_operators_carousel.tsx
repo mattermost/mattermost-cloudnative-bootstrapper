@@ -6,8 +6,6 @@ import { Button} from '@mui/joy';
 import CloudNativePGLogo from '../../static/cloudnativepglogo.png';
 import MattermostLogo from '../../static/mattermost-operator-logo.jpg';
 import NginxLogo from '../../static/Nginx logo.svg';
-import MarinerLogo from '../../static/mariner-logo.png';
-import ProvisionerLogo from '../../static/provisioner-logo.png';
 import { useDeployCloudNativePGMutation, useDeployMattermostOperatorMutation, useDeployNginxOperatorMutation } from '../../client/bootstrapperApi';
 
 type Props = {
@@ -56,6 +54,10 @@ export default function InstallOperatorsCarousel({ onSuccess, onError }: Props) 
     const numSelectedUtilities = utilities.filter(
         (utility) => utility.isChecked && utility.deploymentRequestState !== 'succeeded',
     ).length;
+
+    const handleDeploy = async () => {
+        card.mutator[0]({ clusterName, cloudProvider });
+    };
     
     useEffect(() => {
         if (carouselIndex + 1 > numSelectedUtilities) {
@@ -65,7 +67,8 @@ export default function InstallOperatorsCarousel({ onSuccess, onError }: Props) 
             handleDeploy();
         } else {
         }
-    }, [carouselIndex])
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [carouselIndex, numSelectedUtilities, onSuccess, handleDeploy]);
 
     const utilityInProgress = utilities[carouselIndex];
 
@@ -89,10 +92,6 @@ export default function InstallOperatorsCarousel({ onSuccess, onError }: Props) 
     if (card.mutator[1].isError) {
         onError(card.mutator[1].error as string);
     }
-
-    const handleDeploy = async () => {
-        card.mutator[0]({ clusterName, cloudProvider });
-    };
 
     return (
         <div className="InstallOperators">

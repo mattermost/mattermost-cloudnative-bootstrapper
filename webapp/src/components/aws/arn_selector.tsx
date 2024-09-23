@@ -16,18 +16,19 @@ export default function ARNSelector(props: Props) {
 
     useEffect(() => {
         dispatch(fetchPossibleARN() as any)
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [])
 
     return (
         <>
             <label> IAM Role ARN</label>
-            {arnFetchStatus == 'succeeded' && <Select size="sm" onChange={(event, newValue) => props.onChange(newValue as string)} placeholder="IAM Role ARN">
+            {arnFetchStatus === 'succeeded' && <Select size="sm" onChange={(event, newValue) => props.onChange(newValue as string)} placeholder="IAM Role ARN">
                 {possibleARNs?.map((arn: any) => {
-                    return <Option value={arn.arn}>{arn.arn}</Option>
+                    return <Option key={arn.arn} value={arn.arn}>{arn.arn}</Option>
                 })}
             </Select>}
-            {arnFetchStatus == 'failed' && <Input size="sm" placeholder="IAM Role ARN" onChange={(event) => props.onChange(event.target.value)} />}
-            {arnFetchStatus == 'loading' && <CircularProgress />}
+            {arnFetchStatus === 'failed' && <Input size="sm" placeholder="IAM Role ARN" onChange={(event) => props.onChange(event.target.value)} />}
+            {arnFetchStatus === 'loading' && <CircularProgress />}
         </>
     );
 }

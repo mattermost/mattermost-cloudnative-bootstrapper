@@ -13,7 +13,6 @@ import { Button, CircularProgress } from '@mui/joy';
 import EditInstallationModal from '../../components/dashboard/edit_installation_modal';
 import LogViewerModal from '../../components/dashboard/logs_modal';
 import './dashboard.scss';
-import { useGetInstalledHelmReleasesQuery } from '../../client/bootstrapperApi';
 
 export default function InstallationDashboard() {
     const dispatch = useDispatch();
@@ -30,8 +29,7 @@ export default function InstallationDashboard() {
     const [deleteInstallation, deleteInstallationData] = useDeleteInstallationMutation();
     const [patchInstallation, patchInstallationData] = usePatchInstallationMutation();
 
-    const { data: clusters, isLoading: clustersLoading, isFetching, error: clustersError, refetch: refetchClusters } = useGetClustersQuery(cloudProvider);
-    const {data: releases, isSuccess: isGetReleasesSuccess} = useGetInstalledHelmReleasesQuery({clusterName: selectedClusterName!, cloudProvider}, { skip: cloudProvider === '' || !selectedClusterName });
+    const { data: clusters, isFetching } = useGetClustersQuery(cloudProvider);
 
 
     useEffect(() => {
@@ -41,13 +39,13 @@ export default function InstallationDashboard() {
                 dispatch(setSelectedClusterName(clusterName) as any);
             }
         }
-    }, [])
+    }, [selectedClusterName, dispatch, searchParams])
 
     useEffect(() => {
         if (selectedClusterName) {
             refetchInstallations();
         }
-    }, [selectedClusterName])
+    }, [selectedClusterName, refetchInstallations])
 
     const handleEditInstallation = (installationName: string) => {
         const installation = installations?.filter((install) => install.metadata.name === installationName)[0];
@@ -75,7 +73,7 @@ export default function InstallationDashboard() {
 
     const installationsSection = (installs: Mattermost[]) => {
         return (
-            <div className="installation-cards">{installs.map((install) => <InstallationCard installation={install} onClick={() => { }} onClickEdit={handleEditInstallation} onClickDelete={(installationName) => { deleteInstallation({ clusterName: selectedClusterName!, cloudProvider, installationName }) }} onClickLogs={handleOnClickLogs} />)}
+            <div className="installation-cards">{installs.map((install) => <InstallationCard key={install.metadata.name} installation={install} onClick={() => { }} onClickEdit={handleEditInstallation} onClickDelete={(installationName) => { deleteInstallation({ clusterName: selectedClusterName!, cloudProvider, installationName }) }} onClickLogs={handleOnClickLogs} />)}
                 <CreateInstallationCard onClick={() => navigate(`/${cloudProvider}/create_mattermost_workspace?clusterName=${selectedClusterName}`)} />
             </div>
         )
