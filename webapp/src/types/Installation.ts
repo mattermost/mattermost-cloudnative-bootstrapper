@@ -40,6 +40,7 @@ export interface PatchMattermostWorkspaceRequest {
     endpoint: string;
     fileStore: FileStore;
     fileStorePatch?: PatchMattermostWorkspaceFilestore;
+    databasePatch?: ExistingDBConnection;
 }
 
 export interface PatchMattermostWorkspaceFilestore {
@@ -122,6 +123,12 @@ export interface Database {
     external: ExternalConfig; 
 }
 
+export enum DatabaseType {
+    Existing = 'Existing',
+    CreateCNPG = 'CreateForMeCNPG',
+    CreateRDS = 'CreateForMeRDS',
+}
+
 export enum FilestoreType {
     InClusterExternal = 'InClusterExternal',
     InClusterLocal = 'InClusterLocal',
@@ -169,4 +176,20 @@ export interface Status {
     replicas: number;
     updatedReplicas: number;
     observedGeneration: number;
+}
+
+export interface InstallationLogLine {
+    timestamp: Date;
+    level?: string;
+    msg: string;
+    caller?: string;
+    method?: string;
+    url?: string;
+    request_id?: string;
+    user_id?: string;
+    status_code?: string;
+}
+
+export interface Pod {
+    name: string;
 }

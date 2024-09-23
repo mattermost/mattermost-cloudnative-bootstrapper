@@ -11,6 +11,7 @@ import CreateInstallationCard from '../../components/dashboard/create_installati
 import { Mattermost, PatchMattermostWorkspaceRequest } from '../../types/Installation';
 import { Button, CircularProgress } from '@mui/joy';
 import EditInstallationModal from '../../components/dashboard/edit_installation_modal';
+import LogViewerModal from '../../components/dashboard/logs_modal';
 import './dashboard.scss';
 
 export default function InstallationDashboard() {
@@ -20,6 +21,7 @@ export default function InstallationDashboard() {
     const cloudProvider = useMatch('/:cloudProvider/dashboard')?.params.cloudProvider!;
     const selectedClusterName = useSelector((state: RootState) => state.dashboard.selectedClusterName);
     const installationToEdit = useSelector((state: RootState) => state.dashboard.installationToEdit);
+    const [installationToLog, setInstallationToLog] = useState<Mattermost | undefined>(undefined);
     const { data: installations, isLoading, error: installationsError, refetch: refetchInstallations } = useGetMattermostInstallationsForClusterQuery({ cloudProvider, clusterName: selectedClusterName! }, {
         skip: !selectedClusterName, // Only fetch if cluster name is defined
         pollingInterval: 10000,
@@ -40,7 +42,6 @@ export default function InstallationDashboard() {
 
     useEffect(() => {
         if (selectedClusterName) {
-            console.log("refetching");
             refetchInstallations();
         }
     }, [selectedClusterName, refetchInstallations])
@@ -49,6 +50,11 @@ export default function InstallationDashboard() {
         const installation = installations?.filter((install) => install.metadata.name === installationName)[0];
 
         dispatch(setInstallationToEdit(installation));
+    }
+
+    const handleOnClickLogs = (installationName: string) => {
+        const installation = installations?.filter((install) => install.metadata.name === installationName)[0];
+        setInstallationToLog(installation);
     }
 
     const handleEditModalOnChange = (installation: PatchMattermostWorkspaceRequest) => {
@@ -60,14 +66,13 @@ export default function InstallationDashboard() {
     }
 
     const handleSubmitEditModal = (installation: PatchMattermostWorkspaceRequest) => {
-        console.log("Submitting edit modal", installation);
         patchInstallation({ clusterName: selectedClusterName!, cloudProvider, installationName: installation.name, patch: installation })
         handleOnCloseEditModal();
     }
 
     const installationsSection = (installs: Mattermost[]) => {
         return (
-            <div className="installation-cards">{installs.map((install) => <InstallationCard key={install.metadata.name} installation={install} onClick={() => { }} onClickEdit={handleEditInstallation} onClickDelete={(installationName) => { deleteInstallation({ clusterName: selectedClusterName!, cloudProvider, installationName }) }} />)}
+            <div className="installation-cards">{installs.map((install) => <InstallationCard key={install.metadata.name} installation={install} onClick={() => { }} onClickEdit={handleEditInstallation} onClickDelete={(installationName) => { deleteInstallation({ clusterName: selectedClusterName!, cloudProvider, installationName }) }} onClickLogs={handleOnClickLogs} />)}
                 <CreateInstallationCard onClick={() => navigate(`/${cloudProvider}/create_mattermost_workspace?clusterName=${selectedClusterName}`)} />
             </div>
         )
@@ -92,6 +97,7 @@ export default function InstallationDashboard() {
             {
                 selectedClusterName && !isLoading && !isFetching && installationsError && <div className="installations-section-error">Error fetching installations</div>
             }
+            {installationToLog && <LogViewerModal installation={installationToLog} clusterName={selectedClusterName!} cloudProvider={cloudProvider} onClose={() => setInstallationToLog(undefined)}/>}
             {typeof installationToEdit !== 'undefined' && <EditInstallationModal show={typeof installationToEdit !== 'undefined'} installation={installationToEdit} onClose={handleOnCloseEditModal} onChange={handleEditModalOnChange} onSubmit={handleSubmitEditModal} cloudProvider={cloudProvider}/>}
         </div>
     );

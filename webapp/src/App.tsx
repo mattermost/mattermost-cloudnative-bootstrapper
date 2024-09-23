@@ -17,6 +17,7 @@ import ExistingAWSPage from './pages/aws/choose_existing';
 import CreateWorkspacePage from './pages/mattermost/create_workspace';
 import InstallationDashboard from './pages/dashboard';
 import RehydrateAndRedirect from './components/state';
+import useRudderPage from './hooks/useRudderPage';
 
 const useEnhancedEffect =
   typeof window !== 'undefined' ? React.useLayoutEffect : React.useEffect;
@@ -27,6 +28,7 @@ export default function App() {
   const status = useScript(`https://unpkg.com/feather-icons`);
   const location = useLocation();
   const [initialLoad, setInitialLoad] = React.useState(true);
+  const rudderPage = useRudderPage();
 
   React.useEffect(() => {
     if (initialLoad) {
@@ -37,6 +39,7 @@ export default function App() {
   React.useEffect(() => {
     if (!initialLoad) { //Prevents infinite loop on load
       localStorage.setItem('lastVisitedPage', `${location.pathname}${location.search}`);
+      rudderPage(location.pathname.includes('dashboard') ? 'Dashboard' : 'Setup', location.pathname, {search: location.search, hash: location.hash});
     }
   }, [location, initialLoad]);
 
