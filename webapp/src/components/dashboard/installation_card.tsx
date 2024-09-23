@@ -22,7 +22,6 @@ export default function InstallationCard({
     onClickLogs,
 }: InstallationCardProps) {
     const isStable = installation.status.state === 'stable';
-
     const chipWithTooltipIfApplicable = (isStable: boolean) => {
         if (isStable) {
             return (
@@ -60,7 +59,6 @@ export default function InstallationCard({
                 {!isStable && <CircularProgress size={"sm"} />}
                 {chipWithTooltipIfApplicable(isStable)}
             </div>
-
             <div>
                 <Typography>Image: {installation.status.image}</Typography>
                 <Typography>Version: {installation.status.version}</Typography>

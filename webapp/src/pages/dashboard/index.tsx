@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { useDispatch } from 'react-redux';
 import { useSelector } from 'react-redux';
 import { useMatch, useNavigate, useSearchParams } from 'react-router-dom';
@@ -30,7 +30,6 @@ export default function InstallationDashboard() {
     const [patchInstallation, patchInstallationData] = usePatchInstallationMutation();
 
     const { data: clusters, isFetching } = useGetClustersQuery(cloudProvider);
-
 
     useEffect(() => {
         if (typeof selectedClusterName === 'undefined') {

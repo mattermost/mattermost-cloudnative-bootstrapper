@@ -84,13 +84,13 @@ export default function FilestoreConnection({onChange, cloudProvider, existingFi
     return (
         <div className="filestore-connection">
             <label>Filestore Connection</label>
-            <Select disabled={isEdit} value={filestoreOption} size="sm" placeholder="Choose type..." onChange={(e, newValue) => {
+            <Select data-testid={'filestore-type-selector'} disabled={isEdit} value={filestoreOption} size="sm" placeholder="Choose type..." onChange={(e, newValue) => {
                 setFilestoreOption(newValue as FilestoreType)
             }}>
-                <Option value={FilestoreType.InClusterLocal}>In-Cluster (Local)</Option>
-                <Option value={FilestoreType.ExistingS3}>Use Existing (S3 Compatible)</Option>
-                <Option value={FilestoreType.InClusterExternal}>In-Cluster (External PVC)</Option>
-                {cloudProvider === 'aws' && <Option value={FilestoreType.AWSS3}>Create For Me (S3)</Option>}
+                <Option data-testid={'in-cluster-local'} value={FilestoreType.InClusterLocal}>In-Cluster (Local)</Option>
+                <Option data-testid={'existing-s3'} value={FilestoreType.ExistingS3}>Use Existing (S3 Compatible)</Option>
+                <Option data-testid={'in-cluster-external'} value={FilestoreType.InClusterExternal}>In-Cluster (External PVC)</Option>
+                {cloudProvider === 'aws' && <Option data-testid={'aws-s3'} value={FilestoreType.AWSS3}>Create For Me (S3)</Option>}
             </Select>
             {getFilestoreConnectionInputs()}
             {isEdit && <div className="filestore-type-disclaimer">Note: Editing the filestore connection does not migrate your files. Only change this if you know what you are doing.</div>}

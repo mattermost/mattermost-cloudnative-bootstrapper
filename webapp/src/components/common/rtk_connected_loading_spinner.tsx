@@ -32,7 +32,7 @@ export default function RTKConnectedLoadingSpinner(props: Props) {
     }
 
     return (
-        <div className={`ConnectedLoadingSpinner__${className}`}>
+        <div data-testid={'rtk-loading-spinner-root'} className={`ConnectedLoadingSpinner__${className}`}>
             {content}
         </div>
     );

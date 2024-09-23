@@ -80,7 +80,7 @@ function GetCredentials({ cloudProvider, kubernetesOption, onCredentialsChange }
                 {cloudProvider === 'custom' && (
                     <>
                         <label>Authenticate with...</label>
-                        <Select size="sm" placeholder="Kubecfg option" onChange={(event, newValue) => { handleDropdownChange('kubeconfigType', newValue as string) }}>
+                        <Select data-testid={'kubeconfig-type-select'} size="sm" placeholder="Kubecfg option" onChange={(event, newValue) => { handleDropdownChange('kubeconfigType', newValue as string) }}>
                             <Option value="yaml">YAML</Option>
                             <Option value="file">File Path</Option>
                         </Select>
