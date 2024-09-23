@@ -41,7 +41,6 @@ jobs:
       - name: ci/check-style
         run: |
           echo "machine github.com login mattermost-build password ${{ secrets.MATTERMOST_BUILD_GH_TOKEN }}" > ~/.netrc
-<<<<<<< HEAD
           make check-style
   test-webapp:
     runs-on: ubuntu-22.04
@@ -66,6 +65,3 @@ jobs:
         run: |
           cd webapp
           npm test
-=======
-          make check-style
->>>>>>> master
