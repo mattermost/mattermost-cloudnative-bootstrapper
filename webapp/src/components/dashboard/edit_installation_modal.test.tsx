@@ -7,8 +7,10 @@ import { createMemoryRouter, RouterProvider } from 'react-router-dom';
 import EditInstallationModal from './edit_installation_modal'; 
 import { useGetMattermostInstallationSecretsQuery } from '../../client/dashboardApi'; 
 import FilestoreConnection from '../../pages/mattermost/filestore_connection'; 
+import { useGetInstalledHelmReleasesQuery } from '../../client/bootstrapperApi';
 
 jest.mock('../../client/dashboardApi');
+jest.mock('../../client/bootstrapperApi');
 jest.mock('../../pages/mattermost/filestore_connection');
 jest.mock('react-router-dom', () => ({
     ...jest.requireActual('react-router-dom'),
@@ -21,6 +23,7 @@ describe('EditInstallationModal', () => {
     let store: MockStoreEnhanced<any>;
     let mockInstallation: any;
     let mockInstallationSecrets: any;
+    let mockReleases: any;
     let onSubmitMock: jest.Mock;
     let onChangeMock: jest.Mock;
     let onCloseMock: jest.Mock;
@@ -37,6 +40,11 @@ describe('EditInstallationModal', () => {
             filestoreSecret: { data: { accesskey: 'test-access-key', secretkey: 'test-secret-key' } },
         };
 
+        mockReleases = [
+            { name: 'test-release', version: '1.0.0' },
+            { name: 'test-release', version: '2.0.0' },
+        ];
+
         onSubmitMock = jest.fn();
         onChangeMock = jest.fn();
         onCloseMock = jest.fn();
@@ -45,6 +53,11 @@ describe('EditInstallationModal', () => {
 
         (useGetMattermostInstallationSecretsQuery as jest.Mock).mockReturnValue({
             data: mockInstallationSecrets,
+            isSuccess: true,
+        });
+
+        (useGetInstalledHelmReleasesQuery as jest.Mock).mockReturnValue({
+            data: mockReleases,
             isSuccess: true,
         });
 

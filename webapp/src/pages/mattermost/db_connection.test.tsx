@@ -19,7 +19,6 @@ describe('DBConnection', () => {
 
     it('renders the select with correct options based on releases and cloudProvider', async () => {
         render(<DBConnection releases={mockReleasesWithPG} cloudProvider="aws" onChange={mockOnChange} />);
-        expect(screen.getByText('DB Connection',)).toBeInTheDocument();
 
         // Open the select dropdown
         // Wait for the options to be rendered

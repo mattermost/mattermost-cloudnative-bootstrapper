@@ -67,7 +67,7 @@ export default function DBConnection({ releases, onChange, cloudProvider, isEdit
     return (
         <div className="database-connection">
             <label>DB Connection</label>
-            {!isEdit && <Select size="sm" placeholder="DB Connection" onChange={(e, newValue) => {
+            {!isEdit && <Select data-testid={'db-connection-selector'} size="sm" placeholder="DB Connection" onChange={(e, newValue) => {
                 setDatabaseOption(newValue as string);
             }}>
                 <Option value={DatabaseType.Existing}>Use Existing</Option>
