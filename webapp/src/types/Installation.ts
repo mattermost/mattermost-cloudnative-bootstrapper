@@ -177,3 +177,19 @@ export interface Status {
     updatedReplicas: number;
     observedGeneration: number;
 }
+
+export interface InstallationLogLine {
+    timestamp: Date;
+    level?: string;
+    msg: string;
+    caller?: string;
+    method?: string;
+    url?: string;
+    request_id?: string;
+    user_id?: string;
+    status_code?: string;
+}
+
+export interface Pod {
+    name: string;
+}
