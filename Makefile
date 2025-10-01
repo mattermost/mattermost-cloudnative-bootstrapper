@@ -22,10 +22,10 @@ build_desktop_desktop: build_desktop_macos
 
 .PHONY: lint-server
 lint-server:
-	@echo Running lint
+	@echo Running staticcheck
 	@echo $(GOBIN)
-	GOBIN=$(GOBIN) $(GO) install golang.org/x/lint/golint
-	$(GOBIN)/golint -set_exit_status $(./...)
+	GOBIN=$(GOBIN) $(GO) install honnef.co/go/tools/cmd/staticcheck@latest
+	$(GOBIN)/staticcheck ./...
 	@echo lint success
 
 .PHONY: govet
