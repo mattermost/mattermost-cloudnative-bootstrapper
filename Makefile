@@ -48,3 +48,19 @@ lint-webapp: node_modules
 
 .PHONY: check-style
 check-style: lint-server govet lint-webapp
+
+.PHONY: build-webapp
+build-webapp: node_modules
+	@echo Building webapp for production
+	cd webapp; npm run build
+
+.PHONY: build-server-embedded
+build-server-embedded: build-webapp
+	@echo Building server with embedded frontend
+	@echo Copying webapp build files to static/build
+	rm -rf static/build
+	mkdir -p static
+	cp -r webapp/build static/
+	go build -o build/mcnb-server ./cmd/mcnb
+	@echo Cleaning up copied files
+	rm -rf static/build
