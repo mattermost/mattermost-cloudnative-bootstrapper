@@ -1234,7 +1234,7 @@ func handleDeployMattermostOperator(c *Context, w http.ResponseWriter, r *http.R
 		ChartName:       "mattermost/mattermost-operator",
 		Namespace:       "mattermost-operator",
 		UpgradeCRDs:     true,
-		Version:         "v1.22.0",
+		Version:         "v1.25.2",
 		Wait:            true,
 		Timeout:         300 * time.Second,
 		CreateNamespace: true,
