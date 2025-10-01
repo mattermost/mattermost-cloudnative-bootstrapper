@@ -425,7 +425,7 @@ func handleDeployNginxOperator(c *Context, w http.ResponseWriter, r *http.Reques
       annotations:
         service.beta.kubernetes.io/aws-load-balancer-backend-protocol: "tcp"
         service.beta.kubernetes.io/aws-load-balancer-ssl-ports: "https"
-        service.beta.kubernetes.io/aws-load-balancer-ssl-cert: arn:aws:acm:us-east-1:926412419614:certificate/e13f9426-e452-4670-9f6a-f56b3f346bf1`
+        service.beta.kubernetes.io/aws-load-balancer-ssl-cert: arn:aws:acm:us-east-1:110643744285:certificate/8fcc5250-8a60-4ab8-8337-7491fb447906`
 
 	chartSpec := helmclient.ChartSpec{
 		ReleaseName:     "ingress-nginx",

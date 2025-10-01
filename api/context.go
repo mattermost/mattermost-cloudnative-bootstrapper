@@ -75,17 +75,17 @@ func NewContext(ctx context.Context, statePath string, telemetryDisabled bool) (
 	}
 
 	// Initialize the telemetry provider
-	telemetryProvider, err := telemetry.NewTelemetryProvider(state.Telemetry.TelemetryID, state.Telemetry.TelemetryDisabled)
-	if err != nil {
-		return nil, err
-	}
+	// telemetryProvider, err := telemetry.NewTelemetryProvider(state.Telemetry.TelemetryID, state.Telemetry.TelemetryDisabled)
+	// if err != nil {
+	// return nil, err
+	// }
 
 	return &Context{
 		Ctx:               ctx,
 		BootstrapperState: state,
 		// TODO: this is redundant, use the state.Provider instead everywhere
 		CloudProviderName: state.Provider,
-		TelemetryProvider: telemetryProvider,
+		TelemetryProvider: nil,
 	}, nil
 }
 
