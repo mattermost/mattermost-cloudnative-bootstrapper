@@ -421,6 +421,12 @@ func handleDeployNginxOperator(c *Context, w http.ResponseWriter, r *http.Reques
 
 	// TODO - we need some sort of pre-post hooks for the install to allow for environment specific configurations
 	valuesYaml := `controller:
+    config:
+      use-forwarded-headers: "true"
+	service:
+	  targetPorts:
+	    http: http
+		https: http
     service:
       annotations:
         service.beta.kubernetes.io/aws-load-balancer-backend-protocol: "tcp"
