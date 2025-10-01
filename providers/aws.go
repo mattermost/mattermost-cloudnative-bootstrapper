@@ -181,11 +181,8 @@ func (a *AWSProvider) ListRoles(c context.Context) ([]*model.SupportedRolesRespo
 	// List IAM roles
 	input := &iam.ListRolesInput{}
 	err = svc.ListRolesPages(input, func(page *iam.ListRolesOutput, lastPage bool) bool {
-		for _, role := range page.Roles {
-			// TODO Filter down to only those roles that have permission?
-
-			eksSupportedRoles = append(eksSupportedRoles, role)
-		}
+		// TODO Filter down to only those roles that have permission?
+		eksSupportedRoles = append(eksSupportedRoles, page.Roles...)
 		return !lastPage
 	})
 	if err != nil {
@@ -503,7 +500,7 @@ func (a *AWSProvider) HelmFileStorePre(c context.Context, clusterName string, na
 
 	// Install a chart release.
 	if _, err := helmClient.InstallOrUpgradeChart(context.Background(), &chartSpec, nil); err != nil {
-		return errors.New("Failed to install aws-ebs-csi-driver")
+		return errors.New("failed to install aws-ebs-csi-driver")
 	}
 
 	return nil
