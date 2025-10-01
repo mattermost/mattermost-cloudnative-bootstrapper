@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Button, Option, Select } from '@mui/joy';
 
 import { useDispatch } from 'react-redux';
@@ -22,14 +22,21 @@ export default function ExistingAWSPage() {
     const clusterName = useSelector((state: RootState) => state.aws.clusterName);
     const region = useSelector((state: RootState) => state.aws.region);
 
-    const {data: possibleClusters, isLoading, isError, isSuccess} = useGetPossibleClustersQuery({cloudProvider, region}, {
-        skip: cloudProvider === '' || (cloudProvider !== 'custom' && !region),
+    const skipQuery = cloudProvider === '' || (cloudProvider !== 'custom' && !region);
+    const {data: possibleClusters, isLoading, isError, isSuccess, refetch} = useGetPossibleClustersQuery({cloudProvider, region}, {
+        skip: skipQuery,
     });
 
     const {isLoading: clusterLoading, isError: clusterError, isSuccess: clusterSuccess} = useGetClusterQuery({cloudProvider, clusterName}, {
         skip: clusterName === '',
     });
 
+
+    useEffect(() => {
+        if (!skipQuery) {
+            refetch();
+        }
+    }, [skipQuery, refetch]);
 
     const onClickContinue = () => {
         if (cloudProvider !== 'custom' && !region) {
@@ -67,7 +74,7 @@ export default function ExistingAWSPage() {
                             {cloudProvider !== 'custom' &&
                                 <>
                                     <label>AWS Region</label>
-                                    <Select onChange={(event, newValue) => { dispatch(setRegion(newValue)) }} size="sm" placeholder="AWS Region">
+                                    <Select value={region || null} onChange={(event, newValue) => { dispatch(setRegion(newValue)) }} size="sm" placeholder="AWS Region">
                                         {Object.values(AWSRegions).map(region => (
                                             <Option key={region} value={region}>{region}</Option>
                                         ))}
@@ -77,6 +84,9 @@ export default function ExistingAWSPage() {
                             <ClusterSelectDropdown onChange={(newValue) => { dispatch(setEksClusterName(newValue) as any) }} clusters={possibleClusters || []} />
                             <RTKConnectedLoadingSpinner isError={isError || clusterError || (isSuccess && !possibleClusters.length)} isErrorText={(isSuccess && !possibleClusters.length) ? 'No clusters found. Try another region?' : undefined} isSuccess={isSuccess && clusterSuccess} isLoading={isLoading || clusterLoading} />
                             <div className="button-row">
+                                {(isSuccess && !possibleClusters?.length) && (
+                                    <Button size="lg" color="primary" onClick={() => refetch()}>Try Again</Button>
+                                )}
                                 {/* TODO: Uncomment when we fully support creating new <Button  size="md" color="primary" variant="plain" onClick={() => {navigate(`/aws/new`)}}>Create New Instead</Button> */}
                                 {clusterName && <Button size="lg" color="primary" onClick={onClickContinue}>Next Step</Button>}
                             </div>

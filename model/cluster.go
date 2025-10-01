@@ -56,6 +56,7 @@ type ClusterNodegroup struct {
 type Credentials struct {
 	AccessKeyID     string `json:"accessKeyID"`
 	SecretAccessKey string `json:"accessKeySecret"`
+	SessionToken    string `json:"sessionToken"`
 	Region          string `json:"region"`
 	Kubecfg         string `json:"kubeconfig"`
 	KubecfgType     string `json:"kubeconfigType"`

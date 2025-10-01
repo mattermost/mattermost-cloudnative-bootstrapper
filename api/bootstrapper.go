@@ -1003,6 +1003,7 @@ func handleCreateMattermostInstallation(c *Context, w http.ResponseWriter, r *ht
 
 	var writer string
 	var reader string
+	var databaseSecretName string
 
 	if create.DBConnectionOption == model.DatabaseOptionCreateForMe {
 		dbCluster := &cnpgv1.Cluster{
@@ -1060,29 +1061,37 @@ func handleCreateMattermostInstallation(c *Context, w http.ResponseWriter, r *ht
 		writer = strings.Replace(initial, "postgresql:", "postgres:", 1) // Replace once
 		reader = strings.Replace(writer, fmt.Sprintf("%s-rw:", secretName), fmt.Sprintf("%s-ro:", secretName), 1)
 	} else if create.DBConnectionOption == model.DatabaseOptionExisting {
-		writer = create.ExistingDBConnection.ConnectionString
-		reader = create.ExistingDBConnection.ConnectionString
+		if create.ExistingDBSecretName != "" {
+			databaseSecretName = create.ExistingDBSecretName
+		} else {
+			writer = create.ExistingDBConnection.ConnectionString
+			reader = create.ExistingDBConnection.ConnectionString
+		}
 	}
 
-	databaseSecret := &v1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      model.SecretNameDatabase,
-			Namespace: namespaceName,
-		},
-		Type: v1.SecretTypeOpaque,
-		StringData: map[string]string{
-			"DB_CONNECTION_CHECK_URL":           writer,
-			"DB_CONNECTION_STRING":              writer,
-			"MM_SQLSETTINGS_DATASOURCEREPLICAS": reader, // Assuming read replicas for now
-		},
-	}
+	if databaseSecretName == "" {
+		databaseSecret := &v1.Secret{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      model.SecretNameDatabase,
+				Namespace: namespaceName,
+			},
+			Type: v1.SecretTypeOpaque,
+			StringData: map[string]string{
+				"DB_CONNECTION_CHECK_URL":           writer,
+				"DB_CONNECTION_STRING":              writer,
+				"MM_SQLSETTINGS_DATASOURCEREPLICAS": reader, // Assuming read replicas for now
+			},
+		}
 
-	// Create the database secret
-	_, err = kubeClient.Clientset.CoreV1().Secrets(namespaceName).Create(context.TODO(), databaseSecret, metav1.CreateOptions{})
-	if err != nil {
-		logger.FromContext(c.Ctx).Errorf("Error creating database secret:", err)
-		w.WriteHeader(http.StatusInternalServerError)
-		return
+		// Create the database secret
+		_, err = kubeClient.Clientset.CoreV1().Secrets(namespaceName).Create(context.TODO(), databaseSecret, metav1.CreateOptions{})
+		if err != nil {
+			logger.FromContext(c.Ctx).Errorf("Error creating database secret:", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		databaseSecretName = databaseSecret.ObjectMeta.Name
 	}
 
 	// License Secret
@@ -1108,6 +1117,9 @@ func handleCreateMattermostInstallation(c *Context, w http.ResponseWriter, r *ht
 	}
 
 	filestore := create.GetMMOperatorFilestore(namespaceName, filestoreSecret)
+	if filestore.External != nil && filestore.External.Secret == "" && create.FilestoreSecretName != "" {
+		filestore.External.Secret = create.FilestoreSecretName
+	}
 
 	mattermostCRD := &mmv1beta1.Mattermost{
 		ObjectMeta: metav1.ObjectMeta{
@@ -1127,7 +1139,12 @@ func handleCreateMattermostInstallation(c *Context, w http.ResponseWriter, r *ht
 			},
 			Database: mmv1beta1.Database{
 				External: &mmv1beta1.ExternalDatabase{
-					Secret: model.SecretNameDatabase,
+					Secret: func() string {
+						if databaseSecretName != "" {
+							return databaseSecretName
+						}
+						return model.SecretNameDatabase
+					}(),
 				},
 			},
 			FileStore: filestore,

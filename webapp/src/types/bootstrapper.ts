@@ -10,6 +10,7 @@ export type State = {
 export type CloudCredentials = {
     accessKeyId: string;
     accessKeySecret: string;
+    sessionToken: string;
     region: string;
     kubeconfig: string;
     kubeconfigType: string;

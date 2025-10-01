@@ -42,8 +42,10 @@ type CreateMattermostWorkspaceRequest struct {
 	Version                string                  `json:"version"`
 	DBConnectionOption     string                  `json:"dbConnectionOption"`
 	ExistingDBConnection   *ExistingDBConnection   `json:"existingDatabaseConfig"`
+	ExistingDBSecretName   string                  `json:"existingDatabaseSecretName"`
 	FilestoreOption        string                  `json:"filestoreOption"`
 	S3Filestore            *S3Filestore            `json:"s3FilestoreConfig"`
+	FilestoreSecretName    string                  `json:"filestoreSecretName"`
 	LocalFileStore         *LocalFileStore         `json:"localFilestoreConfig"`
 	LocalExternalFileStore *LocalExternalFileStore `json:"localExternalFilestoreConfig"`
 }
@@ -170,6 +172,9 @@ func (s *S3Filestore) IsValid() bool {
 }
 
 func (c *CreateMattermostWorkspaceRequest) GetMMOperatorFilestoreSecret(namespaceName string) *v1.Secret {
+	if c.FilestoreSecretName != "" {
+		return nil
+	}
 	if c.FilestoreOption == FilestoreOptionExistingS3 {
 		return &v1.Secret{
 			ObjectMeta: metav1.ObjectMeta{
@@ -191,10 +196,15 @@ func (c *CreateMattermostWorkspaceRequest) GetMMOperatorFilestoreSecret(namespac
 func (c *CreateMattermostWorkspaceRequest) GetMMOperatorFilestore(namespaceName string, secret *v1.Secret) mmv1beta1.FileStore {
 	filestore := mmv1beta1.FileStore{}
 	if c.FilestoreOption == FilestoreOptionExistingS3 {
-		filestore.External = &mmv1beta1.ExternalFileStore{
-			URL:    c.S3Filestore.BucketURL,
-			Secret: secret.Name,
-			Bucket: c.S3Filestore.BucketName,
+		filestore.External = &mmv1beta1.ExternalFileStore{}
+		if c.S3Filestore != nil {
+			filestore.External.URL = c.S3Filestore.BucketURL
+			filestore.External.Bucket = c.S3Filestore.BucketName
+		}
+		if secret != nil {
+			filestore.External.Secret = secret.Name
+		} else if c.FilestoreSecretName != "" {
+			filestore.External.Secret = c.FilestoreSecretName
 		}
 	} else if c.FilestoreOption == FilestoreOptionInClusterLocal {
 		filestore.Local = &mmv1beta1.LocalFileStore{
@@ -290,7 +300,7 @@ func (c *CreateMattermostWorkspaceRequest) IsValid() bool {
 		return false
 	}
 
-	if c.FilestoreOption == FilestoreOptionExistingS3 && !c.S3Filestore.IsValid() {
+	if c.FilestoreOption == FilestoreOptionExistingS3 && c.FilestoreSecretName == "" && (c.S3Filestore == nil || !c.S3Filestore.IsValid()) {
 		return false
 	}
 
@@ -306,7 +316,7 @@ func (c *CreateMattermostWorkspaceRequest) IsValid() bool {
 		return false
 	}
 
-	if c.DBConnectionOption == DatabaseOptionExisting && !c.ExistingDBConnection.IsValid() {
+	if c.DBConnectionOption == DatabaseOptionExisting && c.ExistingDBSecretName == "" && (c.ExistingDBConnection == nil || !c.ExistingDBConnection.IsValid()) {
 		return false
 	}
 

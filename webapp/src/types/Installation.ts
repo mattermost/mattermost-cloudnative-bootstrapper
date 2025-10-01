@@ -28,7 +28,8 @@ export interface S3FileStore {
     url: string;
     accessKeyId: string;
     accessKeySecret: string;
-    bucket: string
+    bucket: string;
+    secret?: string;
 }
 
 export interface PatchMattermostWorkspaceRequest {

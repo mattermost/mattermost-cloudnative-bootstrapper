@@ -52,6 +52,7 @@ func GetAWSProvider(credentials *model.Credentials) *AWSProvider {
 			credentials = &model.Credentials{
 				AccessKeyID:     os.Getenv("AWS_ACCESS_KEY_ID"),
 				SecretAccessKey: os.Getenv("AWS_SECRET_ACCESS_KEY"),
+				SessionToken:    os.Getenv("AWS_SESSION_TOKEN"),
 			}
 		}
 		awsProviderInstance = &AWSProvider{
@@ -69,6 +70,7 @@ func (a *AWSProvider) GetAWSCredentials() model.Credentials {
 		return model.Credentials{
 			AccessKeyID:     os.Getenv("AWS_ACCESS_KEY_ID"),
 			SecretAccessKey: os.Getenv("AWS_SECRET_ACCESS_KEY"),
+			SessionToken:    os.Getenv("AWS_SESSION_TOKEN"),
 		}
 	}
 	return *a.Credentials
@@ -102,7 +104,7 @@ func (a *AWSProvider) NewEKSClient(region ...string) *EKSClient {
 		}
 
 		sess, err := session.NewSession(&aws.Config{
-			Credentials: credentials.NewStaticCredentials(awsCredentials.AccessKeyID, awsCredentials.SecretAccessKey, ""),
+			Credentials: credentials.NewStaticCredentials(awsCredentials.AccessKeyID, awsCredentials.SecretAccessKey, awsCredentials.SessionToken),
 			Region:      aws.String(defaultRegion), // Specify the appropriate AWS region
 		})
 		if err != nil {
@@ -136,7 +138,7 @@ func (a *AWSProvider) SetRegion(c context.Context, region string) error {
 func (a *AWSProvider) ValidateCredentials(c context.Context, creds *model.Credentials) (bool, error) {
 	// Create a new session with the provided credentials
 	sess, err := session.NewSession(&aws.Config{
-		Credentials: credentials.NewStaticCredentials(creds.AccessKeyID, creds.SecretAccessKey, ""),
+		Credentials: credentials.NewStaticCredentials(creds.AccessKeyID, creds.SecretAccessKey, creds.SessionToken),
 		Region:      aws.String("us-east-1"), // Specify the appropriate AWS region
 		// LogLevel:    aws.LogLevel(aws.LogDebugWithHTTPBody),
 	})
@@ -168,7 +170,7 @@ func (a *AWSProvider) ListRoles(c context.Context) ([]*model.SupportedRolesRespo
 
 	sess, err := session.NewSession(&aws.Config{
 		Region:      aws.String("us-east-1"), // Specify the appropriate AWS region
-		Credentials: credentials.NewStaticCredentials(awsCredentials.AccessKeyID, awsCredentials.SecretAccessKey, ""),
+		Credentials: credentials.NewStaticCredentials(awsCredentials.AccessKeyID, awsCredentials.SecretAccessKey, awsCredentials.SessionToken),
 	})
 
 	if err != nil {
