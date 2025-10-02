@@ -9,7 +9,6 @@ import (
 	"github.com/mattermost/mattermost-cloudnative-bootstrapper/internal/logger"
 	"github.com/mattermost/mattermost-cloudnative-bootstrapper/model"
 	"github.com/mattermost/mattermost-cloudnative-bootstrapper/providers"
-	"github.com/mattermost/mattermost-cloudnative-bootstrapper/telemetry"
 )
 
 type BootstrapperState struct {
@@ -30,7 +29,6 @@ type Context struct {
 	CloudProviderName string
 	CloudProvider     providers.CloudProvider
 	BootstrapperState BootstrapperState
-	TelemetryProvider *telemetry.TelemetryProvider
 }
 
 func NewContext(ctx context.Context, statePath string, telemetryDisabled bool) (*Context, error) {
@@ -74,18 +72,11 @@ func NewContext(ctx context.Context, statePath string, telemetryDisabled bool) (
 		}
 	}
 
-	// Initialize the telemetry provider
-	telemetryProvider, err := telemetry.NewTelemetryProvider(state.Telemetry.TelemetryID, state.Telemetry.TelemetryDisabled)
-	if err != nil {
-		return nil, err
-	}
-
 	return &Context{
 		Ctx:               ctx,
 		BootstrapperState: state,
 		// TODO: this is redundant, use the state.Provider instead everywhere
 		CloudProviderName: state.Provider,
-		TelemetryProvider: telemetryProvider,
 	}, nil
 }
 
@@ -97,7 +88,6 @@ func (c *Context) Clone() *Context {
 		CloudProviderName: c.CloudProviderName,
 		CloudProvider:     c.CloudProvider,
 		BootstrapperState: c.BootstrapperState,
-		TelemetryProvider: c.TelemetryProvider,
 	}
 }
 

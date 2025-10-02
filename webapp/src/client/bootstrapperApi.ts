@@ -56,6 +56,9 @@ export const bootstrapperApi = createApi({
         getState: builder.query<State, void>({
             query: () => '/state/hydrate',
         }),
+        checkExistingSession: builder.query<{ provider: string; clusterName: string; hasState: boolean }, void>({
+            query: () => '/state/check',
+        }),
         setRegion: builder.mutation<void, { region: string, cloudProvider: string }>({
             query: ({ region, cloudProvider }) => ({
                 url: `/${cloudProvider}/region`,
@@ -166,6 +169,7 @@ export const {
     useGetNodegroupsQuery,
     useGetKubeConfigQuery,
     useGetStateQuery,
+    useCheckExistingSessionQuery,
     useSetRegionMutation,
     useWatchInstallationLogsQuery,
     useGetPodsForInstallationQuery,

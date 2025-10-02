@@ -9,7 +9,7 @@ import { useSelector } from 'react-redux';
 import { RootState } from '../../store';
 import { setCloudCredentials, setCloudProvider, setKubernetesOption } from '../../store/installation/bootstrapperSlice';
 import { useNavigate } from 'react-router-dom';
-import { useSetAndCheckCloudCredentialsMutation } from '../../client/bootstrapperApi';
+import { useSetAndCheckCloudCredentialsMutation, useCheckExistingSessionQuery } from '../../client/bootstrapperApi';
 import RTKConnectedLoadingSpinner from '../../components/common/rtk_connected_loading_spinner';
 
 export default function SetupPage() {
@@ -23,6 +23,10 @@ export default function SetupPage() {
     const lastPageLocalStorage = localStorage.getItem('lastVisitedPage');
     const [lastVisitedPage, setShowLastVisitedPage] = useState(lastPageLocalStorage);
     const showLastVisitedPage = lastVisitedPage && lastVisitedPage !== '/' ? true : false;
+    
+    // Check for existing server-side session
+    const { data: sessionData, isLoading: isSessionLoading } = useCheckExistingSessionQuery();
+    const hasServerSession = sessionData?.hasState && sessionData.provider && sessionData.clusterName;
 
     useEffect(() => {
         if (cloudProvider === 'custom') {
@@ -46,6 +50,15 @@ export default function SetupPage() {
         }
     }
 
+    const handleContinueServerSession = () => {
+        if (sessionData?.provider && sessionData?.clusterName) {
+            // Navigate to the dashboard for the existing session
+            navigate(`/${sessionData.provider}/dashboard?clusterName=${sessionData.clusterName}`);
+        }
+    }
+
+    const showResumeOptions = showLastVisitedPage || hasServerSession;
+
     return (
         <div className="SetupPage">
             <div className="leftPanel">
@@ -61,14 +74,32 @@ export default function SetupPage() {
                             <h3>Setup</h3>
                         </div>
                         <div className="inputs">
-                            {showLastVisitedPage &&
+                            {isSessionLoading && <RTKConnectedLoadingSpinner isLoading={true} isSuccess={false} isError={false} />}
+                            
+                            {!isSessionLoading && showResumeOptions &&
                                 <div className="resume_or_start_over">
-                                    <Button size="lg" color="primary" onClick={() => { navigate(lastVisitedPage!) }}>Continue Last Session</Button>
-                                    <Button size="lg" color="danger" variant="outlined" onClick={() => setShowLastVisitedPage("")}>Start Over</Button>
+                                    {hasServerSession && (
+                                        <>
+                                            <div className="session-info">
+                                                <p>Existing session found: <strong>{sessionData.provider}</strong> cluster <strong>{sessionData.clusterName}</strong></p>
+                                            </div>
+                                            <Button size="lg" color="primary" onClick={handleContinueServerSession}>
+                                                Continue Existing Session
+                                            </Button>
+                                        </>
+                                    )}
+                                    {showLastVisitedPage && (
+                                        <Button size="lg" color="primary" variant="soft" onClick={() => { navigate(lastVisitedPage!) }}>
+                                            Continue From Last Page
+                                        </Button>
+                                    )}
+                                    <Button size="lg" color="danger" variant="outlined" onClick={() => setShowLastVisitedPage("")}>
+                                        Start New Session
+                                    </Button>
                                 </div>
                             }
-                            {
-                                !showLastVisitedPage &&
+                            
+                            {!isSessionLoading && !showResumeOptions &&
                                 <>
                                     <label>Select Cloud Provider</label>
                                     <Select onChange={(event, newValue) => dispatch(setCloudProvider(newValue as string))} size="sm" placeholder="Cloud Provider">

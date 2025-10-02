@@ -33,11 +33,22 @@ export default function CreateWorkspacePage() {
     const informationFetched = isGetClusterSuccess && isGetReleasesSuccess;
 
     const handleCreateWorkspace = () => {
-        createWorkspace({ clusterName, cloudProvider, workspaceInfo: { ...filestoreConnection, ...dbConnection, ...workspaceInfo } })
+        createWorkspace({
+            clusterName,
+            cloudProvider,
+            workspaceInfo: {
+                ...workspaceInfo,
+                ...filestoreConnection,
+                ...dbConnection,
+            }
+        })
     };
 
     const filestoreComplete = () => {
         if (filestoreConnection.filestoreOption === 'ExistingS3') {
+            if (filestoreConnection.filestoreSecretName) {
+                return true;
+            }
             return !!filestoreConnection.s3FilestoreConfig?.url && !!filestoreConnection.s3FilestoreConfig?.bucket && !!filestoreConnection.s3FilestoreConfig?.accessKeyId && !!filestoreConnection.s3FilestoreConfig?.accessKeySecret;
         } else if (filestoreConnection.filestoreOption === 'InClusterLocal') {
             return filestoreConnection.localFilestoreConfig?.storageSize ? true : false;
@@ -52,7 +63,7 @@ export default function CreateWorkspacePage() {
         let workspaceInfoComplete = false;
         const filestoreConnectionComplete = filestoreComplete();
 
-        if (dbConnection.dbConnectionOption === 'Existing' && !!dbConnection.existingDatabaseConfig?.dbConnectionString && !!dbConnection.existingDatabaseConfig?.dbReplicasConnectionString) {
+        if (dbConnection.dbConnectionOption === 'Existing' && (dbConnection.existingDatabaseSecretName || (!!dbConnection.existingDatabaseConfig?.dbConnectionString && !!dbConnection.existingDatabaseConfig?.dbReplicasConnectionString))) {
             dbConnectionComplete = true;
         }
 

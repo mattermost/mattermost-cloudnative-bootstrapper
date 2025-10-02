@@ -1,18 +1,18 @@
 import React, { useEffect } from 'react';
-import { Input, Option, Select } from '@mui/joy';
+import { Input, Option, Select, Switch } from '@mui/joy';
 
 import { FileStore, FilestoreType, LocalExternalFileStore, LocalFileStore, S3FileStore } from '../../types/Installation';
 
 import './filestore_connection.scss';
 
 type FilestoreConnectionProps = {
-    onChange: ({filestoreOption, s3FilestoreConfig, localFilestoreConfig, localExternalFilestoreConfig}: FilestoreConnectionDetails) => void;
+    onChange: ({filestoreOption, s3FilestoreConfig, localFilestoreConfig, localExternalFilestoreConfig, filestoreSecretName}: FilestoreConnectionDetails) => void;
     cloudProvider: string;
     existingFilestore?: FileStore;
     isEdit?: boolean;
 }
 
-export type FilestoreConnectionDetails = {filestoreOption: string, localFilestoreConfig?: LocalFileStore, s3FilestoreConfig?: S3FileStore, localExternalFilestoreConfig?: LocalExternalFileStore};
+export type FilestoreConnectionDetails = {filestoreOption: string, localFilestoreConfig?: LocalFileStore, s3FilestoreConfig?: S3FileStore, localExternalFilestoreConfig?: LocalExternalFileStore, filestoreSecretName?: string};
 
 export default function FilestoreConnection({onChange, cloudProvider, existingFilestore, isEdit}: FilestoreConnectionProps) {
     const [filestoreOption, setFilestoreOption] = React.useState<FilestoreType>(() => {
@@ -25,10 +25,12 @@ export default function FilestoreConnection({onChange, cloudProvider, existingFi
     const [s3FilestoreConfig, setS3FilestoreConfig] = React.useState<S3FileStore | undefined>(existingFilestore?.external);
     const [localFilestoreConfig, setLocalFilestoreConfig] = React.useState<LocalFileStore | undefined>(existingFilestore?.local);
     const [localExternalFilestoreConfig, setLocalExternalFilestoreConfig] = React.useState<LocalExternalFileStore | undefined>(existingFilestore?.externalVolume);
+    const [useExistingSecret, setUseExistingSecret] = React.useState<boolean>(() => !!existingFilestore?.external?.secret);
+    const [existingSecretName, setExistingSecretName] = React.useState<string>(existingFilestore?.external?.secret || '');
 
     useEffect(() => {
-        onChange({filestoreOption, localFilestoreConfig, s3FilestoreConfig, localExternalFilestoreConfig});
-    }, [filestoreOption, localFilestoreConfig, s3FilestoreConfig, localExternalFilestoreConfig, onChange])
+        onChange({filestoreOption, localFilestoreConfig, s3FilestoreConfig, localExternalFilestoreConfig, filestoreSecretName: existingSecretName});
+    }, [filestoreOption, localFilestoreConfig, s3FilestoreConfig, localExternalFilestoreConfig, existingSecretName, onChange])
 
     useEffect(() => {
         resetForm();
@@ -37,6 +39,8 @@ export default function FilestoreConnection({onChange, cloudProvider, existingFi
     const resetForm = () => {
         setLocalFilestoreConfig(undefined);
         setS3FilestoreConfig(undefined);
+        setUseExistingSecret(false);
+        setExistingSecretName('');
     }
 
     const handleExistingS3Change = (field:string, value: string) => {
@@ -53,10 +57,29 @@ export default function FilestoreConnection({onChange, cloudProvider, existingFi
                 return (
                     <>
                         {!existingFilestore && <div className="filestore-type-descriptor">Provide connection details for your existing S3 bucket.</div>}
-                        <Input value={s3FilestoreConfig?.url} type="text" onChange={(e) => handleExistingS3Change('url', e.target.value)} placeholder="Filestore URL" />
-                        <Input value={s3FilestoreConfig?.bucket} type="text" onChange={(e) => handleExistingS3Change('bucket', e.target.value)} placeholder="Bucket Name" />
-                        <Input type="text" value={s3FilestoreConfig?.accessKeyId} onChange={(e) => handleExistingS3Change('accessKeyId', e.target.value)} placeholder="Access Key ID" />
-                        <Input type="password" value={s3FilestoreConfig?.accessKeySecret} onChange={(e) => handleExistingS3Change('accessKeySecret', e.target.value)} placeholder="Access Key Secret" />
+                        <div className="existing-secret-toggle">
+                            <Switch checked={useExistingSecret} onChange={(event) => {
+                                const checked = event.target.checked;
+                                setUseExistingSecret(checked);
+                                if (checked) {
+                                    setS3FilestoreConfig(undefined);
+                                }
+                                if (!checked) {
+                                    setExistingSecretName('');
+                                }
+                            }} />
+                            <span className="existing-secret-label">Use existing Kubernetes secret</span>
+                        </div>
+                        {useExistingSecret ? (
+                            <Input type="text" value={existingSecretName} onChange={(e) => setExistingSecretName(e.target.value)} placeholder="Existing Secret Name" />
+                        ) : (
+                            <>
+                                <Input value={s3FilestoreConfig?.url} type="text" onChange={(e) => handleExistingS3Change('url', e.target.value)} placeholder="Filestore URL" />
+                                <Input value={s3FilestoreConfig?.bucket} type="text" onChange={(e) => handleExistingS3Change('bucket', e.target.value)} placeholder="Bucket Name" />
+                                <Input type="text" value={s3FilestoreConfig?.accessKeyId} onChange={(e) => handleExistingS3Change('accessKeyId', e.target.value)} placeholder="Access Key ID" />
+                                <Input type="password" value={s3FilestoreConfig?.accessKeySecret} onChange={(e) => handleExistingS3Change('accessKeySecret', e.target.value)} placeholder="Access Key Secret" />
+                            </>
+                        )}
                     </>
                 )
             case FilestoreType.InClusterExternal:

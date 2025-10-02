@@ -1,6 +1,20 @@
 .edit-installation-modal {
+    .MuiModalDialog-root {
+        max-width: 800px !important;
+        width: 800px !important;
+        max-height: 85vh !important;
+    }
+
+    .MuiDialogContent-root {
+        overflow: visible !important;
+    }
+
     .edit-inputs {
-        overflow: scroll;
+        overflow-y: auto;
+        overflow-x: hidden;
+        max-height: calc(85vh - 150px);
+        padding-right: 10px;
+        
         label {
             display: block;
             margin-bottom: 5px;
@@ -19,6 +33,44 @@
             margin-top: 20px;
             >*:not(:last-child) {
                 margin-bottom: 12px;
+            }
+        }
+
+        .env-variables-section {
+            margin-top: 20px;
+            padding: 15px;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            background-color: #f9f9f9;
+
+            .env-var-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 15px;
+
+                h4 {
+                    margin: 0;
+                    font-size: 1.1em;
+                }
+            }
+
+            .env-var-row {
+                display: grid;
+                grid-template-columns: 2fr 1.5fr 3fr 40px;
+                gap: 10px;
+                margin-bottom: 10px;
+                align-items: start;
+
+                .MuiInput-root, .MuiSelect-root {
+                    width: 100%;
+                }
+
+                .secret-inputs {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 5px;
+                }
             }
         }
     }

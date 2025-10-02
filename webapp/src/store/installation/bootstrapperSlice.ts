@@ -14,7 +14,7 @@ export interface BootstrapperState {
 const initialState: BootstrapperState = {
     cloudProvider: '',
     kubernetesOption: '',
-    cloudCredentials: { accessKeyId: '', accessKeySecret: '', region: '', kubeconfig: '', kubeconfigType: '' },
+    cloudCredentials: { accessKeyId: '', accessKeySecret: '', sessionToken: '', region: '', kubeconfig: '', kubeconfigType: '' },
     utilities: allUtilities,
 }
 

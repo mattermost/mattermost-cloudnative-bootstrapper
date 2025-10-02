@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { Release } from '../../types/bootstrapper';
-import { Input, Option, Select } from '@mui/joy';
+import { Input, Option, Select, Switch } from '@mui/joy';
 import { DatabaseType, ExistingDBConnection } from '../../types/Installation';
 import './db_connection.scss';
 import SensitiveInput from '../../components/common/text_inputs/sensitive_input';
@@ -8,36 +8,39 @@ import SensitiveInput from '../../components/common/text_inputs/sensitive_input'
 type DBConnectionInputProps = {
     releases: Release[];
     cloudProvider: string;
-    onChange: ({ existingDatabaseConfig, dbConnectionOption }: DBConnectionDetails) => void;
+    onChange: ({ existingDatabaseConfig, dbConnectionOption, existingDatabaseSecretName }: DBConnectionDetails) => void;
     existingDatabase?: ExistingDBConnection;
+    existingDatabaseSecretName?: string;
     isEdit?: boolean;
 }
 
-export type DBConnectionDetails = { existingDatabaseConfig?: ExistingDBConnection, dbConnectionOption: string }
+export type DBConnectionDetails = { existingDatabaseConfig?: ExistingDBConnection, dbConnectionOption: string, existingDatabaseSecretName?: string }
 
-export default function DBConnection({ releases, onChange, cloudProvider, isEdit, existingDatabase }: DBConnectionInputProps) {
+export default function DBConnection({ releases, onChange, cloudProvider, isEdit, existingDatabase, existingDatabaseSecretName }: DBConnectionInputProps) {
     const hasDeployedPGOperator = releases?.some((release) => release.Name === 'cnpg-system');
     const [existingDatabaseConfig, setExistingDatabaseConfig] = React.useState<ExistingDBConnection | undefined>(() => {
         if (isEdit && existingDatabase) return existingDatabase;
         return undefined;
     });
+    const [useExistingSecret, setUseExistingSecret] = React.useState<boolean>(() => !!existingDatabaseSecretName);
+    const [existingSecretName, setExistingSecretName] = React.useState<string>(existingDatabaseSecretName || '');
     const [databaseOption, setDatabaseOption] = React.useState(() => {
         if (existingDatabase && isEdit) return DatabaseType.Existing;
         return '';
     }
     );
 
-    const resetForm = () => {
-        setExistingDatabaseConfig(undefined);
-    }
-
     useEffect(() => {
-        resetForm();
+        if (databaseOption !== DatabaseType.Existing) {
+            setExistingDatabaseConfig(undefined);
+            setUseExistingSecret(false);
+            setExistingSecretName('');
+        }
     }, [databaseOption])
 
     useEffect(() => {
-        onChange({ existingDatabaseConfig, dbConnectionOption: databaseOption });
-    }, [existingDatabaseConfig, databaseOption, onChange]);
+        onChange({ existingDatabaseConfig, dbConnectionOption: databaseOption, existingDatabaseSecretName: useExistingSecret ? existingSecretName : undefined });
+    }, [existingDatabaseConfig, databaseOption, existingSecretName, useExistingSecret, onChange]);
 
     const handleExistingDBChange = (field: string, value: string) => {
         setExistingDatabaseConfig({ ...existingDatabaseConfig, [field]: value } as ExistingDBConnection);
@@ -49,8 +52,24 @@ export default function DBConnection({ releases, onChange, cloudProvider, isEdit
                 return (
                     <>
                         {!isEdit && <div>Connect to an externally managed database through a connection string</div>}
-                        <SensitiveInput label={"DB Connection String"} value={existingDatabaseConfig?.dbConnectionString!} onChange={(value) => handleExistingDBChange('dbConnectionString', value)} />
-                        <SensitiveInput label={"DB Replicas Connection String"} value={existingDatabaseConfig?.dbReplicasConnectionString!} onChange={(value) => handleExistingDBChange('dbReplicasConnectionString', value)} />
+                        <div className="existing-secret-toggle">
+                            <Switch checked={useExistingSecret} onChange={(event) => {
+                                const checked = event.target.checked;
+                                setUseExistingSecret(checked);
+                                if (!checked) {
+                                    setExistingSecretName('');
+                                }
+                            }} />
+                            <span className="existing-secret-label">Use existing Kubernetes secret</span>
+                        </div>
+                        {useExistingSecret ? (
+                            <SensitiveInput label={"Existing Secret Name"} value={existingSecretName} onChange={(value) => setExistingSecretName(value)} />
+                        ) : (
+                            <>
+                                <SensitiveInput label={"DB Connection String"} value={existingDatabaseConfig?.dbConnectionString!} onChange={(value) => handleExistingDBChange('dbConnectionString', value)} />
+                                <SensitiveInput label={"DB Replicas Connection String"} value={existingDatabaseConfig?.dbReplicasConnectionString!} onChange={(value) => handleExistingDBChange('dbReplicasConnectionString', value)} />
+                            </>
+                        )}
                     </>
                 )
             case DatabaseType.CreateCNPG:

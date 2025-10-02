@@ -77,6 +77,9 @@ func initBootstrapper(apiRouter *mux.Router, context *Context) {
 }
 
 func handleSetCredentials(c *Context, w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	cloudProvider := vars["cloudProvider"]
+
 	var credentials model.Credentials
 	json.NewDecoder(r.Body).Decode(&credentials)
 
@@ -99,7 +102,8 @@ func handleSetCredentials(c *Context, w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = UpdateStateCredentials(c.BootstrapperState, &credentials)
+	// Update both credentials and provider in state
+	err = UpdateStateCredentialsAndProvider(c.BootstrapperState, &credentials, cloudProvider)
 	if err != nil {
 		logger.FromContext(c.Ctx).WithError(err).Error("Failed to update state credentials - settings will not be persisted")
 	}
@@ -197,6 +201,12 @@ func handleGetCluster(c *Context, w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		logger.FromContext(c.Ctx).WithError(err).Error("Failed to describe cluster")
 		w.WriteHeader(http.StatusInternalServerError)
+	}
+
+	// Update cluster name in state when accessing a cluster
+	err = UpdateStateClusterName(c.BootstrapperState, clusterName)
+	if err != nil {
+		logger.FromContext(c.Ctx).WithError(err).Error("Failed to update cluster name in state")
 	}
 
 	json.NewEncoder(w).Encode(result)
@@ -431,7 +441,7 @@ func handleDeployNginxOperator(c *Context, w http.ResponseWriter, r *http.Reques
       annotations:
         service.beta.kubernetes.io/aws-load-balancer-backend-protocol: "tcp"
         service.beta.kubernetes.io/aws-load-balancer-ssl-ports: "https"
-        service.beta.kubernetes.io/aws-load-balancer-ssl-cert: arn:aws:acm:us-east-1:926412419614:certificate/e13f9426-e452-4670-9f6a-f56b3f346bf1`
+        service.beta.kubernetes.io/aws-load-balancer-ssl-cert: arn:aws:acm:us-east-1:110643744285:certificate/8fcc5250-8a60-4ab8-8337-7491fb447906`
 
 	chartSpec := helmclient.ChartSpec{
 		ReleaseName:     "ingress-nginx",
@@ -754,6 +764,7 @@ func handlePatchMattermostInstallation(c *Context, w http.ResponseWriter, r *htt
 	logger.FromContext(c.Ctx).Infof("Patch request: %+v", patchRequest.FilestorePatch)
 
 	if !patchRequest.IsValid() {
+		logger.FromContext(c.Ctx).Errorf("Invalid patch request - version validation failed for version: %s", patchRequest.Version)
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
@@ -899,6 +910,12 @@ func handlePatchMattermostInstallation(c *Context, w http.ResponseWriter, r *htt
 		database.External.Secret = updatedSecret.ObjectMeta.Name
 	}
 
+	// Update environment variables if provided
+	if len(patchRequest.MattermostEnv) > 0 {
+		logger.FromContext(c.Ctx).Infof("Updating environment variables, count: %d", len(patchRequest.MattermostEnv))
+		installation.Spec.MattermostEnv = patchRequest.MattermostEnv
+	}
+
 	installation.Spec.Version = patchRequest.Version
 	installation.Spec.Image = patchRequest.Image
 	installation.Spec.FileStore = MMFilestore
@@ -1009,6 +1026,7 @@ func handleCreateMattermostInstallation(c *Context, w http.ResponseWriter, r *ht
 
 	var writer string
 	var reader string
+	var databaseSecretName string
 
 	if create.DBConnectionOption == model.DatabaseOptionCreateForMe {
 		dbCluster := &cnpgv1.Cluster{
@@ -1066,29 +1084,38 @@ func handleCreateMattermostInstallation(c *Context, w http.ResponseWriter, r *ht
 		writer = strings.Replace(initial, "postgresql:", "postgres:", 1) // Replace once
 		reader = strings.Replace(writer, fmt.Sprintf("%s-rw:", secretName), fmt.Sprintf("%s-ro:", secretName), 1)
 	} else if create.DBConnectionOption == model.DatabaseOptionExisting {
-		writer = create.ExistingDBConnection.ConnectionString
-		reader = create.ExistingDBConnection.ConnectionString
+		if create.ExistingDBSecretName != "" {
+			databaseSecretName = create.ExistingDBSecretName
+		} else {
+			writer = create.ExistingDBConnection.ConnectionString
+			reader = create.ExistingDBConnection.ConnectionString
+		}
 	}
 
-	databaseSecret := &v1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      model.SecretNameDatabase,
-			Namespace: namespaceName,
-		},
-		Type: v1.SecretTypeOpaque,
-		StringData: map[string]string{
-			"DB_CONNECTION_CHECK_URL":           writer,
-			"DB_CONNECTION_STRING":              writer,
-			"MM_SQLSETTINGS_DATASOURCEREPLICAS": reader, // Assuming read replicas for now
-		},
-	}
+	if databaseSecretName == "" {
+		databaseSecret := &v1.Secret{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      model.SecretNameDatabase,
+				Namespace: namespaceName,
+			},
+			Type: v1.SecretTypeOpaque,
+			StringData: map[string]string{
+				"DB_CONNECTION_CHECK_URL":           writer,
+				"DB_CONNECTION_STRING":              writer,
+				"MM_SQLSETTINGS_DATASOURCEREPLICAS": reader, // Assuming read replicas for now
+				"MM_CONFIG":                         writer,
+			},
+		}
 
-	// Create the database secret
-	_, err = kubeClient.Clientset.CoreV1().Secrets(namespaceName).Create(context.TODO(), databaseSecret, metav1.CreateOptions{})
-	if err != nil {
-		logger.FromContext(c.Ctx).Errorf("Error creating database secret:", err)
-		w.WriteHeader(http.StatusInternalServerError)
-		return
+		// Create the database secret
+		_, err = kubeClient.Clientset.CoreV1().Secrets(namespaceName).Create(context.TODO(), databaseSecret, metav1.CreateOptions{})
+		if err != nil {
+			logger.FromContext(c.Ctx).Errorf("Error creating database secret:", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		databaseSecretName = databaseSecret.ObjectMeta.Name
 	}
 
 	// License Secret
@@ -1114,6 +1141,9 @@ func handleCreateMattermostInstallation(c *Context, w http.ResponseWriter, r *ht
 	}
 
 	filestore := create.GetMMOperatorFilestore(namespaceName, filestoreSecret)
+	if filestore.External != nil && filestore.External.Secret == "" && create.FilestoreSecretName != "" {
+		filestore.External.Secret = create.FilestoreSecretName
+	}
 
 	mattermostCRD := &mmv1beta1.Mattermost{
 		ObjectMeta: metav1.ObjectMeta{
@@ -1133,7 +1163,12 @@ func handleCreateMattermostInstallation(c *Context, w http.ResponseWriter, r *ht
 			},
 			Database: mmv1beta1.Database{
 				External: &mmv1beta1.ExternalDatabase{
-					Secret: model.SecretNameDatabase,
+					Secret: func() string {
+						if databaseSecretName != "" {
+							return databaseSecretName
+						}
+						return model.SecretNameDatabase
+					}(),
 				},
 			},
 			FileStore: filestore,
@@ -1142,6 +1177,17 @@ func handleCreateMattermostInstallation(c *Context, w http.ResponseWriter, r *ht
 				{Name: "MM_FILESETTINGS_AMAZONS3SSL", Value: "true"},
 				{Name: model.MMENVLicense, ValueFrom: &v1.EnvVarSource{
 					SecretKeyRef: &v1.SecretKeySelector{Key: "license", LocalObjectReference: v1.LocalObjectReference{Name: licenseSecret.ObjectMeta.Name}, Optional: aws.Bool(true)}, // Add comma to separate items
+				}},
+				{Name: "MM_CONFIG", ValueFrom: &v1.EnvVarSource{
+					SecretKeyRef: &v1.SecretKeySelector{
+						Key: "MM_CONFIG",
+						LocalObjectReference: v1.LocalObjectReference{Name: func() string {
+							if databaseSecretName != "" {
+								return databaseSecretName
+							}
+							return model.SecretNameDatabase
+						}()},
+					},
 				}},
 			},
 			PodTemplate: &mmv1beta1.PodTemplate{
@@ -1219,11 +1265,11 @@ func handleDeployMattermostOperator(c *Context, w http.ResponseWriter, r *http.R
 	}
 
 	chartSpec := helmclient.ChartSpec{
-		ReleaseName:     "mattermost-operator",
-		ChartName:       "mattermost/mattermost-operator",
-		Namespace:       "mattermost-operator",
-		UpgradeCRDs:     true,
-		Version:         "v1.22.0",
+		ReleaseName: "mattermost-operator",
+		ChartName:   "mattermost/mattermost-operator",
+		Namespace:   "mattermost-operator",
+		UpgradeCRDs: true,
+		// Version:         "1.25.2",
 		Wait:            true,
 		Timeout:         300 * time.Second,
 		CreateNamespace: true,

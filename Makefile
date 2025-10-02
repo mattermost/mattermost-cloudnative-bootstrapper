@@ -22,10 +22,10 @@ build_desktop_desktop: build_desktop_macos
 
 .PHONY: lint-server
 lint-server:
-	@echo Running staticcheck
+	@echo Running lint
 	@echo $(GOBIN)
-	GOBIN=$(GOBIN) $(GO) install honnef.co/go/tools/cmd/staticcheck@latest
-	$(GOBIN)/staticcheck ./...
+	GOBIN=$(GOBIN) $(GO) install golang.org/x/lint/golint
+	$(GOBIN)/golint -set_exit_status $(./...)
 	@echo lint success
 
 .PHONY: govet
@@ -48,19 +48,3 @@ lint-webapp: node_modules
 
 .PHONY: check-style
 check-style: lint-server govet lint-webapp
-
-.PHONY: build-webapp
-build-webapp: node_modules
-	@echo Building webapp for production
-	cd webapp; npm run build
-
-.PHONY: build-server-embedded
-build-server-embedded: build-webapp
-	@echo Building server with embedded frontend
-	@echo Copying webapp build files to static/build
-	rm -rf static/build
-	mkdir -p static
-	cp -r webapp/build static/
-	go build -o build/mcnb-server ./cmd/mcnb
-	@echo Cleaning up copied files
-	rm -rf static/build

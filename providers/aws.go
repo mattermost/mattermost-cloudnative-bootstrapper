@@ -52,6 +52,7 @@ func GetAWSProvider(credentials *model.Credentials) *AWSProvider {
 			credentials = &model.Credentials{
 				AccessKeyID:     os.Getenv("AWS_ACCESS_KEY_ID"),
 				SecretAccessKey: os.Getenv("AWS_SECRET_ACCESS_KEY"),
+				SessionToken:    os.Getenv("AWS_SESSION_TOKEN"),
 			}
 		}
 		awsProviderInstance = &AWSProvider{
@@ -69,6 +70,7 @@ func (a *AWSProvider) GetAWSCredentials() model.Credentials {
 		return model.Credentials{
 			AccessKeyID:     os.Getenv("AWS_ACCESS_KEY_ID"),
 			SecretAccessKey: os.Getenv("AWS_SECRET_ACCESS_KEY"),
+			SessionToken:    os.Getenv("AWS_SESSION_TOKEN"),
 		}
 	}
 	return *a.Credentials
@@ -102,7 +104,7 @@ func (a *AWSProvider) NewEKSClient(region ...string) *EKSClient {
 		}
 
 		sess, err := session.NewSession(&aws.Config{
-			Credentials: credentials.NewStaticCredentials(awsCredentials.AccessKeyID, awsCredentials.SecretAccessKey, ""),
+			Credentials: credentials.NewStaticCredentials(awsCredentials.AccessKeyID, awsCredentials.SecretAccessKey, awsCredentials.SessionToken),
 			Region:      aws.String(defaultRegion), // Specify the appropriate AWS region
 		})
 		if err != nil {
@@ -136,7 +138,7 @@ func (a *AWSProvider) SetRegion(c context.Context, region string) error {
 func (a *AWSProvider) ValidateCredentials(c context.Context, creds *model.Credentials) (bool, error) {
 	// Create a new session with the provided credentials
 	sess, err := session.NewSession(&aws.Config{
-		Credentials: credentials.NewStaticCredentials(creds.AccessKeyID, creds.SecretAccessKey, ""),
+		Credentials: credentials.NewStaticCredentials(creds.AccessKeyID, creds.SecretAccessKey, creds.SessionToken),
 		Region:      aws.String("us-east-1"), // Specify the appropriate AWS region
 		// LogLevel:    aws.LogLevel(aws.LogDebugWithHTTPBody),
 	})
@@ -168,7 +170,7 @@ func (a *AWSProvider) ListRoles(c context.Context) ([]*model.SupportedRolesRespo
 
 	sess, err := session.NewSession(&aws.Config{
 		Region:      aws.String("us-east-1"), // Specify the appropriate AWS region
-		Credentials: credentials.NewStaticCredentials(awsCredentials.AccessKeyID, awsCredentials.SecretAccessKey, ""),
+		Credentials: credentials.NewStaticCredentials(awsCredentials.AccessKeyID, awsCredentials.SecretAccessKey, awsCredentials.SessionToken),
 	})
 
 	if err != nil {
@@ -181,8 +183,11 @@ func (a *AWSProvider) ListRoles(c context.Context) ([]*model.SupportedRolesRespo
 	// List IAM roles
 	input := &iam.ListRolesInput{}
 	err = svc.ListRolesPages(input, func(page *iam.ListRolesOutput, lastPage bool) bool {
-		// TODO Filter down to only those roles that have permission?
-		eksSupportedRoles = append(eksSupportedRoles, page.Roles...)
+		for _, role := range page.Roles {
+			// TODO Filter down to only those roles that have permission?
+
+			eksSupportedRoles = append(eksSupportedRoles, role)
+		}
 		return !lastPage
 	})
 	if err != nil {
@@ -354,14 +359,25 @@ func (a *AWSProvider) GetKubeRestConfig(c context.Context, clusterName string) (
 
 	cluster := result.Cluster
 
+	// Create an STS client with our credentials
+	awsCredentials := a.GetAWSCredentials()
+	sess, err := session.NewSession(&aws.Config{
+		Credentials: credentials.NewStaticCredentials(awsCredentials.AccessKeyID, awsCredentials.SecretAccessKey, awsCredentials.SessionToken),
+		Region:      aws.String(awsCredentials.Region),
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to create AWS session: %w", err)
+	}
+
+	stsClient := sts.New(sess)
+
+	// Generate token using the STS client directly
 	gen, err := token.NewGenerator(true, false)
 	if err != nil {
 		return nil, err
 	}
-	opts := &token.GetTokenOptions{
-		ClusterID: aws.StringValue(cluster.Name),
-	}
-	tok, err := gen.GetWithOptions(opts)
+
+	tok, err := gen.GetWithSTS(aws.StringValue(cluster.Name), stsClient)
 	if err != nil {
 		return nil, err
 	}
@@ -393,14 +409,25 @@ func (a *AWSProvider) GetKubeConfig(c context.Context, clusterName string) (clie
 
 	cluster := result.Cluster
 
+	// Create an STS client with our credentials
+	awsCredentials := a.GetAWSCredentials()
+	sess, err := session.NewSession(&aws.Config{
+		Credentials: credentials.NewStaticCredentials(awsCredentials.AccessKeyID, awsCredentials.SecretAccessKey, awsCredentials.SessionToken),
+		Region:      aws.String(awsCredentials.Region),
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to create AWS session: %w", err)
+	}
+
+	stsClient := sts.New(sess)
+
+	// Generate token using the STS client directly
 	gen, err := token.NewGenerator(true, false)
 	if err != nil {
 		return nil, err
 	}
-	opts := &token.GetTokenOptions{
-		ClusterID: aws.StringValue(cluster.Name),
-	}
-	tok, err := gen.GetWithOptions(opts)
+
+	tok, err := gen.GetWithSTS(aws.StringValue(cluster.Name), stsClient)
 	if err != nil {
 		return nil, err
 	}
@@ -500,7 +527,7 @@ func (a *AWSProvider) HelmFileStorePre(c context.Context, clusterName string, na
 
 	// Install a chart release.
 	if _, err := helmClient.InstallOrUpgradeChart(context.Background(), &chartSpec, nil); err != nil {
-		return errors.New("failed to install aws-ebs-csi-driver")
+		return errors.New("Failed to install aws-ebs-csi-driver")
 	}
 
 	return nil
