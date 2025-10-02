@@ -124,11 +124,19 @@ func (is *InstallationSecrets) ToInstallationSecretsResponse() (*InstallationSec
 }
 
 func (le *LocalExternalFileStore) IsValid() bool {
-	return le.VolumeClaimName != ""
+	if le.VolumeClaimName == "" {
+		return false
+	}
+
+	return true
 }
 
 func (l *LocalFileStore) IsValid() bool {
-	return l.StorageSize != ""
+	if l.StorageSize == "" {
+		return false
+	}
+
+	return true
 }
 
 func (e *ExistingDBConnection) IsValid() bool {
