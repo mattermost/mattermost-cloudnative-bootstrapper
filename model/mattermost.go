@@ -224,6 +224,7 @@ type PatchMattermostWorkspaceRequest struct {
 	Endpoint       string                           `json:"endpoint"`
 	FilestorePatch *PatchMattermostFilestoreRequest `json:"fileStorePatch"`
 	DatabasePatch  *PatchMattermostDatabaseRequest  `json:"databasePatch"`
+	MattermostEnv  []v1.EnvVar                      `json:"mattermostEnv"`
 }
 
 type PatchMattermostFilestoreRequest struct {

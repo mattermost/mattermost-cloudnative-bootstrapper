@@ -909,6 +909,12 @@ func handlePatchMattermostInstallation(c *Context, w http.ResponseWriter, r *htt
 		database.External.Secret = updatedSecret.ObjectMeta.Name
 	}
 
+	// Update environment variables if provided
+	if len(patchRequest.MattermostEnv) > 0 {
+		logger.FromContext(c.Ctx).Infof("Updating environment variables, count: %d", len(patchRequest.MattermostEnv))
+		installation.Spec.MattermostEnv = patchRequest.MattermostEnv
+	}
+
 	installation.Spec.Version = patchRequest.Version
 	installation.Spec.Image = patchRequest.Image
 	installation.Spec.FileStore = MMFilestore

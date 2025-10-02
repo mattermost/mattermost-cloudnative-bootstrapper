@@ -1,5 +1,5 @@
 import React from 'react';
-import { Mattermost, PatchMattermostWorkspaceRequest, LocalFileStore, FileStore, S3FileStore, ExistingDBConnection } from '../../types/Installation';
+import { Mattermost, PatchMattermostWorkspaceRequest, LocalFileStore, FileStore, S3FileStore, ExistingDBConnection, MattermostEnvItem } from '../../types/Installation';
 import { Button, DialogContent, DialogTitle, Input, Modal, ModalClose, ModalDialog, Textarea } from '@mui/joy';
 import './edit_installation_modal.scss';
 import FilestoreConnection, { FilestoreConnectionDetails } from '../../pages/mattermost/filestore_connection';
@@ -7,6 +7,7 @@ import { useGetMattermostInstallationSecretsQuery } from '../../client/dashboard
 import { useSearchParams } from 'react-router-dom';
 import DBConnection from '../../pages/mattermost/db_connection';
 import { useGetInstalledHelmReleasesQuery } from '../../client/bootstrapperApi';
+import EnvVariablesManager from './env_variables_manager';
 
 type EditInstallationModalProps = {
     installation?: Mattermost;
@@ -32,6 +33,7 @@ export default function EditInstallationModal({ installation, onSubmit, show, on
         fileStore: installation?.spec.fileStore,
         fileStorePatch: {},
         databasePatch: {},
+        mattermostEnv: installation?.spec.mattermostEnv || [],
     } as PatchMattermostWorkspaceRequest);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>, field: string) => {
@@ -39,7 +41,11 @@ export default function EditInstallationModal({ installation, onSubmit, show, on
         setInstallationPatch({ ...installationPatch, [field]: value});
     }
 
-    const buildExistingFilestoreObject = (filestore: FileStore) => {
+    const buildExistingFilestoreObject = (filestore: FileStore | undefined) => {
+        if (!filestore) {
+            return undefined;
+        }
+        
         if (filestore.local) {
             return {
                 local: filestore.local as LocalFileStore
@@ -47,10 +53,10 @@ export default function EditInstallationModal({ installation, onSubmit, show, on
         } else if (filestore.external) {
             return {
                 external: {
-                    ...filestore.external,
-                    accessKeySecret: installationSecrets?.filestoreSecret.data.secretkey,
-                    accessKeyId: installationSecrets?.filestoreSecret.data.accesskey,
-
+                    url: filestore.external.url || '',
+                    bucket: filestore.external.bucket || '',
+                    accessKeySecret: installationSecrets?.filestoreSecret?.data?.secretkey || '',
+                    accessKeyId: installationSecrets?.filestoreSecret?.data?.accesskey || '',
                 } as S3FileStore
             } as FileStore;
         } else if (filestore.externalVolume) {
@@ -58,6 +64,8 @@ export default function EditInstallationModal({ installation, onSubmit, show, on
                 externalVolume: filestore.externalVolume
             } as FileStore;
         }
+        
+        return undefined;
     }
 
     const buildExistingDatabaseObject = (database: ExistingDBConnection) => {
@@ -87,9 +95,13 @@ export default function EditInstallationModal({ installation, onSubmit, show, on
         setInstallationPatch({...installationPatch, databasePatch: change});
     }
 
+    const handleEnvVariablesChange = (envVars: MattermostEnvItem[]) => {
+        setInstallationPatch({...installationPatch, mattermostEnv: envVars});
+    }
+
     return (
         <Modal className="edit-installation-modal" open={show} onClose={onClose}>
-            <ModalDialog size="lg" style={{width: '400px'}}>
+            <ModalDialog size="lg">
                 <ModalClose  onClick={onClose} />
                 <DialogTitle>Edit installation</DialogTitle>
                 <DialogContent>Update installation {installationPatch?.name}</DialogContent>
@@ -105,8 +117,12 @@ export default function EditInstallationModal({ installation, onSubmit, show, on
                     <Input size="sm" type="text" placeholder="Endpoint" value={installationPatch?.endpoint} onChange={(e) => handleChange(e, 'endpoint')}/>
                     <label>License</label>
                     {isSuccess && <Textarea minRows={2} maxRows={10} placeholder="License" value={buildExistingLicenseObject()} onChange={(e) => handleChange(e as unknown as React.ChangeEvent<HTMLInputElement>, 'license')} />}
-                    {isSuccess && <FilestoreConnection isEdit={true} cloudProvider={cloudProvider} existingFilestore={buildExistingFilestoreObject(installationPatch?.fileStore!)} onChange={(change) => { handleFilestoreConnectionChange(change)}} />}
+                    {isSuccess && <FilestoreConnection isEdit={true} cloudProvider={cloudProvider} existingFilestore={buildExistingFilestoreObject(installationPatch?.fileStore)} onChange={(change) => { handleFilestoreConnectionChange(change)}} />}
                     {isSuccess && isGetReleasesSuccess && <DBConnection isEdit={true} cloudProvider={cloudProvider} onChange={({existingDatabaseConfig, dbConnectionOption}) => {handleDatabaseConnectionChange(existingDatabaseConfig!)}} existingDatabase={buildExistingDatabaseObject(installationPatch?.databasePatch!)} releases={releases}/>}
+                    <EnvVariablesManager 
+                        envVariables={installationPatch.mattermostEnv || []} 
+                        onChange={handleEnvVariablesChange}
+                    />
                     <Button className="submit-button" onClick={() => onSubmit(installationPatch!)}>Save</Button>
                 </div>
             </ModalDialog>

@@ -42,6 +42,7 @@ export interface PatchMattermostWorkspaceRequest {
     fileStore: FileStore;
     fileStorePatch?: PatchMattermostWorkspaceFilestore;
     databasePatch?: ExistingDBConnection;
+    mattermostEnv?: MattermostEnvItem[];
 }
 
 export interface PatchMattermostWorkspaceFilestore {
@@ -110,7 +111,14 @@ export interface Spec {
 
 export interface MattermostEnvItem {
     name: string;
-    value: string;
+    value?: string;
+    valueFrom?: {
+        secretKeyRef: {
+            name: string;
+            key: string;
+            optional?: boolean;
+        };
+    };
 } 
 
 export interface Ingress {
