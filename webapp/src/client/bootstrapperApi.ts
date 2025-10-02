@@ -123,6 +123,18 @@ export const bootstrapperApi = createApi({
                 method: 'POST',
             }),
         }),
+        deployRTCDService: builder.mutation<undefined, { cloudProvider: string, clusterName: string }>({
+            query: ({ clusterName, cloudProvider }) => ({
+                url: `/${cloudProvider}/cluster/${clusterName}/deploy_rtcd`,
+                method: 'POST',
+            }),
+        }),
+        deployCallsOffloaderService: builder.mutation<undefined, { cloudProvider: string, clusterName: string }>({
+            query: ({ clusterName, cloudProvider }) => ({
+                url: `/${cloudProvider}/cluster/${clusterName}/deploy_calls_offloader`,
+                method: 'POST',
+            }),
+        }),
         getPodsForInstallation: builder.query<Pod[], { cloudProvider: string, clusterName: string, installationName: string }>({
             query: ({ cloudProvider, clusterName, installationName }) => ({ 
                 url: `/${cloudProvider}/cluster/${clusterName}/installation/${installationName}/pods`,
@@ -170,6 +182,8 @@ export const {
     useDeployMattermostOperatorMutation,
     useDeployNginxOperatorMutation,
     useDeployCloudNativePGMutation,
+    useDeployRTCDServiceMutation,
+    useDeployCallsOffloaderServiceMutation,
     useGetInstalledHelmReleasesQuery,
     useGetPossibleClustersQuery,
     useGetClusterQuery,

@@ -6,7 +6,7 @@ import { Button} from '@mui/joy';
 import CloudNativePGLogo from '../../static/cloudnativepglogo.png';
 import MattermostLogo from '../../static/mattermost-operator-logo.jpg';
 import NginxLogo from '../../static/Nginx logo.svg';
-import { useDeployCloudNativePGMutation, useDeployMattermostOperatorMutation, useDeployNginxOperatorMutation } from '../../client/bootstrapperApi';
+import { useDeployCloudNativePGMutation, useDeployMattermostOperatorMutation, useDeployNginxOperatorMutation, useDeployRTCDServiceMutation, useDeployCallsOffloaderServiceMutation } from '../../client/bootstrapperApi';
 
 type Props = {
     onSuccess: () => void;
@@ -25,6 +25,8 @@ export default function InstallOperatorsCarousel({ onSuccess, onError }: Props) 
     const mattermostMutator = useDeployMattermostOperatorMutation();
     const nginxMutator = useDeployNginxOperatorMutation();
     const cloudNativePGMutator = useDeployCloudNativePGMutation();
+    const rtcdMutator = useDeployRTCDServiceMutation();
+    const callsOffloaderMutator = useDeployCallsOffloaderServiceMutation();
 
     const cards: Record<string, { title: string; description: string; component: React.ReactElement | null, icon: React.ReactElement | null, mutator: any }> = {
         'mattermost-operator': {
@@ -47,6 +49,20 @@ export default function InstallOperatorsCarousel({ onSuccess, onError }: Props) 
             component: null,
             icon: <img src={CloudNativePGLogo} alt="CloudNative PG" style={{ height: '29px', marginRight: '12px' }} />,
             mutator: cloudNativePGMutator,
+        },
+        'rtcd': {
+            title: 'RTCD Service',
+            description: 'The RTCD service handles real-time communication aspects of Mattermost Calls, enabling voice and video calling features. Please wait while we deploy it to your cluster. This may take a few minutes.',
+            component: null,
+            icon: <img src={MattermostLogo} alt="RTCD Service" style={{ height: '29px', marginRight: '12px' }} />,
+            mutator: rtcdMutator,
+        },
+        'calls-offloader': {
+            title: 'Calls Offloader',
+            description: 'The Calls Offloader service enables call recordings, transcriptions, and live captions for Mattermost Calls. Please wait while we deploy it to your cluster. This may take a few minutes.',
+            component: null,
+            icon: <img src={MattermostLogo} alt="Calls Offloader" style={{ height: '29px', marginRight: '12px' }} />,
+            mutator: callsOffloaderMutator,
         },
     };
 
@@ -90,7 +106,7 @@ export default function InstallOperatorsCarousel({ onSuccess, onError }: Props) 
     }
 
     if (card.mutator[1].isError) {
-        onError(card.mutator[1].error as string);
+        onError(card.mutator[1].error);
     }
 
     return (

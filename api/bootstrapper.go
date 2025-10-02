@@ -61,9 +61,13 @@ func initBootstrapper(apiRouter *mux.Router, context *Context) {
 	clusterNameRouter.Handle("/deploy_mattermost_operator", addContext(handleDeployMattermostOperator)).Methods(http.MethodPost)
 	clusterNameRouter.Handle("/deploy_nginx_operator", addContext(handleDeployNginxOperator)).Methods(http.MethodPost)
 	clusterNameRouter.Handle("/deploy_pg_operator", addContext(handleDeployPGOperator)).Methods(http.MethodPost)
+	clusterNameRouter.Handle("/deploy_rtcd", addContext(handleDeployRTCDService)).Methods(http.MethodPost)
+	clusterNameRouter.Handle("/deploy_calls_offloader", addContext(handleDeployCallsOffloaderService)).Methods(http.MethodPost)
 	clusterNameRouter.Handle("/pg_operator", addContext(handleDeletePGOperator)).Methods(http.MethodDelete)
 	clusterNameRouter.Handle("/mattermost_operator", addContext(handleDeleteMattermostOperator)).Methods(http.MethodDelete)
 	clusterNameRouter.Handle("/nginx_operator", addContext(handleDeleteNginxOperator)).Methods(http.MethodDelete)
+	clusterNameRouter.Handle("/rtcd", addContext(handleDeleteRTCDService)).Methods(http.MethodDelete)
+	clusterNameRouter.Handle("/calls_offloader", addContext(handleDeleteCallsOffloaderService)).Methods(http.MethodDelete)
 	clusterNameRouter.Handle("/namespaces", addContext(handleGetClusterNamespaces)).Methods(http.MethodGet)
 	clusterNameRouter.Handle("/installation", addContext(handleCreateMattermostInstallation)).Methods(http.MethodPost)
 	clusterNameRouter.Handle("/installations", addContext(handleGetMattermostInstallations)).Methods(http.MethodGet)
@@ -1273,6 +1277,184 @@ func handleDeployMattermostOperator(c *Context, w http.ResponseWriter, r *http.R
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
+	w.WriteHeader(http.StatusCreated)
+}
+
+func handleDeleteRTCDService(c *Context, w http.ResponseWriter, r *http.Request) {
+	c.Ctx = logger.WithField(c.Ctx, "action", "delete-rtcd")
+	c.Ctx = logger.WithNamespace(c.Ctx, "rtcd")
+	vars := mux.Vars(r)
+	clusterName := vars["name"]
+	if clusterName == "" || clusterName == "undefined" {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	c.Ctx = logger.WithClusterName(c.Ctx, clusterName)
+
+	helmClient, err := c.CloudProvider.HelmClient(c.Ctx, clusterName, "rtcd")
+
+	if err != nil {
+		logger.FromContext(c.Ctx).WithError(err).Error("Failed to authenticate helm client")
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	err = helmClient.UninstallReleaseByName("rtcd")
+	if err != nil {
+		logger.FromContext(c.Ctx).WithError(err).Error("Failed to delete rtcd service")
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+}
+
+func handleDeployRTCDService(c *Context, w http.ResponseWriter, r *http.Request) {
+	c.Ctx = logger.WithField(c.Ctx, "action", "deploy-rtcd")
+	c.Ctx = logger.WithNamespace(c.Ctx, "mattermost-rtcd")
+
+	vars := mux.Vars(r)
+	clusterName := vars["name"]
+	if clusterName == "" || clusterName == "undefined" {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	c.Ctx = logger.WithClusterName(c.Ctx, clusterName)
+
+	helmClient, err := c.CloudProvider.HelmClient(c.Ctx, clusterName, "mattermost-rtcd")
+
+	if err != nil {
+		logger.FromContext(c.Ctx).WithError(err).Error("Failed to authenticate helm client")
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	chartRepo := repo.Entry{
+		Name: "mattermost",
+		URL:  "https://helm.mattermost.com",
+	}
+
+	err = helmClient.AddOrUpdateChartRepo(chartRepo)
+
+	if err != nil {
+		logger.FromContext(c.Ctx).WithError(err).Error("Failed to add or update chart repo")
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	// RTCD configuration based on Mattermost documentation
+	valuesYaml := helm.RTCDServiceValues
+
+	chartSpec := helmclient.ChartSpec{
+		ReleaseName:     "mattermost-rtcd",
+		ChartName:       "mattermost/mattermost-rtcd",
+		Namespace:       "mattermost-rtcd",
+		UpgradeCRDs:     true,
+		Wait:            true,
+		Timeout:         300 * time.Second,
+		CreateNamespace: true,
+		CleanupOnFail:   true,
+		ValuesYaml:      valuesYaml,
+	}
+
+	// Install a chart release.
+	// Note that helmclient.Options.Namespace should ideally match the namespace in chartSpec.Namespace.
+	if _, err := helmClient.InstallOrUpgradeChart(context.Background(), &chartSpec, nil); err != nil {
+		logger.FromContext(c.Ctx).WithError(err).Error("Failed to install rtcd service")
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusCreated)
+}
+
+func handleDeleteCallsOffloaderService(c *Context, w http.ResponseWriter, r *http.Request) {
+	c.Ctx = logger.WithField(c.Ctx, "action", "delete-calls-offloader")
+	c.Ctx = logger.WithNamespace(c.Ctx, "calls-offloader")
+	vars := mux.Vars(r)
+	clusterName := vars["name"]
+	if clusterName == "" || clusterName == "undefined" {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	c.Ctx = logger.WithClusterName(c.Ctx, clusterName)
+
+	helmClient, err := c.CloudProvider.HelmClient(c.Ctx, clusterName, "calls-offloader")
+
+	if err != nil {
+		logger.FromContext(c.Ctx).WithError(err).Error("Failed to authenticate helm client")
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	err = helmClient.UninstallReleaseByName("calls-offloader")
+	if err != nil {
+		logger.FromContext(c.Ctx).WithError(err).Error("Failed to delete calls-offloader service")
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+}
+
+func handleDeployCallsOffloaderService(c *Context, w http.ResponseWriter, r *http.Request) {
+	c.Ctx = logger.WithField(c.Ctx, "action", "deploy-calls-offloader")
+	c.Ctx = logger.WithNamespace(c.Ctx, "calls-offloader")
+
+	vars := mux.Vars(r)
+	clusterName := vars["name"]
+	if clusterName == "" || clusterName == "undefined" {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	c.Ctx = logger.WithClusterName(c.Ctx, clusterName)
+
+	helmClient, err := c.CloudProvider.HelmClient(c.Ctx, clusterName, "calls-offloader")
+
+	if err != nil {
+		logger.FromContext(c.Ctx).WithError(err).Error("Failed to authenticate helm client")
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	chartRepo := repo.Entry{
+		Name: "mattermost",
+		URL:  "https://helm.mattermost.com",
+	}
+
+	err = helmClient.AddOrUpdateChartRepo(chartRepo)
+
+	if err != nil {
+		logger.FromContext(c.Ctx).WithError(err).Error("Failed to add or update chart repo")
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	// Calls-offloader configuration based on Mattermost documentation
+	valuesYaml := helm.CallsOffloaderValues
+
+	chartSpec := helmclient.ChartSpec{
+		ReleaseName:     "calls-offloader",
+		ChartName:       "mattermost/calls-offloader",
+		Namespace:       "calls-offloader",
+		UpgradeCRDs:     true,
+		Wait:            true,
+		Timeout:         300 * time.Second,
+		CreateNamespace: true,
+		CleanupOnFail:   true,
+		ValuesYaml:      valuesYaml,
+	}
+
+	// Install a chart release.
+	// Note that helmclient.Options.Namespace should ideally match the namespace in chartSpec.Namespace.
+	if _, err := helmClient.InstallOrUpgradeChart(context.Background(), &chartSpec, nil); err != nil {
+		logger.FromContext(c.Ctx).WithError(err).Error("Failed to install calls-offloader service")
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
 	w.WriteHeader(http.StatusCreated)
 }
 
