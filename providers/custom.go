@@ -98,6 +98,11 @@ func (p *CustomKubeProvider) ValidateCredentials(c context.Context, creds *model
 		return false, errors.New("no credentials set")
 	}
 
+	// Additional validation for required fields
+	if p.Credentials.Kubecfg == "" {
+		return false, errors.New("kubeconfig content is required")
+	}
+
 	kubeClient, err := p.KubeClient(c, "")
 	if err != nil {
 		return false, fmt.Errorf("unable to instantiate KubeClient: %w", err)
@@ -173,6 +178,10 @@ func (p *CustomKubeProvider) HelmFileStorePre(c context.Context, clusterName str
 
 func (p *CustomKubeProvider) GetKubeConfig(c context.Context, clusterName string) (clientcmd.ClientConfig, error) {
 	credentials := p.GetCustomProviderCredentials()
+	if credentials == nil {
+		return nil, fmt.Errorf("no credentials set for custom provider")
+	}
+
 	// Parse the YAML data into a clientcmdapi.Config object
 	config, err := clientcmd.Load([]byte(credentials.Kubecfg))
 	if err != nil {
@@ -216,6 +225,10 @@ func (p *CustomKubeProvider) KubeClient(c context.Context, clusterName string) (
 
 func (p *CustomKubeProvider) GetKubeRestConfig(c context.Context, clusterName string) (*rest.Config, error) {
 	credentials := p.GetCustomProviderCredentials()
+	if credentials == nil {
+		return nil, fmt.Errorf("no credentials set for custom provider")
+	}
+
 	var config *api.Config
 	if credentials.KubecfgType == "file" {
 		// Load the kubeconfig from a file
