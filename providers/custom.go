@@ -25,7 +25,6 @@ import (
 type CustomKubeProvider struct {
 	Credentials     *model.Credentials
 	credentialsLock *sync.Mutex
-	kubeClient      *model.KubeClient
 }
 
 var customProviderInstance *CustomKubeProvider
@@ -101,12 +100,12 @@ func (p *CustomKubeProvider) ValidateCredentials(c context.Context, creds *model
 
 	kubeClient, err := p.KubeClient(c, "")
 	if err != nil {
-		return false, fmt.Errorf("Unable to instantiate KubeClient: %w", err)
+		return false, fmt.Errorf("unable to instantiate KubeClient: %w", err)
 	}
 
 	_, err = kubeClient.Clientset.Discovery().ServerVersion()
 	if err != nil {
-		return false, fmt.Errorf("Unable to hit discovery endpoint for cluster: %w", err)
+		return false, fmt.Errorf("unable to hit discovery endpoint for cluster: %w", err)
 	}
 
 	return true, nil
