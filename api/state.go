@@ -19,6 +19,7 @@ func initState(apiRouter *mux.Router, context *Context) {
 	stateRouter.Handle("/hydrate", addContext(handleHydrateState)).Methods("GET")
 	stateRouter.Handle("/check", addContext(handleCheckState)).Methods("GET")
 	stateRouter.Handle("", addContext(handlePatchState)).Methods("PATCH")
+	stateRouter.Handle("", addContext(handleDeleteState)).Methods("DELETE")
 }
 
 func handleHydrateState(c *Context, w http.ResponseWriter, r *http.Request) {
@@ -86,6 +87,21 @@ func handlePatchState(c *Context, w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	json.NewEncoder(w).Encode(state)
+}
+
+func handleDeleteState(c *Context, w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	// Delete the state file
+	err := DeleteState(c.BootstrapperState.StateFilePath)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Return success response
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]string{"message": "Session cleared successfully"})
 }
 
 const stateFileName = "state.json"
@@ -171,6 +187,31 @@ func SetState(stateFilePath string, state BootstrapperState) error {
 	}
 
 	err = os.WriteFile(stateFilePath, data, 0600)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func DeleteState(stateFilePath string) error {
+	if stateFilePath == "" {
+		stateFilePath = DefaultStateFilePath()
+	}
+
+	// Check if file exists before trying to delete
+	exists, err := CheckStateExists(stateFilePath)
+	if err != nil {
+		return err
+	}
+
+	if !exists {
+		// File doesn't exist, nothing to delete
+		return nil
+	}
+
+	// Delete the state file
+	err = os.Remove(stateFilePath)
 	if err != nil {
 		return err
 	}

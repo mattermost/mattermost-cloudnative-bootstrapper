@@ -59,6 +59,13 @@ export const bootstrapperApi = createApi({
         checkExistingSession: builder.query<{ provider: string; clusterName: string; hasState: boolean }, void>({
             query: () => '/state/check',
         }),
+        clearSession: builder.mutation<{ message: string }, void>({
+            query: () => ({
+                url: '/state',
+                method: 'DELETE',
+            }),
+            invalidatesTags: ['BootstrapperState'],
+        }),
         setRegion: builder.mutation<void, { region: string, cloudProvider: string }>({
             query: ({ region, cloudProvider }) => ({
                 url: `/${cloudProvider}/region`,
@@ -170,6 +177,7 @@ export const {
     useGetKubeConfigQuery,
     useGetStateQuery,
     useCheckExistingSessionQuery,
+    useClearSessionMutation,
     useSetRegionMutation,
     useWatchInstallationLogsQuery,
     useGetPodsForInstallationQuery,

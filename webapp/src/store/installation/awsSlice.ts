@@ -117,6 +117,9 @@ export const awsSlice = createSlice({
         },
         setCreateNodeGroup: (state, action) => {
             state.createNodeGroup = action.payload
+        },
+        resetAWSState: (state) => {
+            return initialState;
         }
     },
     extraReducers: (builder) => {
@@ -211,5 +214,5 @@ export const createNodeGroupValid = (state: RootState) => {
 }
 
 
-export const { setRegion, setKubernetesOption, setSelectedARN, setPossibleARN, setEksClusterName, setKubernetesVersion, setSecurityGroupIds, setSubnetIds, setCreateNodeGroup } = awsSlice.actions;
+export const { setRegion, setKubernetesOption, setSelectedARN, setPossibleARN, setEksClusterName, setKubernetesVersion, setSecurityGroupIds, setSubnetIds, setCreateNodeGroup, resetAWSState } = awsSlice.actions;
 export default awsSlice.reducer;
