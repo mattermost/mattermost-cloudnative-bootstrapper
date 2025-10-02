@@ -16,6 +16,7 @@ import (
 	cnpgv1 "github.com/cloudnative-pg/cloudnative-pg/api/v1"
 	"github.com/gorilla/mux"
 	"github.com/gorilla/websocket"
+	"github.com/mattermost/mattermost-cloudnative-bootstrapper/helm"
 	"github.com/mattermost/mattermost-cloudnative-bootstrapper/internal/logger"
 	"github.com/mattermost/mattermost-cloudnative-bootstrapper/model"
 	helmclient "github.com/mittwald/go-helm-client"
@@ -430,18 +431,7 @@ func handleDeployNginxOperator(c *Context, w http.ResponseWriter, r *http.Reques
 	}
 
 	// TODO - we need some sort of pre-post hooks for the install to allow for environment specific configurations
-	valuesYaml := `controller:
-    config:
-      use-forwarded-headers: "true"
-	service:
-	  targetPorts:
-	    http: http
-		https: http
-    service:
-      annotations:
-        service.beta.kubernetes.io/aws-load-balancer-backend-protocol: "tcp"
-        service.beta.kubernetes.io/aws-load-balancer-ssl-ports: "https"
-        service.beta.kubernetes.io/aws-load-balancer-ssl-cert: arn:aws:acm:us-east-1:110643744285:certificate/8fcc5250-8a60-4ab8-8337-7491fb447906`
+	valuesYaml := helm.NginxOperatorValues
 
 	chartSpec := helmclient.ChartSpec{
 		ReleaseName:     "ingress-nginx",
@@ -458,7 +448,7 @@ func handleDeployNginxOperator(c *Context, w http.ResponseWriter, r *http.Reques
 	// Install a chart release.
 	// Note that helmclient.Options.Namespace should ideally match the namespace in chartSpec.Namespace.
 	if _, err := helmClient.InstallOrUpgradeChart(context.Background(), &chartSpec, nil); err != nil {
-		logger.FromContext(c.Ctx).WithError(err).Error("Failed to install mattermost operator")
+		logger.FromContext(c.Ctx).WithError(err).Error("Failed to install nginx operator")
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
