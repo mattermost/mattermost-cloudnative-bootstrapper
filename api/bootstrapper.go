@@ -1096,6 +1096,7 @@ func handleCreateMattermostInstallation(c *Context, w http.ResponseWriter, r *ht
 				"DB_CONNECTION_CHECK_URL":           writer,
 				"DB_CONNECTION_STRING":              writer,
 				"MM_SQLSETTINGS_DATASOURCEREPLICAS": reader, // Assuming read replicas for now
+				"MM_CONFIG":                         writer,
 			},
 		}
 
@@ -1169,6 +1170,17 @@ func handleCreateMattermostInstallation(c *Context, w http.ResponseWriter, r *ht
 				{Name: "MM_FILESETTINGS_AMAZONS3SSL", Value: "true"},
 				{Name: model.MMENVLicense, ValueFrom: &v1.EnvVarSource{
 					SecretKeyRef: &v1.SecretKeySelector{Key: "license", LocalObjectReference: v1.LocalObjectReference{Name: licenseSecret.ObjectMeta.Name}, Optional: aws.Bool(true)}, // Add comma to separate items
+				}},
+				{Name: "MM_CONFIG", ValueFrom: &v1.EnvVarSource{
+					SecretKeyRef: &v1.SecretKeySelector{
+						Key: "MM_CONFIG",
+						LocalObjectReference: v1.LocalObjectReference{Name: func() string {
+							if databaseSecretName != "" {
+								return databaseSecretName
+							}
+							return model.SecretNameDatabase
+						}()},
+					},
 				}},
 			},
 			PodTemplate: &mmv1beta1.PodTemplate{
