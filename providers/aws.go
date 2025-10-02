@@ -359,14 +359,25 @@ func (a *AWSProvider) GetKubeRestConfig(c context.Context, clusterName string) (
 
 	cluster := result.Cluster
 
+	// Create an STS client with our credentials
+	awsCredentials := a.GetAWSCredentials()
+	sess, err := session.NewSession(&aws.Config{
+		Credentials: credentials.NewStaticCredentials(awsCredentials.AccessKeyID, awsCredentials.SecretAccessKey, awsCredentials.SessionToken),
+		Region:      aws.String(awsCredentials.Region),
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to create AWS session: %w", err)
+	}
+
+	stsClient := sts.New(sess)
+
+	// Generate token using the STS client directly
 	gen, err := token.NewGenerator(true, false)
 	if err != nil {
 		return nil, err
 	}
-	opts := &token.GetTokenOptions{
-		ClusterID: aws.StringValue(cluster.Name),
-	}
-	tok, err := gen.GetWithOptions(opts)
+
+	tok, err := gen.GetWithSTS(aws.StringValue(cluster.Name), stsClient)
 	if err != nil {
 		return nil, err
 	}
@@ -398,14 +409,25 @@ func (a *AWSProvider) GetKubeConfig(c context.Context, clusterName string) (clie
 
 	cluster := result.Cluster
 
+	// Create an STS client with our credentials
+	awsCredentials := a.GetAWSCredentials()
+	sess, err := session.NewSession(&aws.Config{
+		Credentials: credentials.NewStaticCredentials(awsCredentials.AccessKeyID, awsCredentials.SecretAccessKey, awsCredentials.SessionToken),
+		Region:      aws.String(awsCredentials.Region),
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to create AWS session: %w", err)
+	}
+
+	stsClient := sts.New(sess)
+
+	// Generate token using the STS client directly
 	gen, err := token.NewGenerator(true, false)
 	if err != nil {
 		return nil, err
 	}
-	opts := &token.GetTokenOptions{
-		ClusterID: aws.StringValue(cluster.Name),
-	}
-	tok, err := gen.GetWithOptions(opts)
+
+	tok, err := gen.GetWithSTS(aws.StringValue(cluster.Name), stsClient)
 	if err != nil {
 		return nil, err
 	}
