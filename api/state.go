@@ -17,6 +17,7 @@ func initState(apiRouter *mux.Router, context *Context) {
 
 	stateRouter := apiRouter.PathPrefix("/state").Subrouter()
 	stateRouter.Handle("/hydrate", addContext(handleHydrateState)).Methods("GET")
+	stateRouter.Handle("/check", addContext(handleCheckState)).Methods("GET")
 	stateRouter.Handle("", addContext(handlePatchState)).Methods("PATCH")
 }
 
@@ -26,6 +27,42 @@ func handleHydrateState(c *Context, w http.ResponseWriter, r *http.Request) {
 
 	state := c.BootstrapperState
 	json.NewEncoder(w).Encode(state)
+}
+
+// SessionInfo represents a summary of an existing session for UI display
+type SessionInfo struct {
+	Provider    string `json:"provider"`
+	ClusterName string `json:"clusterName"`
+	HasState    bool   `json:"hasState"`
+}
+
+func handleCheckState(c *Context, w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	// Check if a state file exists
+	exists, err := CheckStateExists(c.BootstrapperState.StateFilePath)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	if !exists {
+		// No state exists
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(SessionInfo{HasState: false})
+		return
+	}
+
+	// State exists, return session info
+	state := c.BootstrapperState
+	sessionInfo := SessionInfo{
+		Provider:    state.Provider,
+		ClusterName: state.ClusterName,
+		HasState:    true,
+	}
+
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(sessionInfo)
 }
 
 func handlePatchState(c *Context, w http.ResponseWriter, r *http.Request) {
