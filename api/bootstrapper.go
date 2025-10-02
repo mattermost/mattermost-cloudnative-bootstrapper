@@ -77,6 +77,9 @@ func initBootstrapper(apiRouter *mux.Router, context *Context) {
 }
 
 func handleSetCredentials(c *Context, w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	cloudProvider := vars["cloudProvider"]
+
 	var credentials model.Credentials
 	json.NewDecoder(r.Body).Decode(&credentials)
 
@@ -99,7 +102,8 @@ func handleSetCredentials(c *Context, w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = UpdateStateCredentials(c.BootstrapperState, &credentials)
+	// Update both credentials and provider in state
+	err = UpdateStateCredentialsAndProvider(c.BootstrapperState, &credentials, cloudProvider)
 	if err != nil {
 		logger.FromContext(c.Ctx).WithError(err).Error("Failed to update state credentials - settings will not be persisted")
 	}
@@ -197,6 +201,12 @@ func handleGetCluster(c *Context, w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		logger.FromContext(c.Ctx).WithError(err).Error("Failed to describe cluster")
 		w.WriteHeader(http.StatusInternalServerError)
+	}
+
+	// Update cluster name in state when accessing a cluster
+	err = UpdateStateClusterName(c.BootstrapperState, clusterName)
+	if err != nil {
+		logger.FromContext(c.Ctx).WithError(err).Error("Failed to update cluster name in state")
 	}
 
 	json.NewEncoder(w).Encode(result)

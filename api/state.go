@@ -193,3 +193,38 @@ func UpdateStateCredentials(existingState BootstrapperState, credentials *model.
 
 	return nil
 }
+
+// UpdateStateCredentialsAndProvider updates credentials and provider in state
+func UpdateStateCredentialsAndProvider(existingState BootstrapperState, credentials *model.Credentials, provider string) error {
+	state, err := GetState(existingState.StateFilePath)
+	if err != nil {
+		return err
+	}
+
+	state.Credentials = credentials
+	state.Provider = provider
+
+	err = SetState(existingState.StateFilePath, state)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// UpdateStateClusterName updates the cluster name in state
+func UpdateStateClusterName(existingState BootstrapperState, clusterName string) error {
+	state, err := GetState(existingState.StateFilePath)
+	if err != nil {
+		return err
+	}
+
+	state.ClusterName = clusterName
+
+	err = SetState(existingState.StateFilePath, state)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
