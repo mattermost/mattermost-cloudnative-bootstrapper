@@ -764,6 +764,7 @@ func handlePatchMattermostInstallation(c *Context, w http.ResponseWriter, r *htt
 	logger.FromContext(c.Ctx).Infof("Patch request: %+v", patchRequest.FilestorePatch)
 
 	if !patchRequest.IsValid() {
+		logger.FromContext(c.Ctx).Errorf("Invalid patch request - version validation failed for version: %s", patchRequest.Version)
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}

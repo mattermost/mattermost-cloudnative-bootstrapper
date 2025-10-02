@@ -281,8 +281,9 @@ func isValidReleaseBranchTag(tag string) bool {
 
 // isValidSemanticVersion checks if the provided string is a valid semantic version.
 func isValidSemanticVersion(version string) bool {
-	// Regular expression pattern for semantic versioning (e.g., 1.0.0)
-	pattern := `^\d+\.\d+\.\d+$`
+	// Regular expression pattern for semantic versioning (e.g., 1.0.0 or 10.12)
+	// Supports both X.Y.Z and X.Y formats
+	pattern := `^\d+\.\d+(\.\d+)?$`
 	match, err := regexp.MatchString(pattern, version)
 	return err == nil && match
 }
