@@ -102,7 +102,33 @@ export default function InstallOperatorsPage() {
 
     useEffect(() => {
         releases?.forEach((release) => {
-            dispatch(setUtilityDeploymentState({ utility: release.Name, deploymentRequestState: 'succeeded', isChecked: true }))
+            // Map release names to utility keys
+            let utilityKey: string;
+            switch (release.Name) {
+                case 'mattermost-operator':
+                    utilityKey = 'mattermost-operator';
+                    break;
+                case 'ingress-nginx':
+                    utilityKey = 'ingress-nginx';
+                    break;
+                case 'cnpg-system':
+                    utilityKey = 'cnpg-system';
+                    break;
+                case 'mattermost-rtcd':
+                    utilityKey = 'rtcd';
+                    break;
+                case 'mattermost-calls-offloader':
+                    utilityKey = 'calls-offloader';
+                    break;
+                default:
+                    return; // Skip unknown releases
+            }
+            
+            dispatch(setUtilityDeploymentState({ 
+                utility: utilityKey, 
+                deploymentRequestState: 'succeeded', 
+                isChecked: true 
+            }));
         })
     }, [releases?.length, dispatch])
 

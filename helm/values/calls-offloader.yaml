@@ -2,18 +2,18 @@ callsOffloader:
   replicaCount: 1
   image:
     repository: mattermost/calls-offloader
-    tag: v0.8.0
+    tag: v0.9.4
   service:
     type: ClusterIP
     port: 4545
     targetPort: 4545
   env:
-    CALLS_OFFLOADER_LOGGER_ENABLEFILE: "false"
-    CALLS_OFFLOADER_LOGGER_ENABLECONSOLE: "true"
-  resources:
-    limits:
-      cpu: 2000m
-      memory: 2Gi
-    requests:
-      cpu: 500m
-      memory: 512Mi
+    CALLS_OFFLOADER_LOGGER_ENABLEFILE: "\"false\""
+    CALLS_OFFLOADER_LOGGER_ENABLECONSOLE: "\"true\""
+  # resources:
+  #   limits:
+  #     cpu: 2000m
+  #     memory: 2Gi
+  #   requests:
+  #     cpu: 500m
+  #     memory: 512Mi
