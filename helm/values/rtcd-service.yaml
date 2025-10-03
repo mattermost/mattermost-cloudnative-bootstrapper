@@ -6,6 +6,6 @@ service:
   RTCport: 8443
 configuration:
   environmentVariables:
-    RTCD_API_SECURITY_ALLOWSELFREGISTRATION: "true"
-    RTCD_LOGGER_ENABLEFILE: "false"
-    RTCD_LOGGER_ENABLECONSOLE: "true"
+    RTCD_API_SECURITY_ALLOWSELFREGISTRATION: "\"true\""
+    RTCD_LOGGER_ENABLEFILE: "\"false\""
+    RTCD_LOGGER_ENABLECONSOLE: "\"true\""
