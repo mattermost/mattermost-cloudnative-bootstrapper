@@ -13,6 +13,19 @@
         color: #c33;
     }
 
+    .error-operation, .error-code {
+        margin-bottom: 12px;
+        padding: 8px 12px;
+        background-color: #f8f9fa;
+        border: 1px solid #e9ecef;
+        border-radius: 4px;
+        font-size: 14px;
+        
+        strong {
+            color: #495057;
+        }
+    }
+
     .error-details {
         margin-top: 16px;
 
@@ -53,6 +66,16 @@
             background-color: #2a1a1a;
             border-color: #4a2a2a;
             color: #ff6b6b;
+        }
+
+        .error-operation, .error-code {
+            background-color: #1a1a1a;
+            border-color: #333;
+            color: #e0e0e0;
+            
+            strong {
+                color: #f0f0f0;
+            }
         }
 
         .error-content {

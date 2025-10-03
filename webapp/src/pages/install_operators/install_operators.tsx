@@ -94,7 +94,7 @@ export default function InstallOperatorsPage() {
     const [currentError, setCurrentError] = useState<any>(null);
 
     // TODO: Wire this in - currently it's just looking at the namespace to see if something's deployed, but these actually contain the Helm deployment status
-    const {data: releases, isLoading: isReleasesLoading, isFetching: isReleasesFetching, isSuccess: isReleasesSuccess, isError: isReleasesError, refetch: refetchReleases} = useGetInstalledHelmReleasesQuery({cloudProvider, clusterName}, {skip: cloudProvider === '' || !clusterName});
+    const {data: releases, isLoading: isReleasesLoading, isFetching: isReleasesFetching, isSuccess: isReleasesSuccess, isError: isReleasesError, error: releasesError, refetch: refetchReleases} = useGetInstalledHelmReleasesQuery({cloudProvider, clusterName}, {skip: cloudProvider === '' || !clusterName});
 
     useGetClusterQuery({cloudProvider, clusterName}, {
         skip: cloudProvider === '' || !clusterName,

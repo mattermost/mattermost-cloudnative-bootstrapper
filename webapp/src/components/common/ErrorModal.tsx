@@ -48,12 +48,19 @@ export default function ErrorModal({ open, title = "Error Details", error, onClo
             return error.length > 100 ? error.substring(0, 100) + '...' : error;
         }
         
+        // Handle structured API error responses
+        if (error?.data?.message) {
+            return error.data.message;
+        }
+        
+        // Handle RTK Query error format
         if (error?.message) {
             return error.message;
         }
         
-        if (error?.data?.message) {
-            return error.data.message;
+        // Handle standard error objects
+        if (error?.error) {
+            return typeof error.error === 'string' ? error.error : error.error.message || 'An error occurred';
         }
         
         return 'An error occurred';
@@ -71,9 +78,19 @@ export default function ErrorModal({ open, title = "Error Details", error, onClo
                     <div className="error-summary">
                         <strong>Summary:</strong> {getErrorSummary(error)}
                     </div>
+                    {error?.data?.operation && (
+                        <div className="error-operation">
+                            <strong>Operation:</strong> {error.data.operation}
+                        </div>
+                    )}
+                    {error?.data?.code && (
+                        <div className="error-code">
+                            <strong>Error Code:</strong> {error.data.code}
+                        </div>
+                    )}
                     <div className="error-details">
                         <div className="error-details-header">
-                            <strong>Full Details:</strong>
+                            <strong>Technical Details:</strong>
                             <Button
                                 size="sm"
                                 variant="outlined"

@@ -12,7 +12,30 @@ type Props = {
     isSuccessText?: string;
     isError: boolean;
     isErrorText?: string;
+    error?: any;
 }
+
+// Helper function to extract error message from different error formats
+const getErrorMessage = (error: any): string | null => {
+    if (!error) return null;
+    
+    // Handle structured API error responses
+    if (error?.data?.message) {
+        return error.data.message;
+    }
+    
+    // Handle RTK Query error format
+    if (error?.message) {
+        return error.message;
+    }
+    
+    // Handle standard error objects
+    if (error?.error) {
+        return typeof error.error === 'string' ? error.error : error.error.message || null;
+    }
+    
+    return null;
+};
 
 export default function RTKConnectedLoadingSpinner(props: Props) {
     let content = null;
@@ -26,7 +49,8 @@ export default function RTKConnectedLoadingSpinner(props: Props) {
         content = <div className="info"><CheckIcon fontSize='small' /> {success}</div>;
         className='succeeded';
     } else if (props.isError) {
-        const error = props.isErrorText || 'An error has occurred';
+        const errorMessage = getErrorMessage(props.error);
+        const error = props.isErrorText || errorMessage || 'An error has occurred';
         content = <div className="info"><ErrorOutline /> {error}</div>;
         className='failed';
     }

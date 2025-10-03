@@ -1317,7 +1317,9 @@ func handleDeployRTCDService(c *Context, w http.ResponseWriter, r *http.Request)
 	vars := mux.Vars(r)
 	clusterName := vars["name"]
 	if clusterName == "" || clusterName == "undefined" {
-		w.WriteHeader(http.StatusBadRequest)
+		model.WriteBadRequestError(w, "Cluster name is required for RTCD deployment", "deploy-rtcd", map[string]interface{}{
+			"provided_cluster_name": clusterName,
+		})
 		return
 	}
 	c.Ctx = logger.WithClusterName(c.Ctx, clusterName)
@@ -1326,7 +1328,11 @@ func handleDeployRTCDService(c *Context, w http.ResponseWriter, r *http.Request)
 
 	if err != nil {
 		logger.FromContext(c.Ctx).WithError(err).Error("Failed to authenticate helm client")
-		w.WriteHeader(http.StatusInternalServerError)
+		model.WriteInternalServerError(w, "Failed to connect to the Kubernetes cluster. Please verify your cluster is running and accessible.", "deploy-rtcd", map[string]interface{}{
+			"cluster_name": clusterName,
+			"namespace":    "mattermost-rtcd",
+			"error":        err.Error(),
+		})
 		return
 	}
 
@@ -1339,7 +1345,12 @@ func handleDeployRTCDService(c *Context, w http.ResponseWriter, r *http.Request)
 
 	if err != nil {
 		logger.FromContext(c.Ctx).WithError(err).Error("Failed to add or update chart repo")
-		w.WriteHeader(http.StatusInternalServerError)
+		model.WriteInternalServerError(w, "Failed to add the Mattermost Helm repository. This may be due to network connectivity issues.", "deploy-rtcd", map[string]interface{}{
+			"repository_name": chartRepo.Name,
+			"repository_url":  chartRepo.URL,
+			"cluster_name":    clusterName,
+			"error":           err.Error(),
+		})
 		return
 	}
 
@@ -1362,7 +1373,14 @@ func handleDeployRTCDService(c *Context, w http.ResponseWriter, r *http.Request)
 	// Note that helmclient.Options.Namespace should ideally match the namespace in chartSpec.Namespace.
 	if _, err := helmClient.InstallOrUpgradeChart(context.Background(), &chartSpec, nil); err != nil {
 		logger.FromContext(c.Ctx).WithError(err).Error("Failed to install rtcd service")
-		w.WriteHeader(http.StatusInternalServerError)
+		model.WriteInternalServerError(w, "Failed to deploy the RTCD service to your cluster. This could be due to insufficient resources, networking issues, or configuration problems.", "deploy-rtcd", map[string]interface{}{
+			"chart_name":      chartSpec.ChartName,
+			"release_name":    chartSpec.ReleaseName,
+			"namespace":       chartSpec.Namespace,
+			"cluster_name":    clusterName,
+			"timeout_seconds": int(chartSpec.Timeout.Seconds()),
+			"error":           err.Error(),
+		})
 		return
 	}
 
