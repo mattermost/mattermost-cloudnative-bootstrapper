@@ -165,6 +165,10 @@ func GetState(stateFilePath string) (BootstrapperState, error) {
 	var state BootstrapperState
 	data, err := os.ReadFile(stateFilePath)
 	if err != nil {
+		if os.IsNotExist(err) {
+			// Return empty state if file is not found
+			return state, nil
+		}
 		return state, err
 	}
 
