@@ -1,0 +1,11 @@
+image:
+  repository: mattermost/rtcd
+  tag: v1.2.1
+service:
+  APIport: 8045
+  RTCport: 8443
+configuration:
+  environmentVariables:
+    RTCD_API_SECURITY_ALLOWSELFREGISTRATION: "\"true\""
+    RTCD_LOGGER_ENABLEFILE: "\"false\""
+    RTCD_LOGGER_ENABLECONSOLE: "\"true\""

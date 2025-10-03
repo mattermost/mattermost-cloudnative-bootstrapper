@@ -7,9 +7,10 @@ import GetCredentials from './get_credentials';
 import { useDispatch } from 'react-redux';
 import { useSelector } from 'react-redux';
 import { RootState } from '../../store';
-import { setCloudCredentials, setCloudProvider, setKubernetesOption } from '../../store/installation/bootstrapperSlice';
+import { setCloudCredentials, setCloudProvider, setKubernetesOption, resetState } from '../../store/installation/bootstrapperSlice';
+import { resetAWSState } from '../../store/installation/awsSlice';
 import { useNavigate } from 'react-router-dom';
-import { useSetAndCheckCloudCredentialsMutation, useCheckExistingSessionQuery } from '../../client/bootstrapperApi';
+import { useSetAndCheckCloudCredentialsMutation, useCheckExistingSessionQuery, useClearSessionMutation } from '../../client/bootstrapperApi';
 import RTKConnectedLoadingSpinner from '../../components/common/rtk_connected_loading_spinner';
 
 export default function SetupPage() {
@@ -20,12 +21,14 @@ export default function SetupPage() {
     const kubernetesOption = useSelector((state: RootState) => state.bootstrapper.kubernetesOption)
     const credentials = useSelector((state: RootState) => state.bootstrapper.cloudCredentials)
     const [setCredentials, result] = useSetAndCheckCloudCredentialsMutation();
+    const [clearSession, clearResult] = useClearSessionMutation();
     const lastPageLocalStorage = localStorage.getItem('lastVisitedPage');
     const [lastVisitedPage, setShowLastVisitedPage] = useState(lastPageLocalStorage);
+    const [userStartedNewSession, setUserStartedNewSession] = useState(false);
     const showLastVisitedPage = lastVisitedPage && lastVisitedPage !== '/' ? true : false;
     
     // Check for existing server-side session
-    const { data: sessionData, isLoading: isSessionLoading } = useCheckExistingSessionQuery();
+    const { data: sessionData, isLoading: isSessionLoading, refetch: refetchSession } = useCheckExistingSessionQuery();
     const hasServerSession = sessionData?.hasState && sessionData.provider && sessionData.clusterName;
 
     useEffect(() => {
@@ -44,9 +47,9 @@ export default function SetupPage() {
     const formComplete = () => {
         const base = !!cloudProvider && !!kubernetesOption && !result.isSuccess;
         if (cloudProvider !== 'custom') {
-            return base && !!credentials.accessKeyId && !!credentials.accessKeySecret;
+            return base && !!credentials?.accessKeyId && !!credentials?.accessKeySecret;
         } else {
-            return base && !!credentials.kubeconfig && !!credentials.kubeconfigType;
+            return base && !!credentials?.kubeconfig && !!credentials?.kubeconfigType;
         }
     }
 
@@ -54,6 +57,35 @@ export default function SetupPage() {
         if (sessionData?.provider && sessionData?.clusterName) {
             // Navigate to the dashboard for the existing session
             navigate(`/${sessionData.provider}/dashboard?clusterName=${sessionData.clusterName}`);
+        }
+    }
+
+    const handleStartNewSession = async () => {
+        try {
+            // Clear server-side session first
+            await clearSession().unwrap();
+            
+            // Clear localStorage
+            localStorage.removeItem('lastVisitedPage');
+            
+            // Reset Redux state
+            dispatch(resetState());
+            dispatch(resetAWSState());
+            
+            // Clear local component state
+            setShowLastVisitedPage("");
+            setUserStartedNewSession(true);
+            
+            // Refetch session data to update hasServerSession
+            refetchSession();
+        } catch (error) {
+            console.error('Failed to clear server session:', error);
+            // Still clear local state even if server clear fails
+            localStorage.removeItem('lastVisitedPage');
+            dispatch(resetState());
+            dispatch(resetAWSState());
+            setShowLastVisitedPage("");
+            setUserStartedNewSession(true);
         }
     }
 
@@ -93,7 +125,14 @@ export default function SetupPage() {
                                             Continue From Last Page
                                         </Button>
                                     )}
-                                    <Button size="lg" color="danger" variant="outlined" onClick={() => setShowLastVisitedPage("")}>
+                                    <Button 
+                                        size="lg" 
+                                        color="danger" 
+                                        variant="outlined" 
+                                        onClick={handleStartNewSession}
+                                        loading={clearResult.isLoading}
+                                        disabled={clearResult.isLoading}
+                                    >
                                         Start New Session
                                     </Button>
                                 </div>

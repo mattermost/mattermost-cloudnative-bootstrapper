@@ -59,6 +59,13 @@ export const bootstrapperApi = createApi({
         checkExistingSession: builder.query<{ provider: string; clusterName: string; hasState: boolean }, void>({
             query: () => '/state/check',
         }),
+        clearSession: builder.mutation<{ message: string }, void>({
+            query: () => ({
+                url: '/state',
+                method: 'DELETE',
+            }),
+            invalidatesTags: ['BootstrapperState'],
+        }),
         setRegion: builder.mutation<void, { region: string, cloudProvider: string }>({
             query: ({ region, cloudProvider }) => ({
                 url: `/${cloudProvider}/region`,
@@ -116,6 +123,18 @@ export const bootstrapperApi = createApi({
                 method: 'POST',
             }),
         }),
+        deployRTCDService: builder.mutation<undefined, { cloudProvider: string, clusterName: string }>({
+            query: ({ clusterName, cloudProvider }) => ({
+                url: `/${cloudProvider}/cluster/${clusterName}/deploy_rtcd`,
+                method: 'POST',
+            }),
+        }),
+        deployCallsOffloaderService: builder.mutation<undefined, { cloudProvider: string, clusterName: string }>({
+            query: ({ clusterName, cloudProvider }) => ({
+                url: `/${cloudProvider}/cluster/${clusterName}/deploy_calls_offloader`,
+                method: 'POST',
+            }),
+        }),
         getPodsForInstallation: builder.query<Pod[], { cloudProvider: string, clusterName: string, installationName: string }>({
             query: ({ cloudProvider, clusterName, installationName }) => ({ 
                 url: `/${cloudProvider}/cluster/${clusterName}/installation/${installationName}/pods`,
@@ -163,6 +182,8 @@ export const {
     useDeployMattermostOperatorMutation,
     useDeployNginxOperatorMutation,
     useDeployCloudNativePGMutation,
+    useDeployRTCDServiceMutation,
+    useDeployCallsOffloaderServiceMutation,
     useGetInstalledHelmReleasesQuery,
     useGetPossibleClustersQuery,
     useGetClusterQuery,
@@ -170,6 +191,7 @@ export const {
     useGetKubeConfigQuery,
     useGetStateQuery,
     useCheckExistingSessionQuery,
+    useClearSessionMutation,
     useSetRegionMutation,
     useWatchInstallationLogsQuery,
     useGetPodsForInstallationQuery,

@@ -22,10 +22,10 @@ build_desktop_desktop: build_desktop_macos
 
 .PHONY: lint-server
 lint-server:
-	@echo Running lint
+	@echo Running staticcheck
 	@echo $(GOBIN)
-	GOBIN=$(GOBIN) $(GO) install golang.org/x/lint/golint
-	$(GOBIN)/golint -set_exit_status $(./...)
+	GOBIN=$(GOBIN) $(GO) install honnef.co/go/tools/cmd/staticcheck@latest
+	$(GOBIN)/staticcheck ./...
 	@echo lint success
 
 .PHONY: govet
@@ -40,7 +40,6 @@ node_modules:
 	git --version
 	cd webapp; npm install
 
-
 .PHONY: lint-webapp
 lint-webapp: node_modules
 	@echo Running eslint
@@ -48,3 +47,34 @@ lint-webapp: node_modules
 
 .PHONY: check-style
 check-style: lint-server govet lint-webapp
+
+.PHONY: build-webapp
+build-webapp: node_modules
+	@echo Building webapp for production
+	cd webapp; npm run build
+
+.PHONY: build-server-embedded
+build-server-embedded: build-webapp
+	@echo Building server with embedded frontend
+	@echo Copying webapp build files to static/build
+	rm -rf static/build
+	mkdir -p static
+	cp -r webapp/build static/
+	go build -o build/mcnb-server ./cmd/mcnb
+	@echo Cleaning up copied files
+	rm -rf static/build
+
+.PHONY: run-server-dev
+run-server-dev:
+	@echo Starting API server with go run on http://localhost:8070
+	@echo "The server will run in API-only mode (no embedded frontend)"
+	@echo "Press Ctrl+C to stop the server"
+	go run ./cmd/mcnb server --disable-telemetry
+
+.PHONY: run-webapp-dev
+run-webapp-dev: node_modules
+	@echo Starting React development server on http://localhost:3000
+	@echo "API calls will be proxied to http://localhost:8070"
+	@echo "Make sure the API server is running with 'make run-server-dev'"
+	@echo "Press Ctrl+C to stop the development server"
+	cd webapp && npm start

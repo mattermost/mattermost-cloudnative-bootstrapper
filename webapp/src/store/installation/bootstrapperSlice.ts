@@ -45,6 +45,13 @@ export const bootstrapperSlice = createSlice({
                 return util;
             });
         },
+        resetState: (state) => {
+            state.cloudProvider = '';
+            state.kubernetesOption = '';
+            state.cloudCredentials = { accessKeyId: '', accessKeySecret: '', sessionToken: '', region: '', kubeconfig: '', kubeconfigType: '' };
+            state.clusterName = undefined;
+            state.utilities = allUtilities;
+        },
     },
     extraReducers: (builder) => {
     }
@@ -59,7 +66,7 @@ export const requiredUtilitiesAreDeployed = (state: RootState) => {
     return requiredUtilities.every((utility: KubeUtility) => utility.isRequired && utility.deploymentRequestState === 'succeeded');
 }
 
-export const { setCloudProvider, setCloudCredentials, setKubernetesOption, setUtilities, setUtilityDeploymentState } = bootstrapperSlice.actions;
+export const { setCloudProvider, setCloudCredentials, setKubernetesOption, setUtilities, setUtilityDeploymentState, resetState } = bootstrapperSlice.actions;
 
 
 export default bootstrapperSlice.reducer;

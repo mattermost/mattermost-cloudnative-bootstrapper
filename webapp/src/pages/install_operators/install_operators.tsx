@@ -14,6 +14,7 @@ import { requiredUtilitiesAreDeployed, setUtilities, setUtilityDeploymentState }
 import InstallOperatorsCarousel from './install_operators_carousel';
 import { useGetClusterQuery, useGetInstalledHelmReleasesQuery } from '../../client/bootstrapperApi';
 import RTKConnectedLoadingSpinner from '../../components/common/rtk_connected_loading_spinner';
+import ErrorModal from '../../components/common/ErrorModal';
 
 export type KubeUtility = {
     displayName: string;
@@ -53,7 +54,32 @@ export const allUtilities: KubeUtility[] = [
         isChecked: false,
         deploymentRequestState: 'idle',
     },
+    {
+        displayName: 'RTCD Service',
+        key: 'rtcd',
+        operatorLogoUrl: MattermostLogo,
+        operatorDescription: 'The RTCD service handles real-time communication aspects of Mattermost Calls, enabling voice and video calling features',
+        isRequired: false,
+        isChecked: false,
+        deploymentRequestState: 'idle',
+    },
+    {
+        displayName: 'Calls Offloader',
+        key: 'calls-offloader',
+        operatorLogoUrl: MattermostLogo,
+        operatorDescription: 'The Calls Offloader service enables call recordings, transcriptions, and live captions for Mattermost Calls',
+        isRequired: false,
+        isChecked: false,
+        deploymentRequestState: 'idle',
+    },
 ];
+
+// Debug logging to help troubleshoot
+console.log('Imported logo paths:', {
+    MattermostLogo,
+    NginxLogo, 
+    CloudNativePGLogo
+});
 
 export default function InstallOperatorsPage() {
     const dispatch = useDispatch();
@@ -64,9 +90,11 @@ export default function InstallOperatorsPage() {
     const utilities = useSelector((state: RootState) => state.bootstrapper.utilities);
     const [isDeploying, setIsDeploying] = useState(false);
     const [deploymentFinished, setDeploymentFinished] = useState(false);
+    const [errorModalOpen, setErrorModalOpen] = useState(false);
+    const [currentError, setCurrentError] = useState<any>(null);
 
     // TODO: Wire this in - currently it's just looking at the namespace to see if something's deployed, but these actually contain the Helm deployment status
-    const {data: releases, isLoading: isReleasesLoading, isFetching: isReleasesFetching, isSuccess: isReleasesSuccess, isError: isReleasesError, refetch: refetchReleases} = useGetInstalledHelmReleasesQuery({cloudProvider, clusterName}, {skip: cloudProvider === '' || !clusterName});
+    const {data: releases, isLoading: isReleasesLoading, isFetching: isReleasesFetching, isSuccess: isReleasesSuccess, isError: isReleasesError, error: releasesError, refetch: refetchReleases} = useGetInstalledHelmReleasesQuery({cloudProvider, clusterName}, {skip: cloudProvider === '' || !clusterName});
 
     useGetClusterQuery({cloudProvider, clusterName}, {
         skip: cloudProvider === '' || !clusterName,
@@ -74,9 +102,35 @@ export default function InstallOperatorsPage() {
 
     useEffect(() => {
         releases?.forEach((release) => {
-            dispatch(setUtilityDeploymentState({ utility: release.Name, deploymentRequestState: 'succeeded', isChecked: true }))
+            // Map release names to utility keys
+            let utilityKey: string;
+            switch (release.Name) {
+                case 'mattermost-operator':
+                    utilityKey = 'mattermost-operator';
+                    break;
+                case 'ingress-nginx':
+                    utilityKey = 'ingress-nginx';
+                    break;
+                case 'cnpg-system':
+                    utilityKey = 'cnpg-system';
+                    break;
+                case 'mattermost-rtcd':
+                    utilityKey = 'rtcd';
+                    break;
+                case 'mattermost-calls-offloader':
+                    utilityKey = 'calls-offloader';
+                    break;
+                default:
+                    return; // Skip unknown releases
+            }
+            
+            dispatch(setUtilityDeploymentState({ 
+                utility: utilityKey, 
+                deploymentRequestState: 'succeeded', 
+                isChecked: true 
+            }));
         })
-    }, [releases?.length, dispatch, releases])
+    }, [releases?.length, dispatch])
 
     const requiredUtilitiesDeployed = useSelector(requiredUtilitiesAreDeployed);
 
@@ -94,7 +148,11 @@ export default function InstallOperatorsPage() {
                     setIsDeploying(false);
                     setDeploymentFinished(true)
                 }}
-                onError={(error) => {setIsDeploying(false); alert(`Error: ${error}`)}}
+                onError={(error) => {
+                    setIsDeploying(false);
+                    setCurrentError(error);
+                    setErrorModalOpen(true);
+                }}
             />
         )
     }
@@ -151,6 +209,15 @@ export default function InstallOperatorsPage() {
                     </div>
                 </div>
             </div>
+            <ErrorModal
+                open={errorModalOpen}
+                title="Deployment Error"
+                error={currentError}
+                onClose={() => {
+                    setErrorModalOpen(false);
+                    setCurrentError(null);
+                }}
+            />
         </div >
     );
 }
