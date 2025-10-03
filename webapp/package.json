@@ -68,10 +68,10 @@
     ]
   },
   "devDependencies": {
-    "@fontsource/inter": "^5.0.15",
+    "@fontsource/inter": "^5.2.8",
     "@types/lodash": "^4.14.202",
     "@types/react-redux": "^7.1.31",
-    "eslint-plugin-react": "^7.35.0",
-    "@types/react-window": "^1.8.8"
+    "@types/react-window": "^1.8.8",
+    "eslint-plugin-react": "^7.35.0"
   }
 }
