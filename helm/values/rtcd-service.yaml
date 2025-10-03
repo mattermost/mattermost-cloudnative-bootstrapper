@@ -1,5 +1,5 @@
 image:
-  repository: mattermost/mattermost-rtcd
+  repository: mattermost/rtcd
   tag: v1.4.0
 service:
   APIport: 8045
