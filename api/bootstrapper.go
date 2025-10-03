@@ -85,8 +85,12 @@ func handleSetCredentials(c *Context, w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	cloudProvider := vars["cloudProvider"]
 
+	logger.FromContext(c.Ctx).Debugf("Setting credentials for provider: %s", cloudProvider)
+
 	var credentials model.Credentials
 	json.NewDecoder(r.Body).Decode(&credentials)
+
+	logger.FromContext(c.Ctx).Debugf("Received credentials for %s provider", cloudProvider)
 
 	err := c.CloudProvider.SetCredentials(c.Ctx, &credentials)
 	if err != nil {
@@ -107,10 +111,14 @@ func handleSetCredentials(c *Context, w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	logger.FromContext(c.Ctx).Debugf("Credentials validated successfully for %s", cloudProvider)
+
 	// Update both credentials and provider in state
 	err = UpdateStateCredentialsAndProvider(c.BootstrapperState, &credentials, cloudProvider)
 	if err != nil {
 		logger.FromContext(c.Ctx).WithError(err).Error("Failed to update state credentials - settings will not be persisted")
+	} else {
+		logger.FromContext(c.Ctx).Debugf("Successfully saved credentials and provider (%s) to state", cloudProvider)
 	}
 
 	w.WriteHeader(http.StatusCreated)
