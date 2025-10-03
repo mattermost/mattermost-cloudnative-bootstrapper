@@ -361,8 +361,6 @@ func handleGetInstalledCharts(c *Context, w http.ResponseWriter, r *http.Request
 		allReleases = append(allReleases, release...)
 	}
 
-	logger.FromContext(c.Ctx).Errorf("%+v", allReleases)
-
 	releasesRes := []model.InstalledReleases{}
 	for _, release := range allReleases {
 		releasesRes = append(releasesRes, model.InstalledReleases{

@@ -104,7 +104,7 @@ export default function InstallOperatorsPage() {
         releases?.forEach((release) => {
             dispatch(setUtilityDeploymentState({ utility: release.Name, deploymentRequestState: 'succeeded', isChecked: true }))
         })
-    }, [releases?.length, dispatch, releases])
+    }, [releases?.length, dispatch])
 
     const requiredUtilitiesDeployed = useSelector(requiredUtilitiesAreDeployed);
 

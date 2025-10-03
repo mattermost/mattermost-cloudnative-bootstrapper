@@ -45,7 +45,7 @@ export default function InstallationDashboard() {
         if (selectedClusterName) {
             refetchInstallations();
         }
-    }, [selectedClusterName, refetchInstallations])
+    }, [selectedClusterName]) // eslint-disable-line react-hooks/exhaustive-deps
 
     const handleEditInstallation = (installationName: string) => {
         const installation = installations?.filter((install) => install.metadata.name === installationName)[0];

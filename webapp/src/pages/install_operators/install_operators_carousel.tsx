@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { useSelector } from 'react-redux';
 import { useMatch, useSearchParams } from 'react-router-dom';
 import { RootState } from '../../store';
@@ -71,20 +71,48 @@ export default function InstallOperatorsCarousel({ onSuccess, onError }: Props) 
         (utility) => utility.isChecked && utility.deploymentRequestState !== 'succeeded',
     ).length;
 
-    const handleDeploy = async () => {
+    const handleDeploy = useCallback(async () => {
+        const utilityInProgress = utilities[carouselIndex];
+        if (!utilityInProgress) return;
+        
+        const card = cards[utilityInProgress.key];
+        if (!card?.mutator) return;
+        
         card.mutator[0]({ clusterName, cloudProvider });
-    };
+    }, [carouselIndex, utilities, cards, clusterName, cloudProvider]);
     
     useEffect(() => {
         if (carouselIndex + 1 > numSelectedUtilities) {
             onSuccess();
-        } else if (card.component === null && !hasMutatorBeenCalled.current) {
-            hasMutatorBeenCalled.current = true;
-            handleDeploy();
-        } else {
+        } else if (!hasMutatorBeenCalled.current) {
+            const utilityInProgress = utilities[carouselIndex];
+            if (utilityInProgress) {
+                const card = cards[utilityInProgress.key];
+                if (card?.component === null) {
+                    hasMutatorBeenCalled.current = true;
+                    handleDeploy();
+                }
+            }
         }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [carouselIndex, numSelectedUtilities, onSuccess, handleDeploy]);
+    }, [carouselIndex, numSelectedUtilities, onSuccess, handleDeploy, utilities, cards]);
+
+    // Handle deployment success/error state changes
+    useEffect(() => {
+        const utilityInProgress = utilities[carouselIndex];
+        if (!utilityInProgress) return;
+        
+        const card = cards[utilityInProgress.key];
+        if (!card?.mutator) return;
+
+        if (card.mutator[1].isSuccess) {
+            hasMutatorBeenCalled.current = false;
+            setCarouselIndex(prev => prev + 1);
+        }
+
+        if (card.mutator[1].isError) {
+            onError(card.mutator[1].error);
+        }
+    }, [utilities, carouselIndex, cards, onError]);
 
     const utilityInProgress = utilities[carouselIndex];
 
@@ -98,15 +126,6 @@ export default function InstallOperatorsCarousel({ onSuccess, onError }: Props) 
 
     if (!card.mutator) {
         return null;
-    }
-
-    if (card.mutator[1].isSuccess) {
-        hasMutatorBeenCalled.current = false;
-        setCarouselIndex(carouselIndex + 1);
-    }
-
-    if (card.mutator[1].isError) {
-        onError(card.mutator[1].error);
     }
 
     return (
