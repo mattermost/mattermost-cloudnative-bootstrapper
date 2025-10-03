@@ -46,3 +46,8 @@ func WriteBadRequestError(w http.ResponseWriter, message, operation string, deta
 func WriteNotFoundError(w http.ResponseWriter, message, operation string, details interface{}) {
 	WriteErrorResponse(w, http.StatusNotFound, message, operation, "NOT_FOUND", details)
 }
+
+// WriteDeploymentError is a convenience function for deployment errors (599 status code)
+func WriteDeploymentError(w http.ResponseWriter, message, operation string, details interface{}) {
+	WriteErrorResponse(w, 599, message, operation, "DEPLOYMENT_ERROR", details)
+}

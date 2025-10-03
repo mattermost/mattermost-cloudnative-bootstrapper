@@ -405,7 +405,9 @@ func handleDeployNginxOperator(c *Context, w http.ResponseWriter, r *http.Reques
 	vars := mux.Vars(r)
 	clusterName := vars["name"]
 	if clusterName == "" || clusterName == "undefined" {
-		w.WriteHeader(http.StatusBadRequest)
+		model.WriteBadRequestError(w, "Cluster name is required for Nginx operator deployment", "deploy-nginx-operator", map[string]interface{}{
+			"provided_cluster_name": clusterName,
+		})
 		return
 	}
 	c.Ctx = logger.WithClusterName(c.Ctx, clusterName)
@@ -417,7 +419,11 @@ func handleDeployNginxOperator(c *Context, w http.ResponseWriter, r *http.Reques
 
 	if err != nil {
 		logger.FromContext(c.Ctx).WithError(err).Error("Failed to authenticate helm client")
-		w.WriteHeader(http.StatusInternalServerError)
+		model.WriteDeploymentError(w, "Failed to connect to the Kubernetes cluster for Nginx operator deployment. Please verify your cluster is running and accessible.", "deploy-nginx-operator", map[string]interface{}{
+			"cluster_name": clusterName,
+			"namespace":    "ingress-nginx",
+			"error":        err.Error(),
+		})
 		return
 	}
 
@@ -430,7 +436,12 @@ func handleDeployNginxOperator(c *Context, w http.ResponseWriter, r *http.Reques
 
 	if err != nil {
 		logger.FromContext(c.Ctx).WithError(err).Error("Failed to add or update chart repo")
-		w.WriteHeader(http.StatusInternalServerError)
+		model.WriteDeploymentError(w, "Failed to add the Nginx Helm repository. This may be due to network connectivity issues.", "deploy-nginx-operator", map[string]interface{}{
+			"repository_name": chartRepo.Name,
+			"repository_url":  chartRepo.URL,
+			"cluster_name":    clusterName,
+			"error":           err.Error(),
+		})
 		return
 	}
 
@@ -453,7 +464,15 @@ func handleDeployNginxOperator(c *Context, w http.ResponseWriter, r *http.Reques
 	// Note that helmclient.Options.Namespace should ideally match the namespace in chartSpec.Namespace.
 	if _, err := helmClient.InstallOrUpgradeChart(context.Background(), &chartSpec, nil); err != nil {
 		logger.FromContext(c.Ctx).WithError(err).Error("Failed to install nginx operator")
-		w.WriteHeader(http.StatusInternalServerError)
+		model.WriteDeploymentError(w, "Failed to deploy the Nginx ingress controller to your cluster. This could be due to insufficient resources, networking issues, or missing subnet tags.", "deploy-nginx-operator", map[string]interface{}{
+			"chart_name":      chartSpec.ChartName,
+			"release_name":    chartSpec.ReleaseName,
+			"namespace":       chartSpec.Namespace,
+			"cluster_name":    clusterName,
+			"timeout_seconds": int(chartSpec.Timeout.Seconds()),
+			"error":           err.Error(),
+			"note":            "Ensure your cluster subnets have the kubernetes.io/cluster/cluster-name tag",
+		})
 		return
 	}
 
@@ -497,7 +516,9 @@ func handleDeployPGOperator(c *Context, w http.ResponseWriter, r *http.Request) 
 	vars := mux.Vars(r)
 	clusterName := vars["name"]
 	if clusterName == "" || clusterName == "undefined" {
-		w.WriteHeader(http.StatusBadRequest)
+		model.WriteBadRequestError(w, "Cluster name is required for CloudNative PostgreSQL operator deployment", "deploy-pg-operator", map[string]interface{}{
+			"provided_cluster_name": clusterName,
+		})
 		return
 	}
 
@@ -506,14 +527,22 @@ func handleDeployPGOperator(c *Context, w http.ResponseWriter, r *http.Request) 
 	helmClient, err := c.CloudProvider.HelmClient(c.Ctx, clusterName, "kube-system")
 	if err != nil {
 		logger.FromContext(c.Ctx).WithError(err).Error("Failed to authenticate helm client")
-		w.WriteHeader(http.StatusInternalServerError)
+		model.WriteDeploymentError(w, "Failed to connect to the Kubernetes cluster for PostgreSQL operator deployment. Please verify your cluster is running and accessible.", "deploy-pg-operator", map[string]interface{}{
+			"cluster_name": clusterName,
+			"namespace":    "kube-system",
+			"error":        err.Error(),
+		})
 		return
 	}
 
 	err = c.CloudProvider.HelmFileStorePre(c.Ctx, clusterName, "kube-system")
 	if err != nil {
 		logger.FromContext(c.Ctx).WithError(err).Error("Failed to execute file system preinstall steps for cnpg operator")
-		w.WriteHeader(http.StatusInternalServerError)
+		model.WriteDeploymentError(w, "Failed to configure file storage prerequisites for PostgreSQL operator deployment. This may be due to insufficient permissions or storage configuration issues.", "deploy-pg-operator", map[string]interface{}{
+			"cluster_name": clusterName,
+			"namespace":    "kube-system",
+			"error":        err.Error(),
+		})
 		return
 	}
 
@@ -525,14 +554,23 @@ func handleDeployPGOperator(c *Context, w http.ResponseWriter, r *http.Request) 
 	err = helmClient.AddOrUpdateChartRepo(chartRepo)
 	if err != nil {
 		logger.FromContext(c.Ctx).WithError(err).Error("Failed to add or update chart repo")
-		w.WriteHeader(http.StatusInternalServerError)
+		model.WriteDeploymentError(w, "Failed to add the CloudNative PostgreSQL Helm repository. This may be due to network connectivity issues.", "deploy-pg-operator", map[string]interface{}{
+			"repository_name": chartRepo.Name,
+			"repository_url":  chartRepo.URL,
+			"cluster_name":    clusterName,
+			"error":           err.Error(),
+		})
 		return
 	}
 
 	helmClient, err = c.CloudProvider.HelmClient(c.Ctx, clusterName, "cnpg-system")
 	if err != nil {
 		logger.FromContext(c.Ctx).WithError(err).Error("Failed to authenticate helm client")
-		w.WriteHeader(http.StatusInternalServerError)
+		model.WriteDeploymentError(w, "Failed to connect to the cnpg-system namespace for PostgreSQL operator deployment.", "deploy-pg-operator", map[string]interface{}{
+			"cluster_name": clusterName,
+			"namespace":    "cnpg-system",
+			"error":        err.Error(),
+		})
 		return
 	}
 
@@ -551,7 +589,14 @@ func handleDeployPGOperator(c *Context, w http.ResponseWriter, r *http.Request) 
 	// Note that helmclient.Options.Namespace should ideally match the namespace in chartSpec.Namespace.
 	if _, err := helmClient.InstallOrUpgradeChart(context.Background(), &chartSpec, nil); err != nil {
 		logger.FromContext(c.Ctx).WithError(err).Error("Failed to install cnpg operator")
-		w.WriteHeader(http.StatusInternalServerError)
+		model.WriteDeploymentError(w, "Failed to deploy the CloudNative PostgreSQL operator to your cluster. This could be due to insufficient resources, networking issues, or configuration problems.", "deploy-pg-operator", map[string]interface{}{
+			"chart_name":      chartSpec.ChartName,
+			"release_name":    chartSpec.ReleaseName,
+			"namespace":       chartSpec.Namespace,
+			"cluster_name":    clusterName,
+			"timeout_seconds": int(chartSpec.Timeout.Seconds()),
+			"error":           err.Error(),
+		})
 		return
 	}
 
@@ -1237,14 +1282,20 @@ func handleDeployMattermostOperator(c *Context, w http.ResponseWriter, r *http.R
 	clusterName := vars["name"]
 
 	if clusterName == "" {
-		w.WriteHeader(http.StatusBadRequest)
+		model.WriteBadRequestError(w, "Cluster name is required for Mattermost operator deployment", "deploy-mattermost-operator", map[string]interface{}{
+			"provided_cluster_name": clusterName,
+		})
 		return
 	}
 
 	helmClient, err := c.CloudProvider.HelmClient(c.Ctx, clusterName, "mattermost-operator")
 	if err != nil {
 		logger.FromContext(c.Ctx).WithError(err).Error("Failed to authenticate helm client")
-		w.WriteHeader(http.StatusInternalServerError)
+		model.WriteDeploymentError(w, "Failed to connect to the Kubernetes cluster for Mattermost operator deployment. Please verify your cluster is running and accessible.", "deploy-mattermost-operator", map[string]interface{}{
+			"cluster_name": clusterName,
+			"namespace":    "mattermost-operator",
+			"error":        err.Error(),
+		})
 		return
 	}
 
@@ -1254,7 +1305,12 @@ func handleDeployMattermostOperator(c *Context, w http.ResponseWriter, r *http.R
 
 	if err != nil {
 		logger.FromContext(c.Ctx).WithError(err).Error("Failed to add or update chart repo")
-		w.WriteHeader(http.StatusInternalServerError)
+		model.WriteDeploymentError(w, "Failed to add the Mattermost Helm repository for operator deployment. This may be due to network connectivity issues.", "deploy-mattermost-operator", map[string]interface{}{
+			"repository_name": chartRepo.Name,
+			"repository_url":  chartRepo.URL,
+			"cluster_name":    clusterName,
+			"error":           err.Error(),
+		})
 		return
 	}
 
@@ -1274,7 +1330,14 @@ func handleDeployMattermostOperator(c *Context, w http.ResponseWriter, r *http.R
 	// Note that helmclient.Options.Namespace should ideally match the namespace in chartSpec.Namespace.
 	if _, err := helmClient.InstallOrUpgradeChart(context.Background(), &chartSpec, nil); err != nil {
 		logger.FromContext(c.Ctx).WithError(err).Error("Failed to install mattermost operator")
-		w.WriteHeader(http.StatusInternalServerError)
+		model.WriteDeploymentError(w, "Failed to deploy the Mattermost operator to your cluster. This could be due to insufficient resources, networking issues, or configuration problems.", "deploy-mattermost-operator", map[string]interface{}{
+			"chart_name":      chartSpec.ChartName,
+			"release_name":    chartSpec.ReleaseName,
+			"namespace":       chartSpec.Namespace,
+			"cluster_name":    clusterName,
+			"timeout_seconds": int(chartSpec.Timeout.Seconds()),
+			"error":           err.Error(),
+		})
 		return
 	}
 	w.WriteHeader(http.StatusCreated)
@@ -1328,7 +1391,7 @@ func handleDeployRTCDService(c *Context, w http.ResponseWriter, r *http.Request)
 
 	if err != nil {
 		logger.FromContext(c.Ctx).WithError(err).Error("Failed to authenticate helm client")
-		model.WriteInternalServerError(w, "Failed to connect to the Kubernetes cluster. Please verify your cluster is running and accessible.", "deploy-rtcd", map[string]interface{}{
+		model.WriteDeploymentError(w, "Failed to connect to the Kubernetes cluster. Please verify your cluster is running and accessible.", "deploy-rtcd", map[string]interface{}{
 			"cluster_name": clusterName,
 			"namespace":    "mattermost-rtcd",
 			"error":        err.Error(),
@@ -1345,7 +1408,7 @@ func handleDeployRTCDService(c *Context, w http.ResponseWriter, r *http.Request)
 
 	if err != nil {
 		logger.FromContext(c.Ctx).WithError(err).Error("Failed to add or update chart repo")
-		model.WriteInternalServerError(w, "Failed to add the Mattermost Helm repository. This may be due to network connectivity issues.", "deploy-rtcd", map[string]interface{}{
+		model.WriteDeploymentError(w, "Failed to add the Mattermost Helm repository. This may be due to network connectivity issues.", "deploy-rtcd", map[string]interface{}{
 			"repository_name": chartRepo.Name,
 			"repository_url":  chartRepo.URL,
 			"cluster_name":    clusterName,
@@ -1373,7 +1436,7 @@ func handleDeployRTCDService(c *Context, w http.ResponseWriter, r *http.Request)
 	// Note that helmclient.Options.Namespace should ideally match the namespace in chartSpec.Namespace.
 	if _, err := helmClient.InstallOrUpgradeChart(context.Background(), &chartSpec, nil); err != nil {
 		logger.FromContext(c.Ctx).WithError(err).Error("Failed to install rtcd service")
-		model.WriteInternalServerError(w, "Failed to deploy the RTCD service to your cluster. This could be due to insufficient resources, networking issues, or configuration problems.", "deploy-rtcd", map[string]interface{}{
+		model.WriteDeploymentError(w, "Failed to deploy the RTCD service to your cluster. This could be due to insufficient resources, networking issues, or configuration problems.", "deploy-rtcd", map[string]interface{}{
 			"chart_name":      chartSpec.ChartName,
 			"release_name":    chartSpec.ReleaseName,
 			"namespace":       chartSpec.Namespace,
@@ -1424,7 +1487,9 @@ func handleDeployCallsOffloaderService(c *Context, w http.ResponseWriter, r *htt
 	vars := mux.Vars(r)
 	clusterName := vars["name"]
 	if clusterName == "" || clusterName == "undefined" {
-		w.WriteHeader(http.StatusBadRequest)
+		model.WriteBadRequestError(w, "Cluster name is required for Calls Offloader deployment", "deploy-calls-offloader", map[string]interface{}{
+			"provided_cluster_name": clusterName,
+		})
 		return
 	}
 	c.Ctx = logger.WithClusterName(c.Ctx, clusterName)
@@ -1433,7 +1498,11 @@ func handleDeployCallsOffloaderService(c *Context, w http.ResponseWriter, r *htt
 
 	if err != nil {
 		logger.FromContext(c.Ctx).WithError(err).Error("Failed to authenticate helm client")
-		w.WriteHeader(http.StatusInternalServerError)
+		model.WriteDeploymentError(w, "Failed to connect to the Kubernetes cluster for Calls Offloader deployment. Please verify your cluster is running and accessible.", "deploy-calls-offloader", map[string]interface{}{
+			"cluster_name": clusterName,
+			"namespace":    "calls-offloader",
+			"error":        err.Error(),
+		})
 		return
 	}
 
@@ -1446,7 +1515,12 @@ func handleDeployCallsOffloaderService(c *Context, w http.ResponseWriter, r *htt
 
 	if err != nil {
 		logger.FromContext(c.Ctx).WithError(err).Error("Failed to add or update chart repo")
-		w.WriteHeader(http.StatusInternalServerError)
+		model.WriteDeploymentError(w, "Failed to add the Mattermost Helm repository for Calls Offloader deployment. This may be due to network connectivity issues.", "deploy-calls-offloader", map[string]interface{}{
+			"repository_name": chartRepo.Name,
+			"repository_url":  chartRepo.URL,
+			"cluster_name":    clusterName,
+			"error":           err.Error(),
+		})
 		return
 	}
 
@@ -1469,7 +1543,14 @@ func handleDeployCallsOffloaderService(c *Context, w http.ResponseWriter, r *htt
 	// Note that helmclient.Options.Namespace should ideally match the namespace in chartSpec.Namespace.
 	if _, err := helmClient.InstallOrUpgradeChart(context.Background(), &chartSpec, nil); err != nil {
 		logger.FromContext(c.Ctx).WithError(err).Error("Failed to install calls-offloader service")
-		w.WriteHeader(http.StatusInternalServerError)
+		model.WriteDeploymentError(w, "Failed to deploy the Calls Offloader service to your cluster. This could be due to insufficient resources, networking issues, or configuration problems.", "deploy-calls-offloader", map[string]interface{}{
+			"chart_name":      chartSpec.ChartName,
+			"release_name":    chartSpec.ReleaseName,
+			"namespace":       chartSpec.Namespace,
+			"cluster_name":    clusterName,
+			"timeout_seconds": int(chartSpec.Timeout.Seconds()),
+			"error":           err.Error(),
+		})
 		return
 	}
 
