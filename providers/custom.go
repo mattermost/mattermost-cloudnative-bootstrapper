@@ -38,6 +38,13 @@ func GetCustomProvider(credentials *model.Credentials) *CustomKubeProvider {
 		}
 	})
 
+	// Always update credentials if they are provided and different from what we have
+	if credentials != nil && customProviderInstance.Credentials != credentials {
+		customProviderInstance.credentialsLock.Lock()
+		customProviderInstance.Credentials = credentials
+		customProviderInstance.credentialsLock.Unlock()
+	}
+
 	return customProviderInstance
 }
 
