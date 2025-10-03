@@ -1,6 +1,6 @@
 image:
   repository: mattermost/rtcd
-  tag: v1.4.0
+  tag: v1.2.1
 service:
   APIport: 8045
   RTCport: 8443
