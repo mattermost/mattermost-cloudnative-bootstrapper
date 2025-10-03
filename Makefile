@@ -40,7 +40,6 @@ node_modules:
 	git --version
 	cd webapp; npm install
 
-
 .PHONY: lint-webapp
 lint-webapp: node_modules
 	@echo Running eslint
@@ -64,3 +63,18 @@ build-server-embedded: build-webapp
 	go build -o build/mcnb-server ./cmd/mcnb
 	@echo Cleaning up copied files
 	rm -rf static/build
+
+.PHONY: run-server-dev
+run-server-dev:
+	@echo Starting API server with go run on http://localhost:8070
+	@echo "The server will run in API-only mode (no embedded frontend)"
+	@echo "Press Ctrl+C to stop the server"
+	go run ./cmd/mcnb server --disable-telemetry
+
+.PHONY: run-webapp-dev
+run-webapp-dev: node_modules
+	@echo Starting React development server on http://localhost:3000
+	@echo "API calls will be proxied to http://localhost:8070"
+	@echo "Make sure the API server is running with 'make run-server-dev'"
+	@echo "Press Ctrl+C to stop the development server"
+	cd webapp && npm start
