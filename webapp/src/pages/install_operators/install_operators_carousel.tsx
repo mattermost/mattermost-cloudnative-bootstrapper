@@ -5,7 +5,7 @@ import { RootState } from '../../store';
 import { Button} from '@mui/joy';
 import CloudNativePGLogo from '../../static/cloudnativepglogo.png';
 import MattermostLogo from '../../static/mattermost-operator-logo.jpg';
-import NginxLogo from '../../static/Nginx logo.svg';
+import NginxLogo from '../../static/nginx-logo.png';
 import { useDeployCloudNativePGMutation, useDeployMattermostOperatorMutation, useDeployNginxOperatorMutation, useDeployRTCDServiceMutation, useDeployCallsOffloaderServiceMutation } from '../../client/bootstrapperApi';
 
 type Props = {

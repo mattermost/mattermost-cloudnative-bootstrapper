@@ -4,7 +4,7 @@ import { useDispatch } from 'react-redux';
 import { useSelector } from 'react-redux';
 import { useMatch, useNavigate, useSearchParams } from 'react-router-dom';
 import MattermostLogo from '../../static/mattermost-operator-logo.jpg';
-import NginxLogo from '../../static/Nginx logo.svg';
+import NginxLogo from '../../static/nginx-logo.png';
 import CloudNativePGLogo from '../../static/cloudnativepglogo.png';
 import './install_operators.scss';
 import { RootState } from '../../store';

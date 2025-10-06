@@ -57,8 +57,8 @@ var serverCmd = &cobra.Command{
 
 					// Try to serve the requested file first
 					if file, err := staticFileSystem.Open(req.URL.Path[1:]); err == nil {
-						defer file.Close()
 						http.ServeContent(w, req, req.URL.Path, time.Time{}, file.(io.ReadSeeker))
+						defer file.Close()
 						return
 					}
 

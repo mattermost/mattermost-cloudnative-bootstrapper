@@ -50,8 +50,8 @@ check-style: lint-server govet lint-webapp
 
 .PHONY: build-webapp
 build-webapp: node_modules
-	@echo Building webapp for production
-	cd webapp; npm run build
+	@echo Building webapp for production with all images embedded
+	cd webapp; IMAGE_INLINE_SIZE_LIMIT=524288 npm run build
 
 .PHONY: build-server-embedded
 build-server-embedded: build-webapp
@@ -61,8 +61,7 @@ build-server-embedded: build-webapp
 	mkdir -p static
 	cp -r webapp/build static/
 	go build -o build/mcnb-server ./cmd/mcnb
-	@echo Cleaning up copied files
-	rm -rf static/build
+	@echo Server built with embedded frontend - keeping static/build for runtime detection
 
 .PHONY: run-server-dev
 run-server-dev:
