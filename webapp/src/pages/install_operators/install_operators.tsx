@@ -74,13 +74,6 @@ export const allUtilities: KubeUtility[] = [
     },
 ];
 
-// Debug logging to help troubleshoot
-console.log('Imported logo paths:', {
-    MattermostLogo,
-    NginxLogo, 
-    CloudNativePGLogo
-});
-
 export default function InstallOperatorsPage() {
     const dispatch = useDispatch();
     const navigate = useNavigate();
