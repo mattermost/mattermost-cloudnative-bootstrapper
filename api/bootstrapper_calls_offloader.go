@@ -119,7 +119,7 @@ func handleDeleteCallsOffloaderService(c *Context, w http.ResponseWriter, r *htt
 		return
 	}
 
-	err = helmClient.UninstallReleaseByName(CallsOffloaderNamespace)
+	err = helmClient.UninstallReleaseByName(CallsOffloaderReleaseName)
 	if err != nil {
 		logger.FromContext(c.Ctx).WithError(err).Error("Failed to delete calls-offloader service")
 		w.WriteHeader(http.StatusInternalServerError)
