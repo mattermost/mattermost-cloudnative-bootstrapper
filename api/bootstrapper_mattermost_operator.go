@@ -117,3 +117,4 @@ func handleDeployMattermostOperator(c *Context, w http.ResponseWriter, r *http.R
 	}
 	w.WriteHeader(http.StatusCreated)
 }
+

@@ -134,3 +134,4 @@ func handleDeployNginxOperator(c *Context, w http.ResponseWriter, r *http.Reques
 
 	w.WriteHeader(http.StatusCreated)
 }
+
