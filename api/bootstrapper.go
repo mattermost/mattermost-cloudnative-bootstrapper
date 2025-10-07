@@ -60,6 +60,13 @@ func initBootstrapper(apiRouter *mux.Router, context *Context) {
 	clusterNameRouter.Handle("/deploy_pg_operator", addContext(handleDeployPGOperator)).Methods(http.MethodPost)
 	clusterNameRouter.Handle("/deploy_rtcd", addContext(handleDeployRTCDService)).Methods(http.MethodPost)
 	clusterNameRouter.Handle("/deploy_calls_offloader", addContext(handleDeployCallsOffloaderService)).Methods(http.MethodPost)
+
+	// Default values endpoints
+	clusterNameRouter.Handle("/default_values/mattermost_operator", addContext(handleGetMattermostOperatorDefaultValues)).Methods(http.MethodGet)
+	clusterNameRouter.Handle("/default_values/nginx_operator", addContext(handleGetNginxOperatorDefaultValues)).Methods(http.MethodGet)
+	clusterNameRouter.Handle("/default_values/cnpg_operator", addContext(handleGetCNPGOperatorDefaultValues)).Methods(http.MethodGet)
+	clusterNameRouter.Handle("/default_values/rtcd_service", addContext(handleGetRTCDServiceDefaultValues)).Methods(http.MethodGet)
+	clusterNameRouter.Handle("/default_values/calls_offloader", addContext(handleGetCallsOffloaderDefaultValues)).Methods(http.MethodGet)
 	clusterNameRouter.Handle("/pg_operator", addContext(handleDeletePGOperator)).Methods(http.MethodDelete)
 	clusterNameRouter.Handle("/mattermost_operator", addContext(handleDeleteMattermostOperator)).Methods(http.MethodDelete)
 	clusterNameRouter.Handle("/nginx_operator", addContext(handleDeleteNginxOperator)).Methods(http.MethodDelete)

@@ -15,6 +15,7 @@ type Props = {
 
 export default function InstallOperatorsCarousel({ onSuccess, onError }: Props) {
     const utilities = useSelector((state: RootState) => state.bootstrapper.utilities.filter((utility) => utility.deploymentRequestState !== 'succeeded'));
+    const operatorCustomValues = useSelector((state: RootState) => state.bootstrapper.operatorCustomValues);
     const cloudProvider = useMatch('/:cloudProvider/cluster/operators')?.params.cloudProvider!;
     const [searchParams,] = useSearchParams();
     const clusterName = searchParams.get('clusterName') || "";
@@ -78,8 +79,9 @@ export default function InstallOperatorsCarousel({ onSuccess, onError }: Props) 
         const card = cards[utilityInProgress.key];
         if (!card?.mutator) return;
         
-        card.mutator[0]({ clusterName, cloudProvider });
-    }, [carouselIndex, utilities, cards, clusterName, cloudProvider]);
+        const customValues = operatorCustomValues[utilityInProgress.key];
+        card.mutator[0]({ clusterName, cloudProvider, customValues });
+    }, [carouselIndex, utilities, cards, clusterName, cloudProvider, operatorCustomValues]);
     
     useEffect(() => {
         if (carouselIndex + 1 > numSelectedUtilities) {

@@ -68,6 +68,25 @@ func handleDeployNginxOperator(c *Context, w http.ResponseWriter, r *http.Reques
 	}
 	c.Ctx = logger.WithClusterName(c.Ctx, clusterName)
 
+	// Parse custom values from request body
+	customValues, err := parseCustomValues(r)
+	if err != nil {
+		logger.FromContext(c.Ctx).WithError(err).Error("Failed to parse custom values")
+		model.WriteBadRequestError(w, "Invalid custom values format", "deploy-nginx-operator", map[string]interface{}{
+			"error": err.Error(),
+		})
+		return
+	}
+
+	// Validate custom values YAML if provided
+	if err := validateCustomValues(customValues); err != nil {
+		logger.FromContext(c.Ctx).WithError(err).Error("Invalid custom values YAML")
+		model.WriteBadRequestError(w, "Invalid YAML format in custom values", "deploy-nginx-operator", map[string]interface{}{
+			"error": err.Error(),
+		})
+		return
+	}
+
 	// TODO: Before this can run, the subnets that the cluster was created on must be updated to have tags with the format:
 	// kubernetes.io/cluster/cluster-name: shared (TODO: Confirm "shared" is correct?)
 
@@ -101,8 +120,11 @@ func handleDeployNginxOperator(c *Context, w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	// TODO - we need some sort of pre-post hooks for the install to allow for environment specific configurations
+	// Use custom values if provided, otherwise use default values
 	valuesYaml := helm.NginxOperatorValues
+	if customValues != "" {
+		valuesYaml = customValues
+	}
 
 	chartSpec := helmclient.ChartSpec{
 		ReleaseName:     NginxOperatorReleaseName,
@@ -134,4 +156,3 @@ func handleDeployNginxOperator(c *Context, w http.ResponseWriter, r *http.Reques
 
 	w.WriteHeader(http.StatusCreated)
 }
-

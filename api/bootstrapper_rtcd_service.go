@@ -68,6 +68,25 @@ func handleDeployRTCDService(c *Context, w http.ResponseWriter, r *http.Request)
 	}
 	c.Ctx = logger.WithClusterName(c.Ctx, clusterName)
 
+	// Parse custom values from request body
+	customValues, err := parseCustomValues(r)
+	if err != nil {
+		logger.FromContext(c.Ctx).WithError(err).Error("Failed to parse custom values")
+		model.WriteBadRequestError(w, "Invalid custom values format", "deploy-rtcd", map[string]interface{}{
+			"error": err.Error(),
+		})
+		return
+	}
+
+	// Validate custom values YAML if provided
+	if err := validateCustomValues(customValues); err != nil {
+		logger.FromContext(c.Ctx).WithError(err).Error("Invalid custom values YAML")
+		model.WriteBadRequestError(w, "Invalid YAML format in custom values", "deploy-rtcd", map[string]interface{}{
+			"error": err.Error(),
+		})
+		return
+	}
+
 	helmClient, err := c.CloudProvider.HelmClient(c.Ctx, clusterName, RTCDServiceNamespace)
 
 	if err != nil {
@@ -98,8 +117,11 @@ func handleDeployRTCDService(c *Context, w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	// RTCD configuration based on Mattermost documentation
+	// Use custom values if provided, otherwise use default values
 	valuesYaml := helm.RTCDServiceValues
+	if customValues != "" {
+		valuesYaml = customValues
+	}
 
 	chartSpec := helmclient.ChartSpec{
 		ReleaseName:     RTCDServiceReleaseName,
@@ -130,4 +152,3 @@ func handleDeployRTCDService(c *Context, w http.ResponseWriter, r *http.Request)
 
 	w.WriteHeader(http.StatusCreated)
 }
-

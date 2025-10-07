@@ -14,3 +14,9 @@ var RTCDServiceValues string
 
 //go:embed values/calls-offloader.yaml
 var CallsOffloaderValues string
+
+//go:embed values/mattermost-operator.yaml
+var MattermostOperatorValues string
+
+//go:embed values/cnpg-operator.yaml
+var CNPGOperatorValues string

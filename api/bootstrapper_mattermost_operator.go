@@ -64,6 +64,25 @@ func handleDeployMattermostOperator(c *Context, w http.ResponseWriter, r *http.R
 		return
 	}
 
+	// Parse custom values from request body
+	customValues, err := parseCustomValues(r)
+	if err != nil {
+		logger.FromContext(c.Ctx).WithError(err).Error("Failed to parse custom values")
+		model.WriteBadRequestError(w, "Invalid custom values format", "deploy-mattermost-operator", map[string]interface{}{
+			"error": err.Error(),
+		})
+		return
+	}
+
+	// Validate custom values YAML if provided
+	if err := validateCustomValues(customValues); err != nil {
+		logger.FromContext(c.Ctx).WithError(err).Error("Invalid custom values YAML")
+		model.WriteBadRequestError(w, "Invalid YAML format in custom values", "deploy-mattermost-operator", map[string]interface{}{
+			"error": err.Error(),
+		})
+		return
+	}
+
 	helmClient, err := c.CloudProvider.HelmClient(c.Ctx, clusterName, MattermostOperatorNamespace)
 	if err != nil {
 		logger.FromContext(c.Ctx).WithError(err).Error("Failed to authenticate helm client")
@@ -99,6 +118,7 @@ func handleDeployMattermostOperator(c *Context, w http.ResponseWriter, r *http.R
 		Timeout:         300 * time.Second,
 		CreateNamespace: true,
 		CleanupOnFail:   true,
+		ValuesYaml:      customValues, // Use custom values if provided (empty string means use chart defaults)
 	}
 
 	// Install a chart release.
@@ -117,4 +137,3 @@ func handleDeployMattermostOperator(c *Context, w http.ResponseWriter, r *http.R
 	}
 	w.WriteHeader(http.StatusCreated)
 }
-

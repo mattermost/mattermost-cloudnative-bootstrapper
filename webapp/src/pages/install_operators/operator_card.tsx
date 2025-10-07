@@ -5,6 +5,7 @@ import CardContent from '@mui/joy/CardContent';
 import Typography from '@mui/joy/Typography';
 import Checkbox from '@mui/joy/Checkbox';
 import Box from '@mui/joy/Box';
+import Button from '@mui/joy/Button';
 
 import './operator_card.scss';
 import { Chip, CircularProgress } from '@mui/joy';
@@ -15,13 +16,14 @@ export type OperatorCardProps = {
     operatorLogoUrl: string;
     operatorDescription: string;
     onClickCheckBox: (checked: boolean) => void;
+    onShowOptions?: () => void;
     isRequired: boolean;
     isChecked: boolean;
     deploymentRequestState: 'idle' | 'loading' | 'failed' | 'succeeded';
     isLoading: boolean;
 }
 
-const OperatorCard = ({ displayName, operatorLogoUrl, operatorDescription, onClickCheckBox, isRequired, key, isChecked, deploymentRequestState, isLoading }: OperatorCardProps) => {
+const OperatorCard = ({ displayName, operatorLogoUrl, operatorDescription, onClickCheckBox, onShowOptions, isRequired, key, isChecked, deploymentRequestState, isLoading }: OperatorCardProps) => {
 
     const handleCheckboxChange = () => {
         if (isRequired || isDeployed) {
@@ -31,6 +33,7 @@ const OperatorCard = ({ displayName, operatorLogoUrl, operatorDescription, onCli
     };
 
     const isDeployed = isChecked && deploymentRequestState === 'succeeded';
+    const canShowOptions = isChecked && !isDeployed && deploymentRequestState !== 'loading';
 
 
     const getChips = () => {
@@ -71,13 +74,31 @@ const OperatorCard = ({ displayName, operatorLogoUrl, operatorDescription, onCli
                 </Box>
             </CardOverflow>
             <CardContent sx={{ textAlign: 'center', py: '8px' }}>
-                {isLoading ? null : <Checkbox
-                    checked={isChecked}
-                    onChange={handleCheckboxChange}
-                    variant="soft"
-                    color="primary"
-                    disabled={isDeployed}
-                />}
+                {isLoading ? null : (
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, alignItems: 'center' }}>
+                        <Checkbox
+                            checked={isChecked}
+                            onChange={handleCheckboxChange}
+                            variant="soft"
+                            color="primary"
+                            disabled={isDeployed}
+                        />
+                        {canShowOptions && onShowOptions && (
+                            <Button
+                                size="sm"
+                                variant="outlined"
+                                color="neutral"
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    onShowOptions();
+                                }}
+                                sx={{ fontSize: 'xs', px: 2, py: 0.5 }}
+                            >
+                                Show Options
+                            </Button>
+                        )}
+                    </Box>
+                )}
             </CardContent>
         </Card>
     );
