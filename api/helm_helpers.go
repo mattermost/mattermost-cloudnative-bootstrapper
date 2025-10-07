@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
-	"os"
 
 	"github.com/mattermost/mattermost-cloudnative-bootstrapper/helm"
 	"gopkg.in/yaml.v3"
@@ -97,86 +96,4 @@ func handleGetCallsOffloaderDefaultValues(c *Context, w http.ResponseWriter, r *
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)
-}
-
-// createValuesFile creates a temporary values file from custom values or default values
-func createValuesFile(customValues, defaultValues string) (string, error) {
-	var valuesContent string
-
-	if customValues != "" {
-		// Validate YAML syntax
-		var yamlData interface{}
-		if err := yaml.Unmarshal([]byte(customValues), &yamlData); err != nil {
-			return "", err
-		}
-		valuesContent = customValues
-	} else {
-		valuesContent = defaultValues
-	}
-
-	// Create temporary file
-	tmpFile, err := os.CreateTemp("", "values-*.yaml")
-	if err != nil {
-		return "", err
-	}
-
-	if _, err := tmpFile.WriteString(valuesContent); err != nil {
-		tmpFile.Close()
-		os.Remove(tmpFile.Name())
-		return "", err
-	}
-
-	if err := tmpFile.Close(); err != nil {
-		os.Remove(tmpFile.Name())
-		return "", err
-	}
-
-	return tmpFile.Name(), nil
-}
-
-// cleanupValuesFile removes the temporary values file
-func cleanupValuesFile(valuesFile string) {
-	if valuesFile != "" {
-		os.Remove(valuesFile)
-	}
-}
-
-// mergeValues merges custom values with default values
-func mergeValues(customValues, defaultValues string) (string, error) {
-	if customValues == "" {
-		return defaultValues, nil
-	}
-
-	// Parse custom values
-	var customData map[string]interface{}
-	if err := yaml.Unmarshal([]byte(customValues), &customData); err != nil {
-		return "", err
-	}
-
-	// Parse default values
-	var defaultData map[string]interface{}
-	if err := yaml.Unmarshal([]byte(defaultValues), &defaultData); err != nil {
-		return "", err
-	}
-
-	// Merge values (custom values override defaults)
-	mergedData := make(map[string]interface{})
-
-	// Start with defaults
-	for k, v := range defaultData {
-		mergedData[k] = v
-	}
-
-	// Override with custom values
-	for k, v := range customData {
-		mergedData[k] = v
-	}
-
-	// Convert back to YAML
-	mergedYAML, err := yaml.Marshal(mergedData)
-	if err != nil {
-		return "", err
-	}
-
-	return string(mergedYAML), nil
 }
