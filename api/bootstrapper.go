@@ -18,9 +18,7 @@ import (
 	"github.com/gorilla/websocket"
 	"github.com/mattermost/mattermost-cloudnative-bootstrapper/internal/logger"
 	"github.com/mattermost/mattermost-cloudnative-bootstrapper/model"
-	helmclient "github.com/mittwald/go-helm-client"
 	"helm.sh/helm/v3/pkg/release"
-	"helm.sh/helm/v3/pkg/repo"
 	v1 "k8s.io/api/core/v1"
 	apiErrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -60,9 +58,20 @@ func initBootstrapper(apiRouter *mux.Router, context *Context) {
 	clusterNameRouter.Handle("/deploy_mattermost_operator", addContext(handleDeployMattermostOperator)).Methods(http.MethodPost)
 	clusterNameRouter.Handle("/deploy_nginx_operator", addContext(handleDeployNginxOperator)).Methods(http.MethodPost)
 	clusterNameRouter.Handle("/deploy_pg_operator", addContext(handleDeployPGOperator)).Methods(http.MethodPost)
+	clusterNameRouter.Handle("/deploy_rtcd", addContext(handleDeployRTCDService)).Methods(http.MethodPost)
+	clusterNameRouter.Handle("/deploy_calls_offloader", addContext(handleDeployCallsOffloaderService)).Methods(http.MethodPost)
+
+	// Default values endpoints
+	clusterNameRouter.Handle("/default_values/mattermost_operator", addContext(handleGetMattermostOperatorDefaultValues)).Methods(http.MethodGet)
+	clusterNameRouter.Handle("/default_values/nginx_operator", addContext(handleGetNginxOperatorDefaultValues)).Methods(http.MethodGet)
+	clusterNameRouter.Handle("/default_values/cnpg_operator", addContext(handleGetCNPGOperatorDefaultValues)).Methods(http.MethodGet)
+	clusterNameRouter.Handle("/default_values/rtcd_service", addContext(handleGetRTCDServiceDefaultValues)).Methods(http.MethodGet)
+	clusterNameRouter.Handle("/default_values/calls_offloader", addContext(handleGetCallsOffloaderDefaultValues)).Methods(http.MethodGet)
 	clusterNameRouter.Handle("/pg_operator", addContext(handleDeletePGOperator)).Methods(http.MethodDelete)
 	clusterNameRouter.Handle("/mattermost_operator", addContext(handleDeleteMattermostOperator)).Methods(http.MethodDelete)
 	clusterNameRouter.Handle("/nginx_operator", addContext(handleDeleteNginxOperator)).Methods(http.MethodDelete)
+	clusterNameRouter.Handle("/rtcd", addContext(handleDeleteRTCDService)).Methods(http.MethodDelete)
+	clusterNameRouter.Handle("/calls_offloader", addContext(handleDeleteCallsOffloaderService)).Methods(http.MethodDelete)
 	clusterNameRouter.Handle("/namespaces", addContext(handleGetClusterNamespaces)).Methods(http.MethodGet)
 	clusterNameRouter.Handle("/installation", addContext(handleCreateMattermostInstallation)).Methods(http.MethodPost)
 	clusterNameRouter.Handle("/installations", addContext(handleGetMattermostInstallations)).Methods(http.MethodGet)
@@ -80,8 +89,12 @@ func handleSetCredentials(c *Context, w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	cloudProvider := vars["cloudProvider"]
 
+	logger.FromContext(c.Ctx).Debugf("Setting credentials for provider: %s", cloudProvider)
+
 	var credentials model.Credentials
 	json.NewDecoder(r.Body).Decode(&credentials)
+
+	logger.FromContext(c.Ctx).Debugf("Received credentials for %s provider", cloudProvider)
 
 	err := c.CloudProvider.SetCredentials(c.Ctx, &credentials)
 	if err != nil {
@@ -102,10 +115,14 @@ func handleSetCredentials(c *Context, w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	logger.FromContext(c.Ctx).Debugf("Credentials validated successfully for %s", cloudProvider)
+
 	// Update both credentials and provider in state
 	err = UpdateStateCredentialsAndProvider(c.BootstrapperState, &credentials, cloudProvider)
 	if err != nil {
 		logger.FromContext(c.Ctx).WithError(err).Error("Failed to update state credentials - settings will not be persisted")
+	} else {
+		logger.FromContext(c.Ctx).Debugf("Successfully saved credentials and provider (%s) to state", cloudProvider)
 	}
 
 	w.WriteHeader(http.StatusCreated)
@@ -348,8 +365,6 @@ func handleGetInstalledCharts(c *Context, w http.ResponseWriter, r *http.Request
 		allReleases = append(allReleases, release...)
 	}
 
-	logger.FromContext(c.Ctx).Errorf("%+v", allReleases)
-
 	releasesRes := []model.InstalledReleases{}
 	for _, release := range allReleases {
 		releasesRes = append(releasesRes, model.InstalledReleases{
@@ -360,208 +375,6 @@ func handleGetInstalledCharts(c *Context, w http.ResponseWriter, r *http.Request
 	}
 
 	json.NewEncoder(w).Encode(releasesRes)
-}
-
-func handleDeleteNginxOperator(c *Context, w http.ResponseWriter, r *http.Request) {
-	c.Ctx = logger.WithField(c.Ctx, "action", "delete-ingress-nginx")
-	c.Ctx = logger.WithNamespace(c.Ctx, "ingress-nginx")
-
-	vars := mux.Vars(r)
-	clusterName := vars["name"]
-	if clusterName == "" || clusterName == "undefined" {
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
-	c.Ctx = logger.WithClusterName(c.Ctx, clusterName)
-
-	helmClient, err := c.CloudProvider.HelmClient(c.Ctx, clusterName, "ingress-nginx")
-
-	if err != nil {
-		logger.FromContext(c.Ctx).WithError(err).Error("Failed to authenticate helm client")
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-
-	err = helmClient.UninstallReleaseByName("ingress-nginx")
-	if err != nil {
-		logger.FromContext(c.Ctx).WithError(err).Error("Failed to delete ingress-nginx operator")
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-
-	w.WriteHeader(http.StatusOK)
-
-}
-
-func handleDeployNginxOperator(c *Context, w http.ResponseWriter, r *http.Request) {
-	c.Ctx = logger.WithField(c.Ctx, "action", "deploy-ingress-nginx")
-	c.Ctx = logger.WithNamespace(c.Ctx, "ingress-nginx")
-
-	vars := mux.Vars(r)
-	clusterName := vars["name"]
-	if clusterName == "" || clusterName == "undefined" {
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
-	c.Ctx = logger.WithClusterName(c.Ctx, clusterName)
-
-	// TODO: Before this can run, the subnets that the cluster was created on must be updated to have tags with the format:
-	// kubernetes.io/cluster/cluster-name: shared (TODO: Confirm "shared" is correct?)
-
-	helmClient, err := c.CloudProvider.HelmClient(c.Ctx, clusterName, "ingress-nginx")
-
-	if err != nil {
-		logger.FromContext(c.Ctx).WithError(err).Error("Failed to authenticate helm client")
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-
-	chartRepo := repo.Entry{
-		Name: "nginx",
-		URL:  "https://kubernetes.github.io/ingress-nginx",
-	}
-
-	err = helmClient.AddOrUpdateChartRepo(chartRepo)
-
-	if err != nil {
-		logger.FromContext(c.Ctx).WithError(err).Error("Failed to add or update chart repo")
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-
-	// TODO - we need some sort of pre-post hooks for the install to allow for environment specific configurations
-	valuesYaml := `controller:
-    config:
-      use-forwarded-headers: "true"
-	service:
-	  targetPorts:
-	    http: http
-		https: http
-    service:
-      annotations:
-        service.beta.kubernetes.io/aws-load-balancer-backend-protocol: "tcp"
-        service.beta.kubernetes.io/aws-load-balancer-ssl-ports: "https"
-        service.beta.kubernetes.io/aws-load-balancer-ssl-cert: arn:aws:acm:us-east-1:110643744285:certificate/8fcc5250-8a60-4ab8-8337-7491fb447906`
-
-	chartSpec := helmclient.ChartSpec{
-		ReleaseName:     "ingress-nginx",
-		ChartName:       "nginx/ingress-nginx",
-		Namespace:       "ingress-nginx",
-		UpgradeCRDs:     true,
-		Wait:            true,
-		Timeout:         3000 * time.Second,
-		CreateNamespace: true,
-		CleanupOnFail:   true,
-		ValuesYaml:      valuesYaml,
-	}
-
-	// Install a chart release.
-	// Note that helmclient.Options.Namespace should ideally match the namespace in chartSpec.Namespace.
-	if _, err := helmClient.InstallOrUpgradeChart(context.Background(), &chartSpec, nil); err != nil {
-		logger.FromContext(c.Ctx).WithError(err).Error("Failed to install mattermost operator")
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-
-	w.WriteHeader(http.StatusCreated)
-
-}
-
-func handleDeletePGOperator(c *Context, w http.ResponseWriter, r *http.Request) {
-	c.Ctx = logger.WithField(c.Ctx, "action", "delete-cnpg")
-	c.Ctx = logger.WithNamespace(c.Ctx, "cnpg-system")
-	vars := mux.Vars(r)
-	clusterName := vars["name"]
-	if clusterName == "" || clusterName == "undefined" {
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
-
-	c.Ctx = logger.WithClusterName(c.Ctx, clusterName)
-
-	helmClient, err := c.CloudProvider.HelmClient(c.Ctx, clusterName, "cnpg-system")
-
-	if err != nil {
-		logger.FromContext(c.Ctx).WithError(err).Error("Failed to authenticate helm client")
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-
-	err = helmClient.UninstallReleaseByName("cnpg-system")
-	if err != nil {
-		logger.FromContext(c.Ctx).WithError(err).Error("Failed to delete cnpg-system operator")
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-
-	w.WriteHeader(http.StatusOK)
-}
-
-func handleDeployPGOperator(c *Context, w http.ResponseWriter, r *http.Request) {
-	c.Ctx = logger.WithField(c.Ctx, "action", "deploy-cnpg")
-	c.Ctx = logger.WithNamespace(c.Ctx, "cnpg")
-	vars := mux.Vars(r)
-	clusterName := vars["name"]
-	if clusterName == "" || clusterName == "undefined" {
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
-
-	c.Ctx = logger.WithClusterName(c.Ctx, clusterName)
-
-	helmClient, err := c.CloudProvider.HelmClient(c.Ctx, clusterName, "kube-system")
-	if err != nil {
-		logger.FromContext(c.Ctx).WithError(err).Error("Failed to authenticate helm client")
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-
-	err = c.CloudProvider.HelmFileStorePre(c.Ctx, clusterName, "kube-system")
-	if err != nil {
-		logger.FromContext(c.Ctx).WithError(err).Error("Failed to execute file system preinstall steps for cnpg operator")
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-
-	chartRepo := repo.Entry{
-		Name: "cnpg",
-		URL:  "https://cloudnative-pg.github.io/charts",
-	}
-
-	err = helmClient.AddOrUpdateChartRepo(chartRepo)
-	if err != nil {
-		logger.FromContext(c.Ctx).WithError(err).Error("Failed to add or update chart repo")
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-
-	helmClient, err = c.CloudProvider.HelmClient(c.Ctx, clusterName, "cnpg-system")
-	if err != nil {
-		logger.FromContext(c.Ctx).WithError(err).Error("Failed to authenticate helm client")
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-
-	chartSpec := helmclient.ChartSpec{
-		ReleaseName:     "cnpg-system",
-		ChartName:       "cnpg/cloudnative-pg",
-		Namespace:       "cnpg-system",
-		UpgradeCRDs:     true,
-		Wait:            true,
-		Timeout:         300 * time.Second,
-		CreateNamespace: true,
-		CleanupOnFail:   true,
-	}
-
-	// Install a chart release.
-	// Note that helmclient.Options.Namespace should ideally match the namespace in chartSpec.Namespace.
-	if _, err := helmClient.InstallOrUpgradeChart(context.Background(), &chartSpec, nil); err != nil {
-		logger.FromContext(c.Ctx).WithError(err).Error("Failed to install cnpg operator")
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-
-	w.WriteHeader(http.StatusCreated)
 }
 
 func handleGetClusterNamespaces(c *Context, w http.ResponseWriter, r *http.Request) {
@@ -1206,84 +1019,6 @@ func handleCreateMattermostInstallation(c *Context, w http.ResponseWriter, r *ht
 		return
 	}
 	json.NewEncoder(w).Encode(mattermost)
-}
-
-func handleDeleteMattermostOperator(c *Context, w http.ResponseWriter, r *http.Request) {
-	c.Ctx = logger.WithField(c.Ctx, "action", "delete-mattermost")
-	c.Ctx = logger.WithNamespace(c.Ctx, "mattermost-operator")
-	vars := mux.Vars(r)
-	clusterName := vars["name"]
-	if clusterName == "" || clusterName == "undefined" {
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
-
-	c.Ctx = logger.WithClusterName(c.Ctx, clusterName)
-
-	helmClient, err := c.CloudProvider.HelmClient(c.Ctx, clusterName, "mattermost-operator")
-
-	if err != nil {
-		logger.FromContext(c.Ctx).WithError(err).Error("Failed to authenticate helm client")
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-
-	err = helmClient.UninstallReleaseByName("mattermost-operator")
-	if err != nil {
-		logger.FromContext(c.Ctx).WithError(err).Error("Failed to delete mattermost-operator operator")
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-	w.WriteHeader(http.StatusOK)
-}
-
-func handleDeployMattermostOperator(c *Context, w http.ResponseWriter, r *http.Request) {
-	logger.FromContext(c.Ctx).Info("Getting kubeconfig")
-	vars := mux.Vars(r)
-	clusterName := vars["name"]
-
-	if clusterName == "" {
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
-
-	helmClient, err := c.CloudProvider.HelmClient(c.Ctx, clusterName, "mattermost-operator")
-	if err != nil {
-		logger.FromContext(c.Ctx).WithError(err).Error("Failed to authenticate helm client")
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-
-	chartRepo := repo.Entry{Name: "mattermost", URL: "https://helm.mattermost.com"}
-
-	err = helmClient.AddOrUpdateChartRepo(chartRepo)
-
-	if err != nil {
-		logger.FromContext(c.Ctx).WithError(err).Error("Failed to add or update chart repo")
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-
-	chartSpec := helmclient.ChartSpec{
-		ReleaseName: "mattermost-operator",
-		ChartName:   "mattermost/mattermost-operator",
-		Namespace:   "mattermost-operator",
-		UpgradeCRDs: true,
-		// Version:         "1.25.2",
-		Wait:            true,
-		Timeout:         300 * time.Second,
-		CreateNamespace: true,
-		CleanupOnFail:   true,
-	}
-
-	// Install a chart release.
-	// Note that helmclient.Options.Namespace should ideally match the namespace in chartSpec.Namespace.
-	if _, err := helmClient.InstallOrUpgradeChart(context.Background(), &chartSpec, nil); err != nil {
-		logger.FromContext(c.Ctx).WithError(err).Error("Failed to install mattermost operator")
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-	w.WriteHeader(http.StatusCreated)
 }
 
 func handleGetMattermostInstallations(c *Context, w http.ResponseWriter, r *http.Request) {

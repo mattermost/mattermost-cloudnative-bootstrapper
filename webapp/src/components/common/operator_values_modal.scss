@@ -1,0 +1,36 @@
+.operator-values-modal {
+    .modal-dialog {
+        .yaml-editor-container {
+            border: 1px solid var(--joy-palette-neutral-300);
+            border-radius: var(--joy-radius-sm);
+        }
+    }
+}
+
+// Ensure proper spacing and layout
+.modal-dialog {
+    .yaml-editor-wrapper {
+        border-radius: var(--joy-radius-sm);
+    }
+    
+    .line-numbers {
+        border-top-left-radius: var(--joy-radius-sm);
+        border-bottom-left-radius: var(--joy-radius-sm);
+    }
+    
+    .yaml-textarea {
+        border-top-right-radius: var(--joy-radius-sm);
+        border-bottom-right-radius: var(--joy-radius-sm);
+    }
+}
+
+// Dark mode adjustments
+[data-joy-color-scheme="dark"] {
+    .operator-values-modal {
+        .modal-dialog {
+            .yaml-editor-container {
+                border-color: var(--joy-palette-neutral-700);
+            }
+        }
+    }
+}

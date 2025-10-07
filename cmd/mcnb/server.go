@@ -2,16 +2,19 @@ package main
 
 import (
 	"context"
+	"io"
 	"log"
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
 	"github.com/gorilla/mux"
 	"github.com/mattermost/mattermost-cloudnative-bootstrapper/api"
 	"github.com/mattermost/mattermost-cloudnative-bootstrapper/internal/logger"
+	"github.com/mattermost/mattermost-cloudnative-bootstrapper/static"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
@@ -38,6 +41,47 @@ var serverCmd = &cobra.Command{
 		}
 
 		api.Register(r, apiContext)
+
+		// Serve embedded static files if available (server mode)
+		if static.IsEmbedded() {
+			logger.FromContext(ctx).Info("Serving embedded frontend files")
+			staticFileSystem, err := static.GetEmbeddedFileSystem()
+			if err != nil {
+				logger.FromContext(ctx).WithError(err).Error("Failed to get embedded file system")
+			} else {
+				// Create a custom handler for SPA routing
+				spaHandler := http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+					// Skip API routes - let them return 404 naturally
+					if strings.HasPrefix(req.URL.Path, "/api/v1") {
+						http.NotFound(w, req)
+						return
+					}
+
+					// Try to serve the requested file first
+					if file, err := staticFileSystem.Open(req.URL.Path[1:]); err == nil {
+						http.ServeContent(w, req, req.URL.Path, time.Time{}, file.(io.ReadSeeker))
+						defer file.Close()
+						return
+					}
+
+					// If file not found and it's not an API route, serve index.html for SPA routing
+					indexFile, err := staticFileSystem.Open("index.html")
+					if err != nil {
+						http.NotFound(w, req)
+						return
+					}
+					defer indexFile.Close()
+
+					w.Header().Set("Content-Type", "text/html; charset=utf-8")
+					http.ServeContent(w, req, "index.html", time.Time{}, indexFile.(io.ReadSeeker))
+				})
+
+				// Serve everything through our custom handler
+				r.PathPrefix("/").Handler(spaHandler)
+			}
+		} else {
+			logger.FromContext(ctx).Info("No embedded frontend files found - running in API-only mode")
+		}
 
 		srv := &http.Server{
 			Addr:           ":8070",

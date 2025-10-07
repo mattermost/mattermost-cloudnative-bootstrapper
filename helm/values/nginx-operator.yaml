@@ -1,0 +1,12 @@
+controller:
+  config:
+    use-forwarded-headers: "true"
+  service:
+    targetPorts:
+      http: http
+      https: http
+    annotations:
+      service.beta.kubernetes.io/aws-load-balancer-backend-protocol: "tcp"
+      service.beta.kubernetes.io/aws-load-balancer-ssl-ports: "https"
+      # TODO: Make configurable or allow discovery
+      service.beta.kubernetes.io/aws-load-balancer-ssl-cert: arn:aws:acm:us-east-1:110643744285:certificate/8fcc5250-8a60-4ab8-8337-7491fb447906

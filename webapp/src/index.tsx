@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom/client';
 import './index.css';
 import App from './App';
 import reportWebVitals from './reportWebVitals';
-import '@fontsource/inter';
+// import '@fontsource/inter'; // Temporarily commented out due to build issues
 import { store } from './store'
 import { Provider } from 'react-redux';
 import { BrowserRouter } from 'react-router-dom'

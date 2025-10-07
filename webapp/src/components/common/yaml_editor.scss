@@ -1,0 +1,80 @@
+.yaml-editor-container {
+    border: 1px solid var(--joy-palette-neutral-300);
+    border-radius: var(--joy-radius-sm);
+    overflow: hidden;
+    background-color: var(--joy-palette-background-surface);
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+}
+
+.yaml-editor-wrapper {
+    display: flex;
+    position: relative;
+    min-height: 300px;
+}
+
+.line-numbers {
+    background-color: var(--joy-palette-neutral-100);
+    border-right: 1px solid var(--joy-palette-neutral-300);
+    padding: 12px 8px;
+    user-select: none;
+    overflow: hidden;
+    min-width: 40px;
+    text-align: right;
+    flex-shrink: 0;
+}
+
+.line-number {
+    display: block;
+    line-height: 1.5;
+    color: var(--joy-palette-neutral-500);
+    font-size: 12px;
+    margin: 0;
+    padding: 0;
+}
+
+.yaml-textarea {
+    flex: 1;
+    border: none;
+    outline: none;
+    padding: 12px;
+    font-family: inherit;
+    font-size: 13px;
+    line-height: 1.5;
+    resize: vertical;
+    background-color: transparent;
+    color: var(--joy-palette-text-primary);
+    min-height: 300px;
+    
+    &::placeholder {
+        color: var(--joy-palette-neutral-400);
+    }
+    
+    &:focus {
+        outline: none;
+    }
+}
+
+// Dark mode support
+[data-joy-color-scheme="dark"] {
+    .yaml-editor-container {
+        border-color: var(--joy-palette-neutral-700);
+        background-color: var(--joy-palette-background-surface);
+    }
+    
+    .line-numbers {
+        background-color: var(--joy-palette-neutral-800);
+        border-right-color: var(--joy-palette-neutral-700);
+    }
+    
+    .line-number {
+        color: var(--joy-palette-neutral-400);
+    }
+    
+    .yaml-textarea {
+        color: var(--joy-palette-text-primary);
+        
+        &::placeholder {
+            color: var(--joy-palette-neutral-500);
+        }
+    }
+}

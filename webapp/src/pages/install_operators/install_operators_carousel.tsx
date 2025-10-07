@@ -1,12 +1,12 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { useSelector } from 'react-redux';
 import { useMatch, useSearchParams } from 'react-router-dom';
 import { RootState } from '../../store';
 import { Button} from '@mui/joy';
 import CloudNativePGLogo from '../../static/cloudnativepglogo.png';
 import MattermostLogo from '../../static/mattermost-operator-logo.jpg';
-import NginxLogo from '../../static/Nginx logo.svg';
-import { useDeployCloudNativePGMutation, useDeployMattermostOperatorMutation, useDeployNginxOperatorMutation } from '../../client/bootstrapperApi';
+import NginxLogo from '../../static/nginx-logo.png';
+import { useDeployCloudNativePGMutation, useDeployMattermostOperatorMutation, useDeployNginxOperatorMutation, useDeployRTCDServiceMutation, useDeployCallsOffloaderServiceMutation } from '../../client/bootstrapperApi';
 
 type Props = {
     onSuccess: () => void;
@@ -15,6 +15,7 @@ type Props = {
 
 export default function InstallOperatorsCarousel({ onSuccess, onError }: Props) {
     const utilities = useSelector((state: RootState) => state.bootstrapper.utilities.filter((utility) => utility.deploymentRequestState !== 'succeeded'));
+    const operatorCustomValues = useSelector((state: RootState) => state.bootstrapper.operatorCustomValues);
     const cloudProvider = useMatch('/:cloudProvider/cluster/operators')?.params.cloudProvider!;
     const [searchParams,] = useSearchParams();
     const clusterName = searchParams.get('clusterName') || "";
@@ -25,6 +26,8 @@ export default function InstallOperatorsCarousel({ onSuccess, onError }: Props) 
     const mattermostMutator = useDeployMattermostOperatorMutation();
     const nginxMutator = useDeployNginxOperatorMutation();
     const cloudNativePGMutator = useDeployCloudNativePGMutation();
+    const rtcdMutator = useDeployRTCDServiceMutation();
+    const callsOffloaderMutator = useDeployCallsOffloaderServiceMutation();
 
     const cards: Record<string, { title: string; description: string; component: React.ReactElement | null, icon: React.ReactElement | null, mutator: any }> = {
         'mattermost-operator': {
@@ -48,6 +51,20 @@ export default function InstallOperatorsCarousel({ onSuccess, onError }: Props) 
             icon: <img src={CloudNativePGLogo} alt="CloudNative PG" style={{ height: '29px', marginRight: '12px' }} />,
             mutator: cloudNativePGMutator,
         },
+        'rtcd': {
+            title: 'RTCD Service',
+            description: 'The RTCD service handles real-time communication aspects of Mattermost Calls, enabling voice and video calling features. Please wait while we deploy it to your cluster. This may take a few minutes.',
+            component: null,
+            icon: <img src={MattermostLogo} alt="RTCD Service" style={{ height: '29px', marginRight: '12px' }} />,
+            mutator: rtcdMutator,
+        },
+        'calls-offloader': {
+            title: 'Calls Offloader',
+            description: 'The Calls Offloader service enables call recordings, transcriptions, and live captions for Mattermost Calls. Please wait while we deploy it to your cluster. This may take a few minutes.',
+            component: null,
+            icon: <img src={MattermostLogo} alt="Calls Offloader" style={{ height: '29px', marginRight: '12px' }} />,
+            mutator: callsOffloaderMutator,
+        },
     };
 
 
@@ -55,20 +72,49 @@ export default function InstallOperatorsCarousel({ onSuccess, onError }: Props) 
         (utility) => utility.isChecked && utility.deploymentRequestState !== 'succeeded',
     ).length;
 
-    const handleDeploy = async () => {
-        card.mutator[0]({ clusterName, cloudProvider });
-    };
+    const handleDeploy = useCallback(async () => {
+        const utilityInProgress = utilities[carouselIndex];
+        if (!utilityInProgress) return;
+        
+        const card = cards[utilityInProgress.key];
+        if (!card?.mutator) return;
+        
+        const customValues = operatorCustomValues[utilityInProgress.key];
+        card.mutator[0]({ clusterName, cloudProvider, customValues });
+    }, [carouselIndex, utilities, cards, clusterName, cloudProvider, operatorCustomValues]);
     
     useEffect(() => {
         if (carouselIndex + 1 > numSelectedUtilities) {
             onSuccess();
-        } else if (card.component === null && !hasMutatorBeenCalled.current) {
-            hasMutatorBeenCalled.current = true;
-            handleDeploy();
-        } else {
+        } else if (!hasMutatorBeenCalled.current) {
+            const utilityInProgress = utilities[carouselIndex];
+            if (utilityInProgress) {
+                const card = cards[utilityInProgress.key];
+                if (card?.component === null) {
+                    hasMutatorBeenCalled.current = true;
+                    handleDeploy();
+                }
+            }
         }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [carouselIndex, numSelectedUtilities, onSuccess, handleDeploy]);
+    }, [carouselIndex, numSelectedUtilities, onSuccess, handleDeploy, utilities, cards]);
+
+    // Handle deployment success/error state changes
+    useEffect(() => {
+        const utilityInProgress = utilities[carouselIndex];
+        if (!utilityInProgress) return;
+        
+        const card = cards[utilityInProgress.key];
+        if (!card?.mutator) return;
+
+        if (card.mutator[1].isSuccess) {
+            hasMutatorBeenCalled.current = false;
+            setCarouselIndex(prev => prev + 1);
+        }
+
+        if (card.mutator[1].isError) {
+            onError(card.mutator[1].error);
+        }
+    }, [utilities, carouselIndex, cards, onError]);
 
     const utilityInProgress = utilities[carouselIndex];
 
@@ -82,15 +128,6 @@ export default function InstallOperatorsCarousel({ onSuccess, onError }: Props) 
 
     if (!card.mutator) {
         return null;
-    }
-
-    if (card.mutator[1].isSuccess) {
-        hasMutatorBeenCalled.current = false;
-        setCarouselIndex(carouselIndex + 1);
-    }
-
-    if (card.mutator[1].isError) {
-        onError(card.mutator[1].error as string);
     }
 
     return (

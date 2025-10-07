@@ -4,16 +4,26 @@ import { useDispatch } from 'react-redux';
 import { useSelector } from 'react-redux';
 import { useMatch, useNavigate, useSearchParams } from 'react-router-dom';
 import MattermostLogo from '../../static/mattermost-operator-logo.jpg';
-import NginxLogo from '../../static/Nginx logo.svg';
+import NginxLogo from '../../static/nginx-logo.png';
 import CloudNativePGLogo from '../../static/cloudnativepglogo.png';
 import './install_operators.scss';
 import { RootState } from '../../store';
 import OperatorCard from './operator_card';
 import { Button } from '@mui/joy';
-import { requiredUtilitiesAreDeployed, setUtilities, setUtilityDeploymentState } from '../../store/installation/bootstrapperSlice';
+import { requiredUtilitiesAreDeployed, setUtilities, setUtilityDeploymentState, setOperatorCustomValues } from '../../store/installation/bootstrapperSlice';
 import InstallOperatorsCarousel from './install_operators_carousel';
-import { useGetClusterQuery, useGetInstalledHelmReleasesQuery } from '../../client/bootstrapperApi';
+import { 
+    useGetClusterQuery, 
+    useGetInstalledHelmReleasesQuery,
+    useGetMattermostOperatorDefaultValuesQuery,
+    useGetNginxOperatorDefaultValuesQuery,
+    useGetCNPGOperatorDefaultValuesQuery,
+    useGetRTCDServiceDefaultValuesQuery,
+    useGetCallsOffloaderDefaultValuesQuery
+} from '../../client/bootstrapperApi';
 import RTKConnectedLoadingSpinner from '../../components/common/rtk_connected_loading_spinner';
+import ErrorModal from '../../components/common/ErrorModal';
+import OperatorValuesModal from '../../components/common/operator_values_modal';
 
 export type KubeUtility = {
     displayName: string;
@@ -53,7 +63,26 @@ export const allUtilities: KubeUtility[] = [
         isChecked: false,
         deploymentRequestState: 'idle',
     },
+    {
+        displayName: 'RTCD Service',
+        key: 'rtcd',
+        operatorLogoUrl: MattermostLogo,
+        operatorDescription: 'The RTCD service handles real-time communication aspects of Mattermost Calls, enabling voice and video calling features',
+        isRequired: false,
+        isChecked: false,
+        deploymentRequestState: 'idle',
+    },
+    {
+        displayName: 'Calls Offloader',
+        key: 'calls-offloader',
+        operatorLogoUrl: MattermostLogo,
+        operatorDescription: 'The Calls Offloader service enables call recordings, transcriptions, and live captions for Mattermost Calls',
+        isRequired: false,
+        isChecked: false,
+        deploymentRequestState: 'idle',
+    },
 ];
+
 
 export default function InstallOperatorsPage() {
     const dispatch = useDispatch();
@@ -62,11 +91,23 @@ export default function InstallOperatorsPage() {
     const cloudProvider = useMatch('/:cloudProvider/cluster/operators')?.params.cloudProvider!;
     const clusterName = searchParams.get('clusterName') || "";
     const utilities = useSelector((state: RootState) => state.bootstrapper.utilities);
+    const operatorCustomValues = useSelector((state: RootState) => state.bootstrapper.operatorCustomValues);
     const [isDeploying, setIsDeploying] = useState(false);
     const [deploymentFinished, setDeploymentFinished] = useState(false);
+    const [errorModalOpen, setErrorModalOpen] = useState(false);
+    const [currentError, setCurrentError] = useState<any>(null);
+    const [valuesModalOpen, setValuesModalOpen] = useState(false);
+    const [selectedOperator, setSelectedOperator] = useState<string | null>(null);
 
     // TODO: Wire this in - currently it's just looking at the namespace to see if something's deployed, but these actually contain the Helm deployment status
-    const {data: releases, isLoading: isReleasesLoading, isFetching: isReleasesFetching, isSuccess: isReleasesSuccess, isError: isReleasesError, refetch: refetchReleases} = useGetInstalledHelmReleasesQuery({cloudProvider, clusterName}, {skip: cloudProvider === '' || !clusterName});
+    const {data: releases, isLoading: isReleasesLoading, isFetching: isReleasesFetching, isSuccess: isReleasesSuccess, isError: isReleasesError, error: releasesError, refetch: refetchReleases} = useGetInstalledHelmReleasesQuery({cloudProvider, clusterName}, {skip: cloudProvider === '' || !clusterName});
+
+    // Fetch default values for each operator
+    const {data: mattermostDefaultValues} = useGetMattermostOperatorDefaultValuesQuery({cloudProvider, clusterName}, {skip: cloudProvider === '' || !clusterName});
+    const {data: nginxDefaultValues} = useGetNginxOperatorDefaultValuesQuery({cloudProvider, clusterName}, {skip: cloudProvider === '' || !clusterName});
+    const {data: cnpgDefaultValues} = useGetCNPGOperatorDefaultValuesQuery({cloudProvider, clusterName}, {skip: cloudProvider === '' || !clusterName});
+    const {data: rtcdDefaultValues} = useGetRTCDServiceDefaultValuesQuery({cloudProvider, clusterName}, {skip: cloudProvider === '' || !clusterName});
+    const {data: callsOffloaderDefaultValues} = useGetCallsOffloaderDefaultValuesQuery({cloudProvider, clusterName}, {skip: cloudProvider === '' || !clusterName});
 
     useGetClusterQuery({cloudProvider, clusterName}, {
         skip: cloudProvider === '' || !clusterName,
@@ -74,9 +115,35 @@ export default function InstallOperatorsPage() {
 
     useEffect(() => {
         releases?.forEach((release) => {
-            dispatch(setUtilityDeploymentState({ utility: release.Name, deploymentRequestState: 'succeeded', isChecked: true }))
+            // Map release names to utility keys
+            let utilityKey: string;
+            switch (release.Name) {
+                case 'mattermost-operator':
+                    utilityKey = 'mattermost-operator';
+                    break;
+                case 'ingress-nginx':
+                    utilityKey = 'ingress-nginx';
+                    break;
+                case 'cnpg-system':
+                    utilityKey = 'cnpg-system';
+                    break;
+                case 'mattermost-rtcd':
+                    utilityKey = 'rtcd';
+                    break;
+                case 'mattermost-calls-offloader':
+                    utilityKey = 'calls-offloader';
+                    break;
+                default:
+                    return; // Skip unknown releases
+            }
+            
+            dispatch(setUtilityDeploymentState({ 
+                utility: utilityKey, 
+                deploymentRequestState: 'succeeded', 
+                isChecked: true 
+            }));
         })
-    }, [releases?.length, dispatch, releases])
+    }, [releases?.length, dispatch])
 
     const requiredUtilitiesDeployed = useSelector(requiredUtilitiesAreDeployed);
 
@@ -86,6 +153,39 @@ export default function InstallOperatorsPage() {
 
     const numSelectedUtilities = utilities.filter((utility) => utility.isChecked && utility.deploymentRequestState !== 'succeeded').length;
 
+    const handleShowOptions = (operatorKey: string) => {
+        setSelectedOperator(operatorKey);
+        setValuesModalOpen(true);
+    };
+
+    const handleSaveValues = (values: string) => {
+        if (selectedOperator) {
+            dispatch(setOperatorCustomValues({ operatorKey: selectedOperator, values }));
+        }
+    };
+
+    const getOperatorDisplayName = (operatorKey: string): string => {
+        const utility = utilities.find(u => u.key === operatorKey);
+        return utility?.displayName || operatorKey;
+    };
+
+    const getDefaultValues = (operatorKey: string): string => {
+        switch (operatorKey) {
+            case 'mattermost-operator':
+                return mattermostDefaultValues?.values || '# Loading default values...';
+            case 'ingress-nginx':
+                return nginxDefaultValues?.values || '# Loading default values...';
+            case 'cnpg-system':
+                return cnpgDefaultValues?.values || '# Loading default values...';
+            case 'rtcd':
+                return rtcdDefaultValues?.values || '# Loading default values...';
+            case 'calls-offloader':
+                return callsOffloaderDefaultValues?.values || '# Loading default values...';
+            default:
+                return '# No default values available for this operator';
+        }
+    };
+
     if (isDeploying && !deploymentFinished) {
         return (
             <InstallOperatorsCarousel
@@ -94,7 +194,11 @@ export default function InstallOperatorsPage() {
                     setIsDeploying(false);
                     setDeploymentFinished(true)
                 }}
-                onError={(error) => {setIsDeploying(false); alert(`Error: ${error}`)}}
+                onError={(error) => {
+                    setIsDeploying(false);
+                    setCurrentError(error);
+                    setErrorModalOpen(true);
+                }}
             />
         )
     }
@@ -131,6 +235,7 @@ export default function InstallOperatorsPage() {
                                                 });
                                                 dispatch(setUtilities(newUtilities));
                                             }}
+                                            onShowOptions={() => handleShowOptions(utility.key)}
                                             isRequired={utility.isRequired}
                                             isChecked={utility.isChecked}
                                             deploymentRequestState={utility.deploymentRequestState}
@@ -151,6 +256,28 @@ export default function InstallOperatorsPage() {
                     </div>
                 </div>
             </div>
+            <ErrorModal
+                open={errorModalOpen}
+                title="Deployment Error"
+                error={currentError}
+                onClose={() => {
+                    setErrorModalOpen(false);
+                    setCurrentError(null);
+                }}
+            />
+            {selectedOperator && (
+                <OperatorValuesModal
+                    open={valuesModalOpen}
+                    onClose={() => {
+                        setValuesModalOpen(false);
+                        setSelectedOperator(null);
+                    }}
+                    onSave={handleSaveValues}
+                    operatorName={getOperatorDisplayName(selectedOperator)}
+                    defaultValues={getDefaultValues(selectedOperator)}
+                    currentValues={operatorCustomValues[selectedOperator]}
+                />
+            )}
         </div >
     );
 }

@@ -1,0 +1,12 @@
+callsOffloader:
+  replicaCount: 1
+  image:
+    repository: mattermost/calls-offloader
+    tag: v0.9.4
+  service:
+    type: ClusterIP
+    port: 4545
+    targetPort: 4545
+  env:
+    CALLS_OFFLOADER_LOGGER_ENABLEFILE: "\"false\""
+    CALLS_OFFLOADER_LOGGER_ENABLECONSOLE: "\"true\""

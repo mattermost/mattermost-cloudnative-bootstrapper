@@ -9,6 +9,7 @@ export interface BootstrapperState {
     cloudCredentials: CloudCredentials;
     clusterName?: string;
     utilities: KubeUtility[];
+    operatorCustomValues: Record<string, string>; // Maps operator key to custom values.yaml
 }
 
 const initialState: BootstrapperState = {
@@ -16,6 +17,7 @@ const initialState: BootstrapperState = {
     kubernetesOption: '',
     cloudCredentials: { accessKeyId: '', accessKeySecret: '', sessionToken: '', region: '', kubeconfig: '', kubeconfigType: '' },
     utilities: allUtilities,
+    operatorCustomValues: {},
 }
 
 export const bootstrapperSlice = createSlice({
@@ -45,6 +47,20 @@ export const bootstrapperSlice = createSlice({
                 return util;
             });
         },
+        setOperatorCustomValues: (state, { payload: { operatorKey, values } }) => {
+            state.operatorCustomValues[operatorKey] = values;
+        },
+        clearOperatorCustomValues: (state, { payload: { operatorKey } }) => {
+            delete state.operatorCustomValues[operatorKey];
+        },
+        resetState: (state) => {
+            state.cloudProvider = '';
+            state.kubernetesOption = '';
+            state.cloudCredentials = { accessKeyId: '', accessKeySecret: '', sessionToken: '', region: '', kubeconfig: '', kubeconfigType: '' };
+            state.clusterName = undefined;
+            state.utilities = allUtilities;
+            state.operatorCustomValues = {};
+        },
     },
     extraReducers: (builder) => {
     }
@@ -59,7 +75,7 @@ export const requiredUtilitiesAreDeployed = (state: RootState) => {
     return requiredUtilities.every((utility: KubeUtility) => utility.isRequired && utility.deploymentRequestState === 'succeeded');
 }
 
-export const { setCloudProvider, setCloudCredentials, setKubernetesOption, setUtilities, setUtilityDeploymentState } = bootstrapperSlice.actions;
+export const { setCloudProvider, setCloudCredentials, setKubernetesOption, setUtilities, setUtilityDeploymentState, setOperatorCustomValues, clearOperatorCustomValues, resetState } = bootstrapperSlice.actions;
 
 
 export default bootstrapperSlice.reducer;

@@ -59,6 +59,13 @@ export const bootstrapperApi = createApi({
         checkExistingSession: builder.query<{ provider: string; clusterName: string; hasState: boolean }, void>({
             query: () => '/state/check',
         }),
+        clearSession: builder.mutation<{ message: string }, void>({
+            query: () => ({
+                url: '/state',
+                method: 'DELETE',
+            }),
+            invalidatesTags: ['BootstrapperState'],
+        }),
         setRegion: builder.mutation<void, { region: string, cloudProvider: string }>({
             query: ({ region, cloudProvider }) => ({
                 url: `/${cloudProvider}/region`,
@@ -98,23 +105,55 @@ export const bootstrapperApi = createApi({
             query: ({ cloudProvider, clusterName }) => `/${cloudProvider}/cluster/${clusterName}/installed_charts`,
             providesTags: ['HelmReleases']
         }),
-        deployMattermostOperator: builder.mutation<undefined, { cloudProvider: string, clusterName: string }>({
-            query: ({ clusterName, cloudProvider }) => ({
+        deployMattermostOperator: builder.mutation<undefined, { cloudProvider: string, clusterName: string, customValues?: string }>({
+            query: ({ clusterName, cloudProvider, customValues }) => ({
                 url: `/${cloudProvider}/cluster/${clusterName}/deploy_mattermost_operator`,
                 method: 'POST',
+                body: customValues ? { customValues } : undefined,
             }),
         }),
-        deployNginxOperator: builder.mutation<undefined, { cloudProvider: string, clusterName: string }>({
-            query: ({ clusterName, cloudProvider }) => ({
+        deployNginxOperator: builder.mutation<undefined, { cloudProvider: string, clusterName: string, customValues?: string }>({
+            query: ({ clusterName, cloudProvider, customValues }) => ({
                 url: `/${cloudProvider}/cluster/${clusterName}/deploy_nginx_operator`,
                 method: 'POST',
+                body: customValues ? { customValues } : undefined,
             }),
         }),
-        deployCloudNativePG: builder.mutation<undefined, { cloudProvider: string, clusterName: string }>({
-            query: ({ clusterName, cloudProvider }) => ({
+        deployCloudNativePG: builder.mutation<undefined, { cloudProvider: string, clusterName: string, customValues?: string }>({
+            query: ({ clusterName, cloudProvider, customValues }) => ({
                 url: `/${cloudProvider}/cluster/${clusterName}/deploy_pg_operator`,
                 method: 'POST',
+                body: customValues ? { customValues } : undefined,
             }),
+        }),
+        deployRTCDService: builder.mutation<undefined, { cloudProvider: string, clusterName: string, customValues?: string }>({
+            query: ({ clusterName, cloudProvider, customValues }) => ({
+                url: `/${cloudProvider}/cluster/${clusterName}/deploy_rtcd`,
+                method: 'POST',
+                body: customValues ? { customValues } : undefined,
+            }),
+        }),
+        deployCallsOffloaderService: builder.mutation<undefined, { cloudProvider: string, clusterName: string, customValues?: string }>({
+            query: ({ clusterName, cloudProvider, customValues }) => ({
+                url: `/${cloudProvider}/cluster/${clusterName}/deploy_calls_offloader`,
+                method: 'POST',
+                body: customValues ? { customValues } : undefined,
+            }),
+        }),
+        getMattermostOperatorDefaultValues: builder.query<{ values: string }, { cloudProvider: string, clusterName: string }>({
+            query: ({ clusterName, cloudProvider }) => `/${cloudProvider}/cluster/${clusterName}/default_values/mattermost_operator`,
+        }),
+        getNginxOperatorDefaultValues: builder.query<{ values: string }, { cloudProvider: string, clusterName: string }>({
+            query: ({ clusterName, cloudProvider }) => `/${cloudProvider}/cluster/${clusterName}/default_values/nginx_operator`,
+        }),
+        getCNPGOperatorDefaultValues: builder.query<{ values: string }, { cloudProvider: string, clusterName: string }>({
+            query: ({ clusterName, cloudProvider }) => `/${cloudProvider}/cluster/${clusterName}/default_values/cnpg_operator`,
+        }),
+        getRTCDServiceDefaultValues: builder.query<{ values: string }, { cloudProvider: string, clusterName: string }>({
+            query: ({ clusterName, cloudProvider }) => `/${cloudProvider}/cluster/${clusterName}/default_values/rtcd_service`,
+        }),
+        getCallsOffloaderDefaultValues: builder.query<{ values: string }, { cloudProvider: string, clusterName: string }>({
+            query: ({ clusterName, cloudProvider }) => `/${cloudProvider}/cluster/${clusterName}/default_values/calls_offloader`,
         }),
         getPodsForInstallation: builder.query<Pod[], { cloudProvider: string, clusterName: string, installationName: string }>({
             query: ({ cloudProvider, clusterName, installationName }) => ({ 
@@ -163,6 +202,8 @@ export const {
     useDeployMattermostOperatorMutation,
     useDeployNginxOperatorMutation,
     useDeployCloudNativePGMutation,
+    useDeployRTCDServiceMutation,
+    useDeployCallsOffloaderServiceMutation,
     useGetInstalledHelmReleasesQuery,
     useGetPossibleClustersQuery,
     useGetClusterQuery,
@@ -170,7 +211,13 @@ export const {
     useGetKubeConfigQuery,
     useGetStateQuery,
     useCheckExistingSessionQuery,
+    useClearSessionMutation,
     useSetRegionMutation,
     useWatchInstallationLogsQuery,
     useGetPodsForInstallationQuery,
+    useGetMattermostOperatorDefaultValuesQuery,
+    useGetNginxOperatorDefaultValuesQuery,
+    useGetCNPGOperatorDefaultValuesQuery,
+    useGetRTCDServiceDefaultValuesQuery,
+    useGetCallsOffloaderDefaultValuesQuery,
 } = bootstrapperApi;
