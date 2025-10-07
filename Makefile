@@ -24,7 +24,7 @@ build_desktop_desktop: build_desktop_macos
 lint-server:
 	@echo Running lint
 	@echo $(GOBIN)
-	GOBIN=$(GOBIN) $(GO) install golang.org/x/lint/golint
+	GOBIN=$(GOBIN) $(GO) install golang.org/x/lint/golint@latest
 	$(GOBIN)/golint -set_exit_status $(./...)
 	@echo lint success
 
