@@ -5,13 +5,14 @@ import { CSSTransition } from 'react-transition-group';
 type Props = {
     cloudProvider: string;
     kubernetesOption: string;
-    onCredentialsChange: (credentials: { accessKeyId: string, accessKeySecret: string, kubeconfig: string }) => void;
+    onCredentialsChange: (credentials: { accessKeyId: string, accessKeySecret: string, sessionToken: string, kubeconfig: string }) => void;
 };
 
 function GetCredentials({ cloudProvider, kubernetesOption, onCredentialsChange }: Props) {
     const [credentials, setCredentials] = useState({
         accessKeyId: '',
         accessKeySecret: '',
+        sessionToken: '',
         kubeconfig: '',
         kubeconfigType: '',
     });
@@ -77,6 +78,15 @@ function GetCredentials({ cloudProvider, kubernetesOption, onCredentialsChange }
                     </div>
                 )}
 
+                {(cloudProvider !== 'custom' && kubernetesOption === 'new') && (
+                    <div className="credentials-row">
+                        <div className="credentials-column">
+                            <label>Session Token (optional)</label>
+                            <Input name="sessionToken" value={credentials.sessionToken} onChange={handleInputChange} placeholder="Session Token" />
+                        </div>
+                    </div>
+                )}
+
                 {cloudProvider === 'custom' && (
                     <>
                         <label>Authenticate with...</label>
@@ -102,6 +112,12 @@ function GetCredentials({ cloudProvider, kubernetesOption, onCredentialsChange }
                             <div className="credentials-column">
                                 <label>Access Key Secret</label>
                                 <Input name="accessKeySecret" value={credentials.accessKeySecret} onChange={handleInputChange} placeholder="Access Key Secret" type="password" />
+                            </div>
+                        </div>
+                        <div className="credentials-row">
+                            <div className="credentials-column">
+                                <label>Session Token (optional)</label>
+                                <Input name="sessionToken" value={credentials.sessionToken} onChange={handleInputChange} placeholder="Session Token" />
                             </div>
                         </div>
                     </>
