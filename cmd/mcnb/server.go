@@ -19,6 +19,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
+const defaultLocalServerAPI = "http://localhost:8070"
+
 var serverCmd = &cobra.Command{
 	Use:   "server",
 	Short: "Run the Mattermost CloudNative Bootstrapper server",

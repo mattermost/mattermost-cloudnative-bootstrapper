@@ -100,7 +100,7 @@ func handleDeployMattermostOperator(c *Context, w http.ResponseWriter, r *http.R
 
 	if err != nil {
 		logger.FromContext(c.Ctx).WithError(err).Error("Failed to add or update chart repo")
-		model.WriteDeploymentError(w, "Failed to add the Mattermost Helm repository for operator deployment. This may be due to network connectivity issues.", "deploy-mattermost-operator", map[string]interface{}{
+		model.WriteDeploymentError(w, "Failed to add the Mattermost Helm repository for Mattermost operator deployment. This may be due to network connectivity issues.", "deploy-mattermost-operator", map[string]interface{}{
 			"repository_name": chartRepo.Name,
 			"repository_url":  chartRepo.URL,
 			"cluster_name":    clusterName,
@@ -135,5 +135,6 @@ func handleDeployMattermostOperator(c *Context, w http.ResponseWriter, r *http.R
 		})
 		return
 	}
+
 	w.WriteHeader(http.StatusCreated)
 }
